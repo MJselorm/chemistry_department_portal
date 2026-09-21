@@ -17,7 +17,9 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins(self) -> list[str]:
-        return [origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()]
+        import re
+        origins = re.split(r"[\s,;]+", self.cors_origins.strip())
+        return [origin.rstrip("/") for origin in origins if origin]
 
 
 @lru_cache
