@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Auth Test</title><link rel="stylesheet" href="styles.css" /></head>
+  <body>
+    <main><h1>Firebase Auth test</h1><p id="status" aria-live="polite">Loading…</p>
+      <section id="anonymous"><h2>Create account / sign in</h2>
+        <form id="auth-form"><label>Email <input id="email" type="email" required autocomplete="email" /></label><label>Password <input id="password" type="password" required minlength="6" autocomplete="current-password" /></label><div><button name="action" value="login">Sign in</button><button name="action" value="register">Register</button></div></form>
+        <button id="reset-password" type="button">Send password reset email</button>
+      </section>
+      <section id="authenticated" hidden class="dashboard">
+        <header class="dashboard-header"><div><p class="eyebrow">YOUR DASHBOARD</p><h2 id="welcome">Welcome!</h2></div><button id="logout" type="button" class="secondary">Sign out</button></header>
+        <p id="dashboard-email" class="email"></p>
+        <article class="profile-card"><h3>Your profile</h3><form id="profile-form"><label>Full name <input id="full-name" maxlength="200" placeholder="Add your name" /></label><button>Save name</button></form><button id="verify-email" type="button" class="link-button">Send verification email</button></article>
+        <details><summary>Profile details</summary><pre id="profile"></pre></details>
+      </section>
+    </main><script src="firebase-config.js"></script><script type="module" src="app.js"></script>
+  </body>
+</html>
