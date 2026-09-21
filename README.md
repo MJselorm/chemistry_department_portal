@@ -62,6 +62,19 @@ npm run dev
 
 Open the URL Vite prints, normally `http://127.0.0.1:5173`.
 
+## Deploy
+
+Deploy `frontend2/` as a static Vite application and `backend/` as a Python/FastAPI service. Configure the values below in the hosting provider's encrypted environment-variable settings; never upload or commit a Firebase Admin service-account JSON file.
+
+| Service | Required production configuration |
+| --- | --- |
+| Backend | `DATABASE_URL`, `FIREBASE_SERVICE_ACCOUNT_JSON`, and `CORS_ORIGINS` containing the deployed frontend URL. |
+| Frontend | `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, and `VITE_API_BASE_URL` set to the public HTTPS backend URL. |
+
+For the backend, create a Firebase service-account key in Firebase Console under **Project settings → Service accounts**, then store the complete JSON document as `FIREBASE_SERVICE_ACCOUNT_JSON`. `FIREBASE_SERVICE_ACCOUNT_PATH` is for local development only because a path on your computer is unavailable to the hosted service.
+
+After changing frontend `VITE_*` variables, rebuild and redeploy the frontend; Vite embeds them at build time. After changing backend variables, redeploy or restart the API. A `503 Authentication verification is temporarily unavailable` response means the backend cannot initialize Firebase Admin, usually because `FIREBASE_SERVICE_ACCOUNT_JSON` is missing, malformed, or belongs to a different Firebase project.
+
 ## API overview
 
 All protected endpoints require `Authorization: Bearer <firebase_id_token>`.
