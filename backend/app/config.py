@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     database_url: str
     supabase_url: str | None = None
     supabase_service_role_key: str | None = None
+    supabase_storage_bucket: str = "directory-media"
     firebase_service_account_path: str | None = None
     firebase_service_account_json: str | None = None
     # The React portal is served by Vite in development. Keep the static

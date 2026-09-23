@@ -65,7 +65,8 @@ async function request(path, { method = 'GET', body, form, auth = true, signal }
     headers['Content-Type'] = 'application/json'
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, { method, headers, body: payload, signal })
+  const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
+  const res = await fetch(targetUrl, { method, headers, body: payload, signal })
   const data = await parseBody(res)
 
   if (res.status === 401 && auth) tokenStore.clear()
@@ -81,6 +82,28 @@ export const api = {
   postForm: (path, form, opts) => request(path, { ...opts, method: 'POST', form }),
   patch: (path, body, opts) => request(path, { ...opts, method: 'PATCH', body }),
   del: (path, opts) => request(path, { ...opts, method: 'DELETE' }),
+  upload: async (path, file, opts = {}) => {
+    const headers = {}
+    if (opts.auth !== false) {
+      const token = tokenStore.get()
+      if (token) headers.Authorization = `Bearer ${token}`
+    }
+    const formData = new FormData()
+    formData.append('file', file)
+    const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers,
+      body: formData,
+      signal: opts.signal,
+    })
+    const data = await parseBody(res)
+    if (res.status === 401 && opts.auth !== false) tokenStore.clear()
+    if (!res.ok) {
+      throw new ApiError(messageFromDetail(data, `Upload failed (${res.status})`), res.status, data)
+    }
+    return data
+  },
 }
 
 export { BASE_URL }

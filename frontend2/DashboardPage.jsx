@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from './AuthContext'
-import { MOCK_DASHBOARD_STATS, MOCK_ANNOUNCEMENTS } from './mocks'
+import { MOCK_DASHBOARD_STATS } from './mocks'
+import { api } from './client'
+import { ENDPOINTS } from './endpoints'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -10,6 +12,13 @@ export default function DashboardPage() {
   // Allow admins to preview student dashboard if desired
   const [previewAsStudent, setPreviewAsStudent] = useState(false)
   const isDisplayingAdmin = isActualAdmin && !previewAsStudent
+  const [announcements, setAnnouncements] = useState([])
+
+  useEffect(() => {
+    api.get(ENDPOINTS.announcements)
+      .then((items) => setAnnouncements(items.slice(0, 4)))
+      .catch(() => setAnnouncements([]))
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -81,19 +90,19 @@ export default function DashboardPage() {
             </p>
             <div className="flex flex-wrap gap-3 mt-6">
               <Link
-                to="/admin"
+                to="/admin?tab=events"
                 className="px-4 py-2.5 rounded-xl bg-white text-[#1d1b38] text-xs font-bold shadow hover:bg-gray-50 transition-colors"
               >
                 + Create new event
               </Link>
               <Link
-                to="/admin"
+                to="/admin?tab=resources"
                 className="px-4 py-2.5 rounded-xl border border-white/30 bg-white/10 text-white text-xs font-bold hover:bg-white/20 transition-colors"
               >
                 Upload resource
               </Link>
               <Link
-                to="/admin"
+                to="/announcements?create=true"
                 className="px-4 py-2.5 rounded-xl border border-white/30 bg-white/10 text-white text-xs font-bold hover:bg-white/20 transition-colors"
               >
                 Post announcement
@@ -233,23 +242,25 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="divide-y divide-[#eef2f3]">
-            {MOCK_ANNOUNCEMENTS.map((item) => (
+            {announcements.length === 0 && (
+              <p className="py-3 text-[11px] text-[#64777d]">No announcements have been published yet.</p>
+            )}
+            {announcements.map((item) => (
               <Link
                 key={item.id}
                 to="/announcements"
                 className="py-3 flex items-start gap-2.5 group hover:bg-[#fbfcfc] rounded-lg px-1 transition-colors"
               >
-                <span
-                  className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                  style={{ backgroundColor: item.dotColor }}
-                />
+                <span className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 bg-[#087f8c]" />
                 <div className="flex-1">
                   <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
                     {item.title}
                   </strong>
-                  <p className="text-[11px] text-[#64777d] mt-0.5">{item.snippet}</p>
+                  <p className="text-[11px] text-[#64777d] mt-0.5">{item.body}</p>
                 </div>
-                <time className="text-[10px] text-[#a1adb0] ml-2 flex-shrink-0">{item.shortTime}</time>
+                <time className="text-[10px] text-[#a1adb0] ml-2 flex-shrink-0">
+                  {new Date(item.published_at).toLocaleDateString()}
+                </time>
               </Link>
             ))}
           </div>
@@ -269,7 +280,7 @@ export default function DashboardPage() {
           /* Admin Quick Access */
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Link
-              to="/admin"
+              to="/admin?tab=events"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
             >
               <span className="block text-xl text-[#7652b8] mb-2 font-bold">◷</span>
@@ -279,7 +290,7 @@ export default function DashboardPage() {
               <small className="block text-[10px] text-[#64777d] mt-1">Schedule & edit seminars</small>
             </Link>
             <Link
-              to="/admin"
+              to="/admin?tab=resources"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
             >
               <span className="block text-xl text-[#7652b8] mb-2 font-bold">▣</span>
@@ -289,7 +300,7 @@ export default function DashboardPage() {
               <small className="block text-[10px] text-[#64777d] mt-1">Lecture notes & handouts</small>
             </Link>
             <Link
-              to="/admin"
+              to="/admin?tab=users"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
             >
               <span className="block text-xl text-[#7652b8] mb-2 font-bold">◎</span>
@@ -299,14 +310,14 @@ export default function DashboardPage() {
               <small className="block text-[10px] text-[#64777d] mt-1">Accounts & roles list</small>
             </Link>
             <Link
-              to="/admin"
+              to="/announcements?create=true"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
             >
               <span className="block text-xl text-[#7652b8] mb-2 font-bold">▤</span>
               <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#7652b8]">
-                Post Notice
+                Manage Announcements
               </strong>
-              <small className="block text-[10px] text-[#64777d] mt-1">Broadcast announcement</small>
+              <small className="block text-[10px] text-[#64777d] mt-1">Create, pin & view broadcasts</small>
             </Link>
           </div>
         ) : (

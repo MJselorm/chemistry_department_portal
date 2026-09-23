@@ -33,6 +33,7 @@ export const ENDPOINTS = {
   adminCreateEvent: '/admin/events',
   adminUploadResource: '/admin/resources',
   adminPostAnnouncement: '/admin/announcements',
+  adminDeleteAnnouncement: (id) => `/admin/announcements/${id}`,
   adminManageUsers: '/admin/users',
 }
 
@@ -43,4 +44,30 @@ export const HUB_ENDPOINTS = {
   departmentNote: '/hub/note',
   departmentEvents: '/hub/events',
   directory: '/hub/directory',
+}
+
+export const DIRECTORY_ENDPOINTS = {
+  summary: '/api/directory/summary',
+  search: '/api/directory/search',
+  uploadImage: '/api/directory/uploads/images',
+  departments: '/api/directory/departments',
+  department: (id) => `/api/directory/departments/${id}`,
+  executives: '/api/directory/executives',
+  executive: (id) => `/api/directory/executives/${id}`,
+  classRepresentatives: '/api/directory/class-representatives',
+  classRepresentative: (id) => `/api/directory/class-representatives/${id}`,
+  lecturers: '/api/directory/lecturers',
+  lecturer: (id) => `/api/directory/lecturers/${id}`,
+  lecturerConsultations: (lecturerId) => `/api/directory/lecturers/${lecturerId}/consultations`,
+  consultation: (id) => `/api/directory/consultations/${id}`,
+  courses: '/api/directory/courses',
+  course: (id) => `/api/directory/courses/${id}`,
+  clubs: '/api/directory/clubs',
+  club: (id) => `/api/directory/clubs/${id}`,
+  committees: '/api/directory/committees',
+  committee: (id) => `/api/directory/committees/${id}`,
+  committeeMembers: (committeeId) => `/api/directory/committees/${committeeId}/members`,
+  committeeMember: (id) => `/api/directory/committee-members/${id}`,
+  contacts: '/api/directory/contacts',
+  contact: (id) => `/api/directory/contacts/${id}`,
 }

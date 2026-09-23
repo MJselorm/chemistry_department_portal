@@ -19,3 +19,19 @@ class UserProfile(BaseModel):
 
 class UpdateMyProfile(BaseModel):
     full_name: str | None = Field(default=None, max_length=200)
+
+
+class AnnouncementCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    body: str = Field(min_length=1, max_length=10000)
+    category: str = Field(default="Department", min_length=1, max_length=50)
+    audience: str = Field(default="All students", max_length=50)
+    issuer: str = Field(default="Chemistry Board of Studies", min_length=1, max_length=200)
+    is_pinned: bool = False
+
+
+class AnnouncementOut(AnnouncementCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    published_at: datetime

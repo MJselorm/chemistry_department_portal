@@ -14,11 +14,17 @@ import ProfilePage from './ProfilePage'
 import SettingsPage from './SettingsPage'
 import AdminPage from './AdminPage'
 
+// Student Directory Admin Suite
+import { ToastProvider } from './directory/Toast'
+import DirectoryAdminOverview from './directory/DirectoryAdminOverview'
+import DirectoryEntityManager from './directory/DirectoryEntityManager'
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <ToastProvider>
+          <Routes>
           {/* Landing / Sign In Page (Preserved) */}
           <Route path="/" element={<LoginPage />} />
 
@@ -103,9 +109,114 @@ export default function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly>
                 <PortalLayout title="Admin Dashboard" subtitle="Administration Console">
                   <AdminPage />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Student Directory Admin Suite */}
+          <Route
+            path="/admin/directory"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Directory Management" subtitle="Admin Console">
+                  <DirectoryAdminOverview />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/directory/executives"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Executives" subtitle="Directory Administration">
+                  <DirectoryEntityManager categoryKey="executives" />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/directory/class-representatives"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Class Representatives" subtitle="Directory Administration">
+                  <DirectoryEntityManager categoryKey="classRepresentatives" />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/directory/course-representatives"
+            element={<Navigate to="/admin/directory/class-representatives" replace />}
+          />
+
+          <Route
+            path="/admin/directory/lecturers"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Lecturers" subtitle="Directory Administration">
+                  <DirectoryEntityManager categoryKey="lecturers" />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/directory/courses"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Courses" subtitle="Directory Administration">
+                  <DirectoryEntityManager categoryKey="courses" />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/directory/clubs"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Clubs" subtitle="Directory Administration">
+                  <DirectoryEntityManager categoryKey="clubs" />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/directory/committees"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Committees" subtitle="Directory Administration">
+                  <DirectoryEntityManager categoryKey="committees" />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/directory/departments"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Departments" subtitle="Directory Administration">
+                  <DirectoryEntityManager categoryKey="departments" />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/directory/contacts"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Directory Contacts" subtitle="Directory Administration">
+                  <DirectoryEntityManager categoryKey="contacts" />
                 </PortalLayout>
               </ProtectedRoute>
             }
@@ -114,6 +225,7 @@ export default function App() {
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   )
