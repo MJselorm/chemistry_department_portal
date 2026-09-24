@@ -5,8 +5,20 @@
  * in endpoints.js match your FastAPI router prefixes.
  */
 
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
-const BASE_URL = rawBaseUrl.replace(/\/+$/, '')
+function resolveBaseUrl() {
+  const envUrl = import.meta.env.VITE_API_BASE_URL
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, '')
+  }
+  // In production builds (e.g. Vercel), default to '/api' so Vercel's proxy rewrite handles routing without CORS issues
+  if (import.meta.env.PROD) {
+    return '/api'
+  }
+  // In local development, fall back to localhost
+  return 'http://127.0.0.1:8000'
+}
+
+const BASE_URL = resolveBaseUrl()
 const TOKEN_KEY = 'gscs.access_token'
 
 export const tokenStore = {
@@ -48,7 +60,7 @@ function messageFromDetail(payload, fallback) {
   return fallback
 }
 
-async function request(path, { method = 'GET', body, form, auth = true, signal } = {}) {
+async function request(path, { method = 'GET', body, form, auth = true, signal, retryCount = 1 } = {}) {
   const headers = {}
   if (auth) {
     const token = tokenStore.get()
@@ -66,7 +78,25 @@ async function request(path, { method = 'GET', body, form, auth = true, signal }
   }
 
   const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
-  const res = await fetch(targetUrl, { method, headers, body: payload, signal })
+  let res
+  try {
+    res = await fetch(targetUrl, { method, headers, body: payload, signal })
+  } catch (err) {
+    if (retryCount > 0 && (err.name === 'TypeError' || err.message?.includes('fetch'))) {
+      // Server may be spinning up from cold sleep (e.g. Render free tier). Wait 2s and retry once.
+      await new Promise((r) => setTimeout(r, 2000))
+      return request(path, { method, body, form, auth, signal, retryCount: retryCount - 1 })
+    }
+    if (err.name === 'TypeError' || err.message?.includes('fetch')) {
+      throw new ApiError(
+        'Unable to connect to the backend server. If the server is on a free tier (Render), it may be waking up from standby (~30 seconds). Please try again in a moment.',
+        0,
+        null
+      )
+    }
+    throw err
+  }
+
   const data = await parseBody(res)
 
   if (res.status === 401 && auth) tokenStore.clear()
@@ -91,12 +121,24 @@ export const api = {
     const formData = new FormData()
     formData.append('file', file)
     const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
-    const res = await fetch(targetUrl, {
-      method: 'POST',
-      headers,
-      body: formData,
-      signal: opts.signal,
-    })
+    let res
+    try {
+      res = await fetch(targetUrl, {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: opts.signal,
+      })
+    } catch (err) {
+      if (err.name === 'TypeError' || err.message?.includes('fetch')) {
+        throw new ApiError(
+          'Unable to reach the file upload server. The server may be waking up or offline. Please retry in a moment.',
+          0,
+          null
+        )
+      }
+      throw err
+    }
     const data = await parseBody(res)
     if (res.status === 401 && opts.auth !== false) tokenStore.clear()
     if (!res.ok) {

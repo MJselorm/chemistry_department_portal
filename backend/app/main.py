@@ -9,6 +9,7 @@ app = FastAPI(title="Firebase + Supabase Auth API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
+    allow_origin_regex=r"^https:\/\/([a-zA-Z0-9_-]+\.)*(vercel\.app|firebaseapp\.com|web\.app|onrender\.com)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

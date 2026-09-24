@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/directory/:match*",
+      "destination": "https://chemistry-department-portal.onrender.com/api/directory/:match*"
+    },
+    {
       "source": "/api/:match*",
       "destination": "https://chemistry-department-portal.onrender.com/:match*"
     },

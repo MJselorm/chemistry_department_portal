@@ -68,8 +68,8 @@ Deploy `frontend2/` as a static Vite application and `backend/` as a Python/Fast
 
 | Service | Required production configuration |
 | --- | --- |
-| Backend | `DATABASE_URL`, `FIREBASE_SERVICE_ACCOUNT_JSON`, and `CORS_ORIGINS` containing the deployed frontend URL. |
-| Frontend | `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, and `VITE_API_BASE_URL` set to the public HTTPS backend URL. |
+| Render backend | Copy the keys in [`backend/.env.production.example`](backend/.env.production.example). Set `CORS_ORIGINS` to the exact Vercel frontend URL. |
+| Vercel frontend | Copy the keys in [`frontend2/.env.production.example`](frontend2/.env.production.example). Keep `VITE_API_BASE_URL=/api` so the checked-in Vercel rewrite proxies requests to Render. |
 
 For the backend, create a Firebase service-account key in Firebase Console under **Project settings → Service accounts**, then store the complete JSON document as `FIREBASE_SERVICE_ACCOUNT_JSON`. `FIREBASE_SERVICE_ACCOUNT_PATH` is for local development only because a path on your computer is unavailable to the hosted service.
 
