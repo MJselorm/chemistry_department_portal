@@ -168,41 +168,42 @@ export default function DirectoryAdminOverview() {
     : 0
 
   return (
-    <div className="space-y-8">
-      {/* Top Search & Controls Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <nav className="text-xs text-[#8fa0a4] mb-1">
-            <span>Home</span> / <span className="text-foreground font-semibold">Dashboard</span>
-          </nav>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            Directory Management
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-            Manage the information students see across the department. Control access roles, update courses, and publish contacts.
-          </p>
-        </div>
-
-        {/* Global Live Search Bar */}
-        <div ref={searchContainerRef} className="relative w-full sm:w-80 flex-shrink-0">
-          <div className="relative">
-            <Search size={15} className="absolute left-3.5 top-3 text-[#9ba8ac]" />
-            <input
-              type="text"
-              aria-label="Search directory management records"
-              placeholder="Search directories, courses..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setShowResults(true)
-              }}
-              onFocus={() => setShowResults(true)}
-              className="w-full pl-9 pr-8 py-2 rounded-xl border border-border bg-surface text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary shadow-xs transition-all"
-            />
-            {searching && (
-              <Loader2 size={14} className="absolute right-3 top-3 animate-spin text-primary" />
-            )}
+    <div className="space-y-6">
+      <div className="space-y-4">
+        {/* Top Search & Controls Bar */}
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
+          <div className="min-w-0 max-w-2xl">
+            <nav className="text-xs text-[#8fa0a4] mb-1">
+              <span>Home</span> / <span className="text-foreground font-semibold">Dashboard</span>
+            </nav>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+              Directory Management
+            </h1>
+            <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+              Manage the information students see across the department. Control access roles, update courses, and publish contacts.
+            </p>
           </div>
+
+          {/* Global Live Search Bar */}
+          <div ref={searchContainerRef} className="relative w-full sm:w-[420px] sm:max-w-full sm:self-end xl:flex-shrink-0">
+            <div className="relative">
+              <Search size={15} className="absolute left-3.5 top-3 text-[#9ba8ac]" />
+              <input
+                type="text"
+                aria-label="Search directory management records"
+                placeholder="Search directories, courses..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setShowResults(true)
+                }}
+                onFocus={() => setShowResults(true)}
+                className="w-full pl-9 pr-8 py-2 rounded-xl border border-border bg-surface text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary shadow-xs transition-all"
+              />
+              {searching && (
+                <Loader2 size={14} className="absolute right-3 top-3 animate-spin text-primary" />
+              )}
+            </div>
 
           {/* Search Dropdown Results */}
           {showResults && searchResults && (
@@ -258,11 +259,12 @@ export default function DirectoryAdminOverview() {
               )}
             </div>
           )}
+          </div>
         </div>
-      </div>
 
-      {/* Directory Category Navigation Tabs */}
-      <DirectorySubNav />
+        {/* Directory Category Navigation Tabs */}
+        <DirectorySubNav />
+      </div>
 
       {/* Directory Overview Section */}
       <section className="space-y-4">
