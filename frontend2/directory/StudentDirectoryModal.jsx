@@ -132,18 +132,18 @@ export default function StudentDirectoryModal({
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-xl bg-white rounded-2xl border border-[#e4ecee] shadow-2xl z-10 max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-xl bg-surface rounded-2xl border border-border shadow-2xl z-10 max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#eef2f3] bg-[#fbfdfd]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#eef2f3] bg-surface-secondary">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#087f8c]" />
+            <span className="w-2 h-2 rounded-full bg-primary" />
             <span className="text-[11px] font-black uppercase tracking-wider text-[#73888d]">
               Directory Profile
             </span>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full text-[#6b7f84] hover:bg-[#f1f6f7] hover:text-[#102a2f] grid place-items-center transition-colors"
+            className="w-8 h-8 rounded-full text-[#6b7f84] hover:bg-[#f1f6f7] hover:text-foreground grid place-items-center transition-colors"
             title="Close dialog"
           >
             <X size={16} />
@@ -158,26 +158,26 @@ export default function StudentDirectoryModal({
               <img
                 src={photoUrl}
                 alt={displayName}
-                className="w-20 h-20 rounded-2xl object-cover border border-[#e4ecee] shadow-sm flex-shrink-0"
+                className="w-20 h-20 rounded-2xl object-cover border border-border shadow-sm flex-shrink-0"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#dff2f4] to-[#c2e7ea] text-[#087f8c] font-black text-2xl grid place-items-center flex-shrink-0 shadow-xs">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#dff2f4] to-[#c2e7ea] text-primary font-black text-2xl grid place-items-center flex-shrink-0 shadow-xs">
                 {getInitials(displayName) || 'CH'}
               </div>
             )}
 
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-[#102a2f] leading-snug break-words">
+              <h2 className="text-xl font-bold text-foreground leading-snug break-words">
                 {displayName}
               </h2>
-              <p className="text-xs font-bold text-[#087f8c] mt-0.5 break-words">
+              <p className="text-xs font-bold text-primary mt-0.5 break-words">
                 {subtitle}
               </p>
 
               {/* Badges / Meta row */}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
                 {record.level && (
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#eaf4f6] text-[#087f8c]">
+                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#eaf4f6] text-primary">
                     Level {record.level}
                   </span>
                 )}
@@ -206,7 +206,7 @@ export default function StudentDirectoryModal({
               {email && (
                 <a
                   href={`mailto:${email}`}
-                  className="flex-1 min-w-[130px] inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-[#087f8c] text-white text-xs font-bold hover:bg-[#066b76] transition-colors shadow-xs"
+                  className="flex-1 min-w-[130px] inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors shadow-xs"
                 >
                   <Mail size={14} /> Send Email
                 </a>
@@ -215,7 +215,7 @@ export default function StudentDirectoryModal({
               {phone && (
                 <a
                   href={`tel:${phone}`}
-                  className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-white text-[#102a2f] text-xs font-bold hover:bg-[#f8fbfb] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-surface text-foreground text-xs font-bold hover:bg-[#f8fbfb] transition-colors"
                 >
                   <Phone size={14} /> Call
                 </a>
@@ -224,13 +224,13 @@ export default function StudentDirectoryModal({
               {phone && (
                 <button
                   onClick={() => handleCopy(phone, 'phone')}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-white text-[#5b7176] text-xs font-semibold hover:bg-[#f8fbfb] transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-surface text-[#5b7176] text-xs font-semibold hover:bg-[#f8fbfb] transition-colors"
                   title="Copy Phone Number"
                 >
                   {copiedField === 'phone' ? (
                     <>
-                      <Check size={14} className="text-[#27805a]" />
-                      <span className="text-[#27805a]">Copied</span>
+                      <Check size={14} className="text-success" />
+                      <span className="text-success">Copied</span>
                     </>
                   ) : (
                     <>
@@ -246,7 +246,7 @@ export default function StudentDirectoryModal({
                   href={record.website.startsWith('http') ? record.website : `https://${record.website}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-white text-[#087f8c] text-xs font-bold hover:bg-[#f8fbfb] transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-surface text-primary text-xs font-bold hover:bg-[#f8fbfb] transition-colors"
                 >
                   <ExternalLink size={13} /> Website
                 </a>
@@ -257,7 +257,7 @@ export default function StudentDirectoryModal({
                   href={record.social_links.startsWith('http') ? record.social_links : `https://${record.social_links}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-white text-[#087f8c] text-xs font-bold hover:bg-[#f8fbfb] transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-surface text-primary text-xs font-bold hover:bg-[#f8fbfb] transition-colors"
                 >
                   <ExternalLink size={13} /> Social Link
                 </a>
@@ -268,7 +268,7 @@ export default function StudentDirectoryModal({
           {/* Bio / Description / Mandate */}
           {(record.bio || record.description || record.purpose) && (
             <div className="bg-[#f9fbfb] border border-[#e8f0f2] rounded-xl p-4 text-xs leading-relaxed text-[#374f54] space-y-1.5">
-              <strong className="block text-[11px] font-bold text-[#102a2f] uppercase tracking-wider">
+              <strong className="block text-[11px] font-bold text-foreground uppercase tracking-wider">
                 {record.purpose ? 'Mandate & Purpose' : record.bio ? 'About / Biography' : 'Overview & Description'}
               </strong>
               <p className="whitespace-pre-line text-[#4a6369]">
@@ -280,57 +280,57 @@ export default function StudentDirectoryModal({
           {/* Detailed Info Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             {record.program && (
-              <div className="p-3 bg-white border border-[#eaf0f2] rounded-xl">
+              <div className="p-3 bg-surface border border-[#eaf0f2] rounded-xl">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8b9ea3] block">
                   Program
                 </span>
-                <span className="font-semibold text-[#102a2f] mt-0.5 block">{record.program}</span>
+                <span className="font-semibold text-foreground mt-0.5 block">{record.program}</span>
               </div>
             )}
 
             {record.qualification && (
-              <div className="p-3 bg-white border border-[#eaf0f2] rounded-xl sm:col-span-2">
+              <div className="p-3 bg-surface border border-[#eaf0f2] rounded-xl sm:col-span-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8b9ea3] block">
                   Academic Qualifications
                 </span>
-                <span className="font-semibold text-[#102a2f] mt-0.5 block">{record.qualification}</span>
+                <span className="font-semibold text-foreground mt-0.5 block">{record.qualification}</span>
               </div>
             )}
 
             {record.faculty && (
-              <div className="p-3 bg-white border border-[#eaf0f2] rounded-xl">
+              <div className="p-3 bg-surface border border-[#eaf0f2] rounded-xl">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8b9ea3] block">
                   Faculty
                 </span>
-                <span className="font-semibold text-[#102a2f] mt-0.5 block">{record.faculty}</span>
+                <span className="font-semibold text-foreground mt-0.5 block">{record.faculty}</span>
               </div>
             )}
 
             {record.student_id && (
-              <div className="p-3 bg-white border border-[#eaf0f2] rounded-xl">
+              <div className="p-3 bg-surface border border-[#eaf0f2] rounded-xl">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8b9ea3] block">
                   Student ID
                 </span>
-                <span className="font-semibold text-[#102a2f] mt-0.5 block">{record.student_id}</span>
+                <span className="font-semibold text-foreground mt-0.5 block">{record.student_id}</span>
               </div>
             )}
 
             {record.academic_year && (
-              <div className="p-3 bg-white border border-[#eaf0f2] rounded-xl">
+              <div className="p-3 bg-surface border border-[#eaf0f2] rounded-xl">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8b9ea3] block">
                   Academic Year
                 </span>
-                <span className="font-semibold text-[#102a2f] mt-0.5 block">{record.academic_year}</span>
+                <span className="font-semibold text-foreground mt-0.5 block">{record.academic_year}</span>
               </div>
             )}
 
             {/* Club specific meetings */}
             {(record.meeting_day || record.meeting_time || record.meeting_location) && (
-              <div className="p-3 bg-white border border-[#eaf0f2] rounded-xl sm:col-span-2 space-y-1">
+              <div className="p-3 bg-surface border border-[#eaf0f2] rounded-xl sm:col-span-2 space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8b9ea3] block">
                   Meeting Schedule
                 </span>
-                <div className="flex items-center gap-2 text-xs font-bold text-[#087f8c]">
+                <div className="flex items-center gap-2 text-xs font-bold text-primary">
                   <Calendar size={13} />
                   <span>
                     {record.meeting_day || 'Weekly'}
@@ -347,7 +347,7 @@ export default function StudentDirectoryModal({
 
             {/* Committee Leadership */}
             {(record.chairperson || record.secretary) && (
-              <div className="p-3 bg-white border border-[#eaf0f2] rounded-xl sm:col-span-2 space-y-1">
+              <div className="p-3 bg-surface border border-[#eaf0f2] rounded-xl sm:col-span-2 space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8b9ea3] block">
                   Committee Leadership
                 </span>
@@ -355,13 +355,13 @@ export default function StudentDirectoryModal({
                   {record.chairperson && (
                     <div>
                       <small className="text-[10px] text-[#8b9ea3]">Chairperson</small>
-                      <strong className="block text-xs text-[#102a2f]">{record.chairperson}</strong>
+                      <strong className="block text-xs text-foreground">{record.chairperson}</strong>
                     </div>
                   )}
                   {record.secretary && (
                     <div>
                       <small className="text-[10px] text-[#8b9ea3]">Secretary</small>
-                      <strong className="block text-xs text-[#102a2f]">{record.secretary}</strong>
+                      <strong className="block text-xs text-foreground">{record.secretary}</strong>
                     </div>
                   )}
                 </div>
@@ -374,8 +374,8 @@ export default function StudentDirectoryModal({
             <div className="space-y-3 pt-2 border-t border-[#edf2f4]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-[#087f8c]" />
-                  <h3 className="text-xs font-bold text-[#102a2f] uppercase tracking-wider">
+                  <Clock size={16} className="text-primary" />
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
                     Office & Consultation Hours
                   </h3>
                 </div>
@@ -385,7 +385,7 @@ export default function StudentDirectoryModal({
               </div>
 
               {loadingConsultations ? (
-                <div className="py-6 text-center text-xs text-[#7e9499] bg-[#fbfdfd] rounded-xl border border-dashed border-[#d6e3e5]">
+                <div className="py-6 text-center text-xs text-[#7e9499] bg-surface-secondary rounded-xl border border-dashed border-[#d6e3e5]">
                   Loading consultation slots...
                 </div>
               ) : consultations.length === 0 ? (
@@ -404,12 +404,12 @@ export default function StudentDirectoryModal({
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <strong className="font-bold text-[#102a2f]">{slot.day_of_week}</strong>
+                          <strong className="font-bold text-foreground">{slot.day_of_week}</strong>
                           <span
                             className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
                               slot.mode === 'Virtual'
-                                ? 'bg-[#f0eafb] text-[#7652b8]'
-                                : 'bg-[#e7f5f7] text-[#087f8c]'
+                                ? 'bg-[var(--primary-soft)] text-primary'
+                                : 'bg-[#e7f5f7] text-primary'
                             }`}
                           >
                             {slot.mode || 'In-Person'}
@@ -430,7 +430,7 @@ export default function StudentDirectoryModal({
                       </div>
 
                       {slot.instructions && (
-                        <div className="text-[10px] text-[#698187] sm:max-w-xs italic sm:text-right">
+                        <div className="text-[10px] text-muted-foreground sm:max-w-xs italic sm:text-right">
                           {slot.instructions}
                         </div>
                       )}
@@ -446,8 +446,8 @@ export default function StudentDirectoryModal({
             <div className="space-y-3 pt-2 border-t border-[#edf2f4]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Users size={16} className="text-[#087f8c]" />
-                  <h3 className="text-xs font-bold text-[#102a2f] uppercase tracking-wider">
+                  <Users size={16} className="text-primary" />
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
                     Committee Roster
                   </h3>
                 </div>
@@ -457,7 +457,7 @@ export default function StudentDirectoryModal({
               </div>
 
               {loadingMembers ? (
-                <div className="py-6 text-center text-xs text-[#7e9499] bg-[#fbfdfd] rounded-xl border border-dashed border-[#d6e3e5]">
+                <div className="py-6 text-center text-xs text-[#7e9499] bg-surface-secondary rounded-xl border border-dashed border-[#d6e3e5]">
                   Loading committee members...
                 </div>
               ) : committeeMembers.length === 0 ? (
@@ -465,15 +465,15 @@ export default function StudentDirectoryModal({
                   No individual members registered in directory.
                 </div>
               ) : (
-                <div className="divide-y divide-[#edf3f4] rounded-xl border border-[#e0ecee] overflow-hidden bg-white">
+                <div className="divide-y divide-[#edf3f4] rounded-xl border border-[#e0ecee] overflow-hidden bg-surface">
                   {committeeMembers.map((member) => (
-                    <div key={member.id} className="p-3 flex items-center justify-between gap-3 text-xs hover:bg-[#fbfdfd]">
+                    <div key={member.id} className="p-3 flex items-center justify-between gap-3 text-xs hover:bg-surface-secondary">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#e8f6f7] text-[#087f8c] font-black text-xs grid place-items-center flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-[var(--primary-soft)] text-primary font-black text-xs grid place-items-center flex-shrink-0">
                           {getInitials(member.name)}
                         </div>
                         <div>
-                          <strong className="block font-bold text-[#102a2f]">{member.name}</strong>
+                          <strong className="block font-bold text-foreground">{member.name}</strong>
                           <span className="text-[11px] text-[#6b8287]">{member.role || 'Member'}</span>
                         </div>
                       </div>
@@ -482,7 +482,7 @@ export default function StudentDirectoryModal({
                         {member.email && (
                           <a
                             href={`mailto:${member.email}`}
-                            className="w-7 h-7 rounded-full bg-[#f1f6f7] text-[#087f8c] hover:bg-[#087f8c] hover:text-white grid place-items-center transition-colors text-xs"
+                            className="w-7 h-7 rounded-full bg-[#f1f6f7] text-primary hover:bg-primary hover:text-white grid place-items-center transition-colors text-xs"
                             title={`Email ${member.name}`}
                           >
                             <Mail size={12} />
@@ -491,7 +491,7 @@ export default function StudentDirectoryModal({
                         {member.phone && (
                           <a
                             href={`tel:${member.phone}`}
-                            className="w-7 h-7 rounded-full bg-[#f1f6f7] text-[#087f8c] hover:bg-[#087f8c] hover:text-white grid place-items-center transition-colors text-xs"
+                            className="w-7 h-7 rounded-full bg-[#f1f6f7] text-primary hover:bg-primary hover:text-white grid place-items-center transition-colors text-xs"
                             title={`Call ${member.name}`}
                           >
                             <Phone size={12} />
@@ -507,11 +507,11 @@ export default function StudentDirectoryModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 border-t border-[#eef2f3] bg-[#fbfdfd] flex items-center justify-between">
+        <div className="px-6 py-3.5 border-t border-[#eef2f3] bg-surface-secondary flex items-center justify-between">
           <span className="text-[10px] text-[#869b9f]">Chemistry Department Directory</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-[#102a2f] text-white text-xs font-bold hover:bg-[#1a3c42] transition-colors"
+            className="px-4 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors"
           >
             Close
           </button>

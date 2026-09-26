@@ -58,16 +58,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[1.35fr_1fr]">
       {/* ── Left: the society's story ─────────────────────────────── */}
-      <section className="relative flex min-h-[26rem] flex-col justify-between overflow-hidden bg-[#0C1418] px-8 py-10 text-white sm:px-14 lg:min-h-screen lg:px-16 lg:py-14">
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-cover bg-center opacity-40"
-          style={{ backgroundImage: "url('/lab-hero.jpg')" }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-gradient-to-br from-[#0A1218]/95 via-[#0C1A22]/80 to-[#102A33]/70"
-        />
+      <section className="chem-hero relative flex min-h-[26rem] flex-col justify-between overflow-hidden px-8 py-10 text-white sm:px-14 lg:min-h-screen lg:px-16 lg:py-14">
 
         <header className="relative flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
@@ -97,8 +88,8 @@ export default function LoginPage() {
             industry pioneers. We coordinate weekly laboratory colloquiums, support organic research
             publications, and steward the frontiers of molecular science.
           </p>
-          <p className="mt-8 flex items-center gap-4 text-[0.68rem] font-semibold tracking-[0.2em] text-cyan-500">
-            <span className="h-px w-8 bg-cyan-500" />
+          <p className="mt-8 flex items-center gap-4 text-[0.68rem] font-semibold tracking-[0.2em] text-[#e8c95b]">
+            <span className="h-px w-8 bg-[#e8c95b]" />
             DISCOVER • CATALYZE • CONNECT
           </p>
         </div>
@@ -108,7 +99,7 @@ export default function LoginPage() {
             <div key={stat.label}>
               <dt
                 className={`font-display text-[1.9rem] font-light ${
-                  stat.accent ? 'text-cyan-500' : 'text-white'
+                  stat.accent ? 'text-[#e8c95b]' : 'text-white'
                 }`}
               >
                 {stat.value}
@@ -138,7 +129,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={setEmail}
-              placeholder="chemist@stjude.edu"
+              placeholder="student@knust.edu.gh"
               autoComplete="username"
             />
 
@@ -171,14 +162,14 @@ export default function LoginPage() {
                   onChange={(e) => setKeepSignedIn(e.target.checked)}
                   className="peer sr-only"
                 />
-                <span className="flex h-[1.05rem] w-[1.05rem] items-center justify-center rounded border border-slate-300 bg-white text-white transition-colors peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500 peer-focus-visible:ring-offset-2">
+                <span className="flex h-[1.05rem] w-[1.05rem] items-center justify-center rounded border border-slate-300 bg-surface text-white transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2">
                   {keepSignedIn && <Check size={12} strokeWidth={3} />}
                 </span>
                 Keep me signed in
               </label>
               <a
                 href="/forgot-password"
-                className="text-[0.82rem] font-medium text-cyan-600 hover:underline"
+                className="text-[0.82rem] font-medium text-primary hover:underline"
               >
                 Forgot password?
               </a>
@@ -193,7 +184,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting || googleSubmitting}
-              className="w-full rounded-lg bg-ink py-3.5 font-head text-[0.9rem] font-semibold text-white shadow-[0_10px_24px_-14px_rgba(10,27,38,0.9)] transition-colors hover:bg-[#12293a] disabled:opacity-60"
+              className="w-full rounded-lg bg-primary py-3.5 font-head text-[0.9rem] font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {submitting ? 'Signing in…' : 'Sign in'}
             </button>
@@ -210,15 +201,15 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={submitting || googleSubmitting}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white py-3 px-4 font-head text-[0.88rem] font-medium text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-ink focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-surface py-3 px-4 font-head text-[0.88rem] font-medium text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-ink focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:opacity-60"
           >
             <GoogleIcon className="h-4 w-4 shrink-0" />
             <span>{googleSubmitting ? 'Connecting with Google…' : 'Sign in with Google'}</span>
           </button>
 
           <p className="mt-7 text-center text-[0.82rem] text-slate-500">
-            Not a member of Hexagon yet?{' '}
-            <a href="/register" className="font-semibold text-cyan-600 hover:underline">
+            Not a member yet?{' '}
+            <a href="/register" className="font-semibold text-primary hover:underline">
               Create account
             </a>
           </p>
@@ -226,7 +217,7 @@ export default function LoginPage() {
 
         <footer className="mx-auto mt-16 max-w-sm text-center text-[0.72rem] leading-relaxed text-slate-400">
           <p>Authorized access only. Subject to university IT usage policy.</p>
-          <p>© {new Date().getFullYear()} St. Jude University Chemical Society</p>
+          <p>© {new Date().getFullYear()} Ghana Students' Chemical Society, KNUST</p>
         </footer>
       </section>
     </div>
@@ -242,7 +233,7 @@ function Field({ id, label, icon: Icon, value, onChange, trailing, ...props }) {
       >
         {label}
       </label>
-      <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-3 transition-colors focus-within:border-cyan-500">
+      <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-surface px-3.5 py-3 transition-colors focus-within:border-cyan-500">
         <Icon size={16} className="shrink-0 text-slate-400" />
         <input
           id={id}
@@ -280,4 +271,3 @@ function GoogleIcon({ className = 'w-4 h-4' }) {
     </svg>
   )
 }
-

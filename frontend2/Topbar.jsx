@@ -26,7 +26,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
     .toUpperCase() || (isAdmin ? 'AD' : 'ST')
 
   return (
-    <header className="h-16 bg-[var(--header)]/95 backdrop-blur border-b border-[var(--border)] flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30 transition-colors duration-200">
+    <header className="min-h-16 bg-[var(--header)] backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8 sticky top-0 z-30 transition-colors duration-200">
       <div className="flex items-center gap-3">
         <button
           onClick={onOpenSidebar}
@@ -37,14 +37,14 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
         </button>
         <div>
           <div className="flex items-center gap-2">
-            <strong className="block text-sm sm:text-base font-bold text-[var(--foreground)] leading-none">
+            <strong className="block text-sm sm:text-base font-semibold text-[var(--foreground)] leading-none">
               {displayTitle}
             </strong>
             <span
               className={`px-2 py-0.5 text-[9px] font-black uppercase rounded-full tracking-wider ${
                 isAdmin
-                  ? 'bg-[#eee7fa] text-[#7652b8] border border-[#d6c3f3]'
-                  : 'bg-[#e8f6f7] text-[#087f8c] border border-[#bce4e8]'
+                  ? 'bg-[var(--accent-soft)] text-[var(--warning)] border border-[var(--warning-border)]'
+                  : 'bg-[var(--primary-soft)] text-[var(--primary)] border border-[var(--primary-border)]'
               }`}
             >
               {isAdmin ? 'Admin' : 'Student'}
@@ -56,11 +56,11 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <button
           type="button"
           onClick={onToggleTheme}
-          className="w-8 h-8 rounded-xl border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
+          className="w-9 h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
           aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
@@ -69,7 +69,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
 
         <button
           onClick={() => alert('Notifications (Placeholder API: /notifications)')}
-          className="w-8 h-8 rounded-xl border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
+          className="w-9 h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
           aria-label="Open notifications"
           title="Notifications"
         >
@@ -79,13 +79,13 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
         {/* User profile chip */}
         <Link
           to="/profile"
-          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-[var(--muted)] border border-transparent hover:border-[var(--border)] transition-all"
+          className="flex items-center gap-2.5 px-1.5 sm:px-2.5 py-1 rounded-lg hover:bg-[var(--muted)] border border-transparent hover:border-[var(--border)] transition-all"
         >
           <span
             className={`w-8 h-8 rounded-full font-extrabold text-xs grid place-items-center ${
               isAdmin
-                ? 'bg-[#eee7fa] text-[#7652b8]'
-                : 'bg-[#d8f0f1] text-[#087f8c]'
+                ? 'bg-[var(--accent-soft)] text-[var(--warning)]'
+                : 'bg-[var(--primary-soft)] text-[var(--primary)]'
             }`}
           >
             {initials}

@@ -232,18 +232,18 @@ export default function DirectoryEntityManager({ categoryKey }) {
         <div>
           {/* Breadcrumbs */}
           <nav className="flex items-center gap-1.5 text-xs text-[#8da0a5] mb-1.5">
-            <Link to="/admin/directory" className="hover:text-[#087f8c] flex items-center gap-1">
+            <Link to="/admin/directory" className="hover:text-primary flex items-center gap-1">
               <Home size={13} />
               <span>Directory</span>
             </Link>
             <ChevronRight size={12} className="text-[#a8b8bc]" />
-            <span className="font-bold text-[#102a2f]">{categoryConfig.plural}</span>
+            <span className="font-bold text-foreground">{categoryConfig.plural}</span>
           </nav>
 
-          <h1 className="text-2xl font-bold text-[#102a2f] tracking-tight">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
             {categoryConfig.plural} Management
           </h1>
-          <p className="text-xs text-[#64777d] mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Browse, search, edit, and publish department {categoryConfig.plural.toLowerCase()}.
           </p>
         </div>
@@ -251,17 +251,17 @@ export default function DirectoryEntityManager({ categoryKey }) {
         <div className="flex items-center gap-2">
           <Link
             to="/admin/directory"
-            className="px-3.5 py-2 rounded-xl border border-[#d9e3e5] bg-white hover:bg-gray-50 text-xs font-bold text-[#496066] transition-colors flex items-center gap-1.5 shadow-xs"
+            className="px-3.5 py-2 rounded-xl border border-border bg-surface hover:bg-gray-50 text-xs font-bold text-muted-foreground transition-colors flex items-center gap-1.5 shadow-xs"
           >
             <ArrowLeft size={13} /> Overview
           </Link>
           <button
             onClick={loadData}
             disabled={loading}
-            className="p-2 rounded-xl border border-[#d9e3e5] bg-white hover:bg-gray-50 text-[#496066] transition-colors shadow-xs disabled:opacity-50"
+            className="p-2 rounded-xl border border-border bg-surface hover:bg-gray-50 text-muted-foreground transition-colors shadow-xs disabled:opacity-50"
             title="Refresh records"
           >
-            <RefreshCw size={14} className={loading ? 'animate-spin text-[#087f8c]' : ''} />
+            <RefreshCw size={14} className={loading ? 'animate-spin text-primary' : ''} />
           </button>
         </div>
       </div>

@@ -100,24 +100,24 @@ export default function DirectoryFormModal({
       <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={!isSaving ? onClose : undefined} />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl border border-[#e4ecee] p-6 sm:p-7 shadow-card z-10 max-h-[90vh] flex flex-col animate-in zoom-in-95">
+      <div className="relative w-full max-w-3xl bg-surface rounded-2xl border border-border p-6 sm:p-7 shadow-card z-10 max-h-[90vh] flex flex-col animate-in zoom-in-95">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#e4ecee]">
+        <div className="flex items-center justify-between pb-4 border-b border-border">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#087f8c]">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
               DIRECTORY MANAGEMENT
             </span>
-            <h2 className="text-xl font-bold text-[#102a2f] mt-0.5">
+            <h2 className="text-xl font-bold text-foreground mt-0.5">
               {isEdit ? `Edit ${categoryConfig.singular}` : `Add New ${categoryConfig.singular}`}
             </h2>
-            <p className="text-xs text-[#64777d]">
+            <p className="text-xs text-muted-foreground">
               Fill in the details below. Required fields are marked with an asterisk (*).
             </p>
           </div>
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="p-1.5 rounded-lg text-[#91a0a5] hover:text-[#102a2f] hover:bg-gray-100 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors disabled:opacity-50"
             aria-label="Close"
           >
             <X size={18} />
@@ -147,13 +147,13 @@ export default function DirectoryFormModal({
                 return (
                   <div
                     key={field.name}
-                    className={`flex items-center justify-between p-3.5 rounded-xl border border-[#e4ecee] bg-[#f9fbfb] ${
+                    className={`flex items-center justify-between p-3.5 rounded-xl border border-border bg-[#f9fbfb] ${
                       field.colSpan === 2 ? 'sm:col-span-2' : ''
                     }`}
                   >
                     <div>
-                      <strong className="block text-xs font-bold text-[#102a2f]">{field.label}</strong>
-                      <small className="text-[10px] text-[#64777d]">
+                      <strong className="block text-xs font-bold text-foreground">{field.label}</strong>
+                      <small className="text-[10px] text-muted-foreground">
                         {formData[field.name] ? 'Visible to students in directory' : 'Hidden from students'}
                       </small>
                     </div>
@@ -166,7 +166,7 @@ export default function DirectoryFormModal({
                         }
                         className="sr-only peer"
                       />
-                      <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#087f8c]"></div>
+                      <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                     </label>
                   </div>
                 )
@@ -175,8 +175,8 @@ export default function DirectoryFormModal({
               if (field.type === 'textarea') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-[#102a2f] mb-1">
-                      {field.label} {field.required && <span className="text-[#c84b4b]">*</span>}
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <textarea
                       rows={3}
@@ -187,11 +187,11 @@ export default function DirectoryFormModal({
                       }
                       className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-none transition-colors ${
                         hasError
-                          ? 'border-[#f5b3b3] bg-[#fdecec]/30 focus:border-[#c84b4b]'
-                          : 'border-[#d9e3e5] bg-white focus:border-[#087f8c]'
+                          ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
+                          : 'border-border bg-surface focus:border-primary'
                       }`}
                     />
-                    {hasError && <p className="text-[10px] text-[#c84b4b] mt-1">{errors[field.name]}</p>}
+                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -199,18 +199,18 @@ export default function DirectoryFormModal({
               if (field.type === 'select') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-[#102a2f] mb-1">
-                      {field.label} {field.required && <span className="text-[#c84b4b]">*</span>}
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <select
                       value={value}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
                       }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-white focus:outline-none transition-colors ${
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-surface focus:outline-none transition-colors ${
                         hasError
-                          ? 'border-[#f5b3b3] bg-[#fdecec]/30 focus:border-[#c84b4b]'
-                          : 'border-[#d9e3e5] focus:border-[#087f8c]'
+                          ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
+                          : 'border-border focus:border-primary'
                       }`}
                     >
                       <option value="">Select {field.label}…</option>
@@ -220,7 +220,7 @@ export default function DirectoryFormModal({
                         </option>
                       ))}
                     </select>
-                    {hasError && <p className="text-[10px] text-[#c84b4b] mt-1">{errors[field.name]}</p>}
+                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -228,18 +228,18 @@ export default function DirectoryFormModal({
               if (field.type === 'department_select') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-[#102a2f] mb-1">
-                      {field.label} {field.required && <span className="text-[#c84b4b]">*</span>}
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <select
                       value={value}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
                       }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-white focus:outline-none transition-colors ${
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-surface focus:outline-none transition-colors ${
                         hasError
-                          ? 'border-[#f5b3b3] bg-[#fdecec]/30 focus:border-[#c84b4b]'
-                          : 'border-[#d9e3e5] focus:border-[#087f8c]'
+                          ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
+                          : 'border-border focus:border-primary'
                       }`}
                     >
                       <option value="">Select Department…</option>
@@ -249,7 +249,7 @@ export default function DirectoryFormModal({
                         </option>
                       ))}
                     </select>
-                    {hasError && <p className="text-[10px] text-[#c84b4b] mt-1">{errors[field.name]}</p>}
+                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -257,18 +257,18 @@ export default function DirectoryFormModal({
               if (field.type === 'course_select') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-[#102a2f] mb-1">
-                      {field.label} {field.required && <span className="text-[#c84b4b]">*</span>}
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <select
                       value={value}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
                       }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-white focus:outline-none transition-colors ${
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-surface focus:outline-none transition-colors ${
                         hasError
-                          ? 'border-[#f5b3b3] bg-[#fdecec]/30 focus:border-[#c84b4b]'
-                          : 'border-[#d9e3e5] focus:border-[#087f8c]'
+                          ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
+                          : 'border-border focus:border-primary'
                       }`}
                     >
                       <option value="">Select Course…</option>
@@ -278,7 +278,7 @@ export default function DirectoryFormModal({
                         </option>
                       ))}
                     </select>
-                    {hasError && <p className="text-[10px] text-[#c84b4b] mt-1">{errors[field.name]}</p>}
+                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -286,18 +286,18 @@ export default function DirectoryFormModal({
               if (field.type === 'lecturer_select') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-[#102a2f] mb-1">
-                      {field.label} {field.required && <span className="text-[#c84b4b]">*</span>}
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <select
                       value={value}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
                       }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-white focus:outline-none transition-colors ${
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-surface focus:outline-none transition-colors ${
                         hasError
-                          ? 'border-[#f5b3b3] bg-[#fdecec]/30 focus:border-[#c84b4b]'
-                          : 'border-[#d9e3e5] focus:border-[#087f8c]'
+                          ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
+                          : 'border-border focus:border-primary'
                       }`}
                     >
                       <option value="">Select Lecturer (Optional)…</option>
@@ -307,7 +307,7 @@ export default function DirectoryFormModal({
                         </option>
                       ))}
                     </select>
-                    {hasError && <p className="text-[10px] text-[#c84b4b] mt-1">{errors[field.name]}</p>}
+                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -315,8 +315,8 @@ export default function DirectoryFormModal({
               // Standard inputs (text, email, number, time)
               return (
                 <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                  <label className="block text-xs font-bold text-[#102a2f] mb-1">
-                    {field.label} {field.required && <span className="text-[#c84b4b]">*</span>}
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    {field.label} {field.required && <span className="text-destructive">*</span>}
                   </label>
                   <input
                     type={field.type || 'text'}
@@ -327,11 +327,11 @@ export default function DirectoryFormModal({
                     }
                     className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-none transition-colors ${
                       hasError
-                        ? 'border-[#f5b3b3] bg-[#fdecec]/30 focus:border-[#c84b4b]'
-                        : 'border-[#d9e3e5] bg-white focus:border-[#087f8c]'
+                        ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
+                        : 'border-border bg-surface focus:border-primary'
                     }`}
                   />
-                  {hasError && <p className="text-[10px] text-[#c84b4b] mt-1">{errors[field.name]}</p>}
+                  {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                 </div>
               )
             })}
@@ -339,12 +339,12 @@ export default function DirectoryFormModal({
         </form>
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-[#e4ecee] flex items-center justify-end gap-2.5">
+        <div className="pt-4 border-t border-border flex items-center justify-end gap-2.5">
           <button
             type="button"
             disabled={isSaving}
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-[#d9e3e5] text-xs font-bold text-[#496066] hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -352,7 +352,7 @@ export default function DirectoryFormModal({
             type="submit"
             form="directory-form"
             disabled={isSaving}
-            className="px-5 py-2.5 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
           >
             {isSaving && <Loader2 size={13} className="animate-spin" />}
             {isSaving ? 'Saving…' : isEdit ? 'Update Record' : `Create ${categoryConfig.singular}`}

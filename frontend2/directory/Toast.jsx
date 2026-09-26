@@ -34,16 +34,16 @@ export function ToastProvider({ children }) {
               key={t.id}
               className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border shadow-card transition-all transform animate-in fade-in slide-in-from-top-2 text-xs font-medium ${
                 isSuccess
-                  ? 'bg-[#e7f5ed] border-[#a6dec1] text-[#27805a]'
+                  ? 'bg-[var(--success-soft)] border-[var(--success-border)] text-success'
                   : isError
-                  ? 'bg-[#fdecec] border-[#f5b3b3] text-[#c84b4b]'
-                  : 'bg-[#e8f6f7] border-[#bce4e8] text-[#087f8c]'
+                  ? 'bg-[var(--destructive-soft)] border-[var(--destructive-border)] text-destructive'
+                  : 'bg-[var(--primary-soft)] border-[var(--primary-border)] text-primary'
               }`}
             >
               <div className="mt-0.5 flex-shrink-0">
-                {isSuccess && <CheckCircle2 size={16} className="text-[#27805a]" />}
-                {isError && <AlertCircle size={16} className="text-[#c84b4b]" />}
-                {!isSuccess && !isError && <Info size={16} className="text-[#087f8c]" />}
+                {isSuccess && <CheckCircle2 size={16} className="text-success" />}
+                {isError && <AlertCircle size={16} className="text-destructive" />}
+                {!isSuccess && !isError && <Info size={16} className="text-primary" />}
               </div>
               <div className="flex-1 break-words leading-relaxed">{t.message}</div>
               <button

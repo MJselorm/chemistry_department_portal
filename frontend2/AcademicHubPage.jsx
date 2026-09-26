@@ -41,9 +41,9 @@ export default function AcademicHubPage() {
       {/* Page Head */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7d9297]">STUDY CENTRE</span>
-          <h1 className="text-2xl font-bold text-[#102a2f] mt-1">Academic Hub</h1>
-          <p className="text-xs text-[#64777d] mt-1">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">STUDY CENTRE</span>
+          <h1 className="text-2xl font-bold text-foreground mt-1">Academic Hub</h1>
+          <p className="text-xs text-muted-foreground mt-1">
             A structured repository for the materials chemistry students use most.
           </p>
         </div>
@@ -54,7 +54,7 @@ export default function AcademicHubPage() {
             placeholder="Search resources"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 rounded-xl border border-[#e4ecee] bg-white text-xs focus:outline-none focus:border-[#087f8c]"
+            className="w-full pl-8 pr-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary"
           />
         </div>
       </div>
@@ -68,10 +68,10 @@ export default function AcademicHubPage() {
             <div
               key={cat.id}
               onClick={() => setSelectedCategory(isSelected ? null : cat.title)}
-              className={`p-4 bg-white border rounded-2xl shadow-sm cursor-pointer flex gap-3.5 items-start transition-all ${
+              className={`p-4 bg-surface border rounded-2xl shadow-sm cursor-pointer flex gap-3.5 items-start transition-all ${
                 isSelected
-                  ? 'border-[#087f8c] ring-2 ring-[#087f8c]/20'
-                  : 'border-[#e4ecee] hover:border-[#b8dfe1]'
+                  ? 'border-primary ring-2 ring-[var(--primary-border)]'
+                  : 'border-border hover:border-[var(--primary-border)]'
               }`}
             >
               <div
@@ -83,20 +83,20 @@ export default function AcademicHubPage() {
                     : cat.color === 'amber'
                     ? 'bg-[#fff5df] text-[#ad740b]'
                     : cat.color === 'purple'
-                    ? 'bg-[#f1ebfb] text-[#7652b8]'
+                    ? 'bg-[#f1ebfb] text-primary'
                     : cat.color === 'red'
-                    ? 'bg-[#fdeeee] text-[#c84b4b]'
+                    ? 'bg-[#fdeeee] text-destructive'
                     : 'bg-[#eef2f3] text-[#5b7075]'
                 }`}
               >
                 <Icon size={19} aria-hidden="true" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-bold text-[#102a2f] mb-1">{cat.title}</h3>
-                <p className="text-[10px] text-[#64777d] leading-relaxed mb-2 line-clamp-2">
+                <h3 className="text-xs font-bold text-foreground mb-1">{cat.title}</h3>
+                <p className="text-[10px] text-muted-foreground leading-relaxed mb-2 line-clamp-2">
                   {cat.description}
                 </p>
-                <small className="text-[10px] font-bold text-[#087f8c] flex items-center gap-1">
+                <small className="text-[10px] font-bold text-primary flex items-center gap-1">
                   {cat.files} {isSelected ? 'Filtered' : 'Open'}
                 </small>
               </div>
@@ -106,18 +106,18 @@ export default function AcademicHubPage() {
       </div>
 
       {/* Recently Added Section */}
-      <section className="bg-white border border-[#e4ecee] rounded-2xl p-5 shadow-sm">
+      <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#7d9297]">RECENTLY ADDED</span>
-            <h2 className="text-lg font-bold text-[#102a2f] mt-0.5">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">RECENTLY ADDED</span>
+            <h2 className="text-lg font-bold text-foreground mt-0.5">
               {selectedCategory ? `Resources in ${selectedCategory}` : 'Latest resources'}
             </h2>
           </div>
           {selectedCategory && (
             <button
               onClick={() => setSelectedCategory(null)}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-[#d7e2e4] text-[#496066] hover:bg-gray-50"
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-[#d7e2e4] text-muted-foreground hover:bg-gray-50"
             >
               Clear filter
             </button>
@@ -136,22 +136,22 @@ export default function AcademicHubPage() {
 
             {/* Table Rows */}
             {filteredResources.length === 0 ? (
-              <div className="py-8 text-center text-xs text-[#64777d]">
+              <div className="py-8 text-center text-xs text-muted-foreground">
                 No matching materials found.
               </div>
             ) : (
               filteredResources.map((item) => (
                 <div key={item.id} className="grid grid-cols-12 gap-4 py-3.5 items-center text-xs">
                   <div className="col-span-6">
-                    <strong className="block text-xs font-bold text-[#102a2f]">{item.name}</strong>
+                    <strong className="block text-xs font-bold text-foreground">{item.name}</strong>
                     <small className="block text-[10px] text-[#98a5a8] mt-0.5">{item.meta}</small>
                   </div>
-                  <span className="col-span-2 text-xs text-[#64777d]">{item.category}</span>
+                  <span className="col-span-2 text-xs text-muted-foreground">{item.category}</span>
                   <span className="col-span-2 text-xs text-[#98a5a8]">{item.added}</span>
                   <div className="col-span-2 text-right">
                     <button
                       onClick={() => handleDownload(item)}
-                      className="text-xs font-bold text-[#087f8c] hover:underline"
+                      className="text-xs font-bold text-primary hover:underline"
                     >
                       Download
                     </button>

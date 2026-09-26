@@ -124,23 +124,23 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl border border-[#e4ecee] p-6 shadow-card z-10 max-h-[90vh] flex flex-col animate-in zoom-in-95">
+      <div className="relative w-full max-w-2xl bg-surface rounded-2xl border border-border p-6 shadow-card z-10 max-h-[90vh] flex flex-col animate-in zoom-in-95">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#e4ecee]">
+        <div className="flex items-center justify-between pb-4 border-b border-border">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#087f8c]">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
               OFFICE HOURS
             </span>
-            <h2 className="text-lg font-bold text-[#102a2f] mt-0.5">
+            <h2 className="text-lg font-bold text-foreground mt-0.5">
               Consultation Schedule
             </h2>
-            <p className="text-xs text-[#64777d]">
-              Managing hours for <strong className="text-[#102a2f]">{lecturer?.name}</strong> {lecturer?.staff_id ? `(${lecturer.staff_id})` : ''}
+            <p className="text-xs text-muted-foreground">
+              Managing hours for <strong className="text-foreground">{lecturer?.name}</strong> {lecturer?.staff_id ? `(${lecturer.staff_id})` : ''}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#91a0a5] hover:text-[#102a2f] hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors"
           >
             <X size={18} />
           </button>
@@ -149,7 +149,7 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto py-4 space-y-4">
           {error && (
-            <div className="p-3 bg-[#fdecec] text-[#c84b4b] rounded-xl text-xs flex items-center gap-2">
+            <div className="p-3 bg-[var(--destructive-soft)] text-destructive rounded-xl text-xs flex items-center gap-2">
               <AlertCircle size={15} />
               <span>{error}</span>
             </div>
@@ -157,15 +157,15 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
 
           {/* Form to Add/Edit */}
           {isFormOpen ? (
-            <form onSubmit={handleSave} className="bg-[#f9fbfb] border border-[#e4ecee] rounded-xl p-4 space-y-3">
+            <form onSubmit={handleSave} className="bg-[#f9fbfb] border border-border rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <strong className="text-xs font-bold text-[#102a2f]">
+                <strong className="text-xs font-bold text-foreground">
                   {editingId ? 'Edit Consultation Period' : 'Add Consultation Period'}
                 </strong>
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="text-xs text-[#64777d] hover:text-[#102a2f]"
+                  className="text-xs text-muted-foreground hover:text-foreground"
                 >
                   Cancel
                 </button>
@@ -173,11 +173,11 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block font-bold text-[#102a2f] mb-1">Day of Week</label>
+                  <label className="block font-bold text-foreground mb-1">Day of Week</label>
                   <select
                     value={formData.day_of_week}
                     onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#d9e3e5] bg-white text-xs focus:outline-none focus:border-[#087f8c]"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary"
                   >
                     {DAYS.map((d) => (
                       <option key={d} value={d}>{d}</option>
@@ -186,11 +186,11 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#102a2f] mb-1">Mode</label>
+                  <label className="block font-bold text-foreground mb-1">Mode</label>
                   <select
                     value={formData.mode}
                     onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#d9e3e5] bg-white text-xs focus:outline-none focus:border-[#087f8c]"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary"
                   >
                     {MODES.map((m) => (
                       <option key={m} value={m}>{m}</option>
@@ -199,46 +199,46 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#102a2f] mb-1">Start Time</label>
+                  <label className="block font-bold text-foreground mb-1">Start Time</label>
                   <input
                     type="time"
                     required
                     value={formData.start_time}
                     onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#d9e3e5] bg-white text-xs focus:outline-none focus:border-[#087f8c]"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#102a2f] mb-1">End Time</label>
+                  <label className="block font-bold text-foreground mb-1">End Time</label>
                   <input
                     type="time"
                     required
                     value={formData.end_time}
                     onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#d9e3e5] bg-white text-xs focus:outline-none focus:border-[#087f8c]"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block font-bold text-[#102a2f] mb-1">Location / Link</label>
+                  <label className="block font-bold text-foreground mb-1">Location / Link</label>
                   <input
                     type="text"
                     placeholder="e.g. Chem Block Room 204 or Zoom link"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#d9e3e5] bg-white text-xs focus:outline-none focus:border-[#087f8c]"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block font-bold text-[#102a2f] mb-1">Instructions for Students</label>
+                  <label className="block font-bold text-foreground mb-1">Instructions for Students</label>
                   <input
                     type="text"
                     placeholder="e.g. Send an email prior to visiting"
                     value={formData.instructions}
                     onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#d9e3e5] bg-white text-xs focus:outline-none focus:border-[#087f8c]"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
@@ -247,14 +247,14 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="px-3 py-1.5 rounded-lg border border-[#d9e3e5] text-xs font-bold text-[#496066] hover:bg-white"
+                  className="px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-muted-foreground hover:bg-surface"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-1.5 rounded-lg bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
                 >
                   {saving && <Loader2 size={12} className="animate-spin" />}
                   {saving ? 'Saving…' : 'Save Slot'}
@@ -263,13 +263,13 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
             </form>
           ) : (
             <div className="flex justify-between items-center">
-              <span className="text-xs text-[#64777d]">
+              <span className="text-xs text-muted-foreground">
                 {consultations.length} scheduled consultation period{consultations.length === 1 ? '' : 's'}
               </span>
               <button
                 type="button"
                 onClick={openAddForm}
-                className="px-3 py-1.5 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                className="px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
               >
                 <Plus size={14} /> Add Consultation
               </button>
@@ -278,27 +278,27 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
 
           {/* Consultation List */}
           {loading ? (
-            <div className="py-8 text-center text-xs text-[#64777d] flex items-center justify-center gap-2">
-              <Loader2 size={16} className="animate-spin text-[#087f8c]" />
+            <div className="py-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+              <Loader2 size={16} className="animate-spin text-primary" />
               Loading consultation periods…
             </div>
           ) : consultations.length === 0 ? (
-            <div className="py-8 text-center bg-[#f9fbfb] rounded-xl border border-dashed border-[#e4ecee] p-6">
-              <Clock size={24} className="mx-auto text-[#91a0a5] mb-2" />
-              <p className="text-xs font-bold text-[#102a2f]">No consultation periods configured</p>
-              <p className="text-[11px] text-[#64777d] mt-1">Students will see office hours once added.</p>
+            <div className="py-8 text-center bg-[#f9fbfb] rounded-xl border border-dashed border-border p-6">
+              <Clock size={24} className="mx-auto text-muted-foreground mb-2" />
+              <p className="text-xs font-bold text-foreground">No consultation periods configured</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Students will see office hours once added.</p>
             </div>
           ) : (
             <div className="space-y-2">
               {consultations.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between p-3.5 rounded-xl border border-[#e4ecee] bg-white hover:border-[#b7dfe2] transition-colors"
+                  className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-surface hover:border-[var(--primary-border)] transition-colors"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <strong className="text-xs font-bold text-[#102a2f]">{c.day_of_week}</strong>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[#e8f6f7] text-[#087f8c]">
+                      <strong className="text-xs font-bold text-foreground">{c.day_of_week}</strong>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[var(--primary-soft)] text-primary">
                         {c.mode || 'In-Person'}
                       </span>
                       {c.is_active === false && (
@@ -307,14 +307,14 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-[#64777d]">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <Clock size={12} className="text-[#087f8c]" />
+                        <Clock size={12} className="text-primary" />
                         {c.start_time?.slice(0, 5)} – {c.end_time?.slice(0, 5)}
                       </span>
                       {c.location && (
                         <span className="flex items-center gap-1">
-                          <MapPin size={12} className="text-[#087f8c]" />
+                          <MapPin size={12} className="text-primary" />
                           {c.location}
                         </span>
                       )}
@@ -327,7 +327,7 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => openEditForm(c)}
-                      className="p-1.5 rounded-lg text-[#64777d] hover:text-[#087f8c] hover:bg-[#e8f6f7] transition-colors"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-[var(--primary-soft)] transition-colors"
                       title="Edit consultation period"
                     >
                       <Edit3 size={14} />
@@ -335,7 +335,7 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
                     <button
                       disabled={deletingId === c.id}
                       onClick={() => handleDelete(c.id)}
-                      className="p-1.5 rounded-lg text-[#64777d] hover:text-[#c84b4b] hover:bg-[#fdecec] transition-colors disabled:opacity-50"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-[var(--destructive-soft)] transition-colors disabled:opacity-50"
                       title="Delete consultation period"
                     >
                       {deletingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -348,11 +348,11 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="pt-3 border-t border-[#e4ecee] flex justify-end">
+        <div className="pt-3 border-t border-border flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-[#d9e3e5] text-xs font-bold text-[#496066] hover:bg-gray-50"
+            className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-gray-50"
           >
             Done
           </button>

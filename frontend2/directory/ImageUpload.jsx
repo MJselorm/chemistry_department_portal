@@ -52,12 +52,12 @@ export default function ImageUpload({ value, onChange, label = 'Image', helpText
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="block text-xs font-bold text-[#102a2f]">{label}</label>
+        <label className="block text-xs font-bold text-foreground">{label}</label>
         {value && (
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="text-[11px] font-bold text-[#c84b4b] hover:underline flex items-center gap-1"
+            className="text-[11px] font-bold text-destructive hover:underline flex items-center gap-1"
           >
             <Trash2 size={12} /> Remove
           </button>
@@ -66,8 +66,8 @@ export default function ImageUpload({ value, onChange, label = 'Image', helpText
 
       {value ? (
         /* Preview container */
-        <div className="flex items-center gap-4 p-3 rounded-xl border border-[#e4ecee] bg-[#f9fbfb]">
-          <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-white border border-[#e4ecee] flex-shrink-0 shadow-xs">
+        <div className="flex items-center gap-4 p-3 rounded-xl border border-border bg-[#f9fbfb]">
+          <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-surface border border-border flex-shrink-0 shadow-xs">
             <img
               src={value}
               alt="Uploaded preview"
@@ -82,23 +82,23 @@ export default function ImageUpload({ value, onChange, label = 'Image', helpText
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-[#102a2f] truncate">Current file linked</p>
-            <p className="text-[11px] text-[#64777d] truncate max-w-xs">{value}</p>
+            <p className="text-xs font-bold text-foreground truncate">Current file linked</p>
+            <p className="text-[11px] text-muted-foreground truncate max-w-xs">{value}</p>
           </div>
           <button
             type="button"
             disabled={uploading}
             onClick={() => inputRef.current?.click()}
-            className="px-3 py-1.5 rounded-lg border border-[#d9e3e5] bg-white hover:bg-gray-50 text-xs font-bold text-[#102a2f] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            className="px-3 py-1.5 rounded-lg border border-border bg-surface hover:bg-gray-50 text-xs font-bold text-foreground flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
             {uploading ? (
               <>
-                <Loader2 size={12} className="animate-spin text-[#087f8c]" />
+                <Loader2 size={12} className="animate-spin text-primary" />
                 Uploading…
               </>
             ) : (
               <>
-                <RefreshCw size={12} className="text-[#087f8c]" />
+                <RefreshCw size={12} className="text-primary" />
                 Replace
               </>
             )}
@@ -116,25 +116,25 @@ export default function ImageUpload({ value, onChange, label = 'Image', helpText
           onClick={() => !uploading && inputRef.current?.click()}
           className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 ${
             dragOver
-              ? 'border-[#087f8c] bg-[#e8f6f7]'
+              ? 'border-primary bg-[var(--primary-soft)]'
               : 'border-[#dce6e8] bg-[#f9fbfb] hover:bg-[#f2f7f8] hover:border-[#b8d7db]'
           } ${uploading ? 'opacity-60 pointer-events-none' : ''}`}
         >
           {uploading ? (
             <div className="flex flex-col items-center py-2">
-              <Loader2 size={24} className="animate-spin text-[#087f8c] mb-2" />
-              <strong className="text-xs text-[#102a2f]">Uploading to Supabase…</strong>
+              <Loader2 size={24} className="animate-spin text-primary mb-2" />
+              <strong className="text-xs text-foreground">Uploading to Supabase…</strong>
             </div>
           ) : (
             <>
-              <div className="w-10 h-10 rounded-full bg-white border border-[#e4ecee] grid place-items-center text-[#087f8c] shadow-xs">
+              <div className="w-10 h-10 rounded-full bg-surface border border-border grid place-items-center text-primary shadow-xs">
                 <UploadCloud size={20} />
               </div>
               <div>
-                <strong className="text-xs font-bold text-[#102a2f] block">
-                  Click to upload <span className="font-normal text-[#64777d]">or drag and drop</span>
+                <strong className="text-xs font-bold text-foreground block">
+                  Click to upload <span className="font-normal text-muted-foreground">or drag and drop</span>
                 </strong>
-                <small className="text-[10px] text-[#91a0a5] mt-0.5 block">{helpText}</small>
+                <small className="text-[10px] text-muted-foreground mt-0.5 block">{helpText}</small>
               </div>
             </>
           )}
@@ -142,7 +142,7 @@ export default function ImageUpload({ value, onChange, label = 'Image', helpText
       )}
 
       {error && (
-        <div className="flex items-center gap-1.5 text-xs text-[#c84b4b] bg-[#fdecec] p-2 rounded-lg border border-[#f5b3b3]">
+        <div className="flex items-center gap-1.5 text-xs text-destructive bg-[var(--destructive-soft)] p-2 rounded-lg border border-[var(--destructive-border)]">
           <AlertCircle size={14} className="flex-shrink-0" />
           <span>{error}</span>
         </div>

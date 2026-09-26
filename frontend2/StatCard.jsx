@@ -3,20 +3,20 @@
  * green while the lab-hours card reads blue.
  */
 const TONES = {
-  blue: 'bg-[#E4F1FC] text-[#1C4E80]',
+  blue: 'bg-[var(--primary-soft)] text-primary',
   amber: 'bg-amber-100 text-amber-800',
   green: 'bg-emerald-100 text-emerald-700',
 }
 
 export default function StatCard({ label, value, pill, pillTone = 'blue', note, icon: Icon }) {
   return (
-    <article className="rounded-2xl border border-hair bg-white p-5 shadow-card">
+    <article className="rounded-2xl border border-hair bg-surface p-5 shadow-card">
       <header className="flex items-start justify-between gap-3">
         <h3 className="font-head text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-slate-500">
           {label}
         </h3>
         {Icon && (
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5FD] text-[#1C4E80]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--primary-soft)] text-primary">
             <Icon size={16} strokeWidth={2} />
           </span>
         )}

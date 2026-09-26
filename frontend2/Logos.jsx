@@ -37,7 +37,7 @@ export function GscsLogo({
 }) {
   const src = variant === 'circle' ? LOGOS.gscsCircle : LOGOS.gscs
   const badgeClasses = badge
-    ? 'rounded-full bg-white object-contain p-0.5 shadow-sm ring-1 ring-white/30'
+    ? 'rounded-full bg-surface object-contain p-0.5 shadow-sm ring-1 ring-white/30'
     : 'object-contain'
 
   return (
@@ -66,7 +66,7 @@ export function KnustLogo({
 
   if (badge) {
     return (
-      <div className="inline-flex items-center rounded-lg bg-white/95 px-2.5 py-1 shadow-sm ring-1 ring-white/20 backdrop-blur-sm">
+      <div className="inline-flex items-center rounded-lg bg-surface px-2.5 py-1 shadow-sm ring-1 ring-white/20 backdrop-blur-sm">
         <img
           src={src}
           alt={alt}
@@ -101,7 +101,7 @@ export function KnustEmblem({
 }) {
   const src = transparent ? LOGOS.knustEmblemTransparent : LOGOS.knustEmblem
   const badgeClasses = badge
-    ? 'rounded-full bg-white object-contain p-1 shadow-sm ring-1 ring-white/30'
+    ? 'rounded-full bg-surface object-contain p-1 shadow-sm ring-1 ring-white/30'
     : 'object-contain'
 
   return (

@@ -26,7 +26,6 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       to: '/dashboard',
       label: isAdmin ? 'Admin Dashboard' : 'Student Dashboard',
       icon: isAdmin ? ShieldCheck : LayoutDashboard,
-      highlight: isAdmin ? 'text-[#7652b8]' : 'text-[#087f8c]',
     },
     { to: '/events', label: 'Events', icon: CalendarDays },
     { to: '/academic', label: 'Academic Hub', icon: GraduationCap },
@@ -64,10 +63,12 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         }`}
       >
         {/* Brand Header */}
-        <div className={`flex items-center gap-3 border-b border-[var(--sidebar-border)] px-4 py-5 ${isCollapsed ? 'lg:justify-center' : ''}`}>
-          <div className="w-9 h-9 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-black text-xs grid place-items-center tracking-wider shadow-sm flex-shrink-0">
-            CH
-          </div>
+        <div className={`flex items-center gap-3 border-b border-[var(--sidebar-border)] px-4 py-4 ${isCollapsed ? 'lg:justify-center' : ''}`}>
+          <img
+            src="/gscs-logo-circle.png"
+            alt="GSCS"
+            className="w-10 h-10 rounded-full object-contain flex-shrink-0 ring-1 ring-[var(--border)] bg-surface"
+          />
           <div className={isCollapsed ? 'lg:hidden' : ''}>
             <strong className="block text-sm font-bold text-[var(--sidebar-foreground)] leading-none">Chemistry Hub</strong>
             <span className="block text-[10px] text-[var(--muted-foreground)] mt-1">
@@ -80,7 +81,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           <button
             type="button"
             onClick={onToggleCollapsed}
-            className={`w-full flex items-center rounded-xl px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--accent)] transition-colors ${
+            className={`w-full flex items-center rounded-lg px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--primary)] transition-colors ${
               isCollapsed ? 'justify-center' : 'justify-between'
             }`}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -108,14 +109,12 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                 onClick={onClose}
                 title={isCollapsed ? item.label : undefined}
                 className={({ isActive }) =>
-                  `group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                  `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
                     isCollapsed ? 'lg:justify-center' : ''
                   } ${
                     isActive || isDirectoryActive
-                      ? isAdmin && item.to === '/dashboard'
-                        ? 'bg-[#f0eafb] text-[#7652b8] font-bold shadow-xs'
-                        : 'bg-[#e8f6f7] text-[#087f8c] font-bold shadow-xs'
-                      : 'text-[#65767b] hover:bg-[#f1f7f7] hover:text-[#087f8c]'
+                      ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-bold before:absolute before:left-0 before:h-5 before:w-0.5 before:rounded-full before:bg-[var(--accent)]'
+                      : 'text-[var(--muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)]'
                   }`
                 }
               >
@@ -126,9 +125,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                     className={`ml-auto text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
                       isCollapsed ? 'lg:hidden' : ''
                     } ${
-                      isAdmin
-                        ? 'bg-[#eee7fa] text-[#7652b8]'
-                        : 'bg-[#e8f6f7] text-[#087f8c]'
+                      'bg-[var(--accent-soft)] text-[var(--accent)]'
                     }`}
                   >
                     {isAdmin ? 'Admin' : 'Student'}
@@ -151,12 +148,12 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
             onClick={onClose}
             title={isCollapsed ? 'Settings' : undefined}
             className={({ isActive }) =>
-              `group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+              `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 isCollapsed ? 'lg:justify-center' : ''
               } ${
                 isActive
-                  ? 'bg-[#e8f6f7] text-[#087f8c]'
-                  : 'text-[#65767b] hover:bg-[#f1f7f7]'
+                  ? 'bg-[var(--primary-soft)] text-[var(--primary)] before:absolute before:left-0 before:h-5 before:w-0.5 before:rounded-full before:bg-[var(--accent)]'
+                  : 'text-[var(--muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)]'
               }`
             }
           >
@@ -171,7 +168,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
 
           <button
             onClick={handleSignOut}
-            className={`group relative w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#b64a4a] hover:bg-[#fdecec] transition-colors text-left ${
+            className={`group relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--destructive)] hover:bg-[var(--destructive-soft)] transition-colors text-left ${
               isCollapsed ? 'lg:justify-center' : ''
             }`}
             title={isCollapsed ? 'Sign out' : undefined}
