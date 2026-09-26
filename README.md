@@ -4,15 +4,15 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
 
 ## Project layout
 
-| Path | Purpose |
-| --- | --- |
-| `frontend2/` | Active React 18 + Vite portal, including Firebase sign-in and member dashboard. |
-| `backend/` | FastAPI service, Firebase token verification, SQLAlchemy models, and Alembic migrations. |
-| `supabase/migrations/` | Supabase migration history. |
-| `experimentals/frontend/` | Earlier static Firebase client. |
-| `experimentals/dashboard/` | Dashboard UI prototype/reference components. |
-| `experimentals/chemistry_department_portal_frontend/` | Static HTML prototype screens. |
-| `experimentals/figma/` | Design reference assets. |
+| Path                                                  | Purpose                                                                                  |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `frontend2/`                                          | Active React 18 + Vite portal, including Firebase sign-in and member dashboard.          |
+| `backend/`                                            | FastAPI service, Firebase token verification, SQLAlchemy models, and Alembic migrations. |
+| `supabase/migrations/`                                | Supabase migration history.                                                              |
+| `experimentals/frontend/`                             | Earlier static Firebase client.                                                          |
+| `experimentals/dashboard/`                            | Dashboard UI prototype/reference components.                                             |
+| `experimentals/chemistry_department_portal_frontend/` | Static HTML prototype screens.                                                           |
+| `experimentals/figma/`                                | Design reference assets.                                                                 |
 
 ## Prerequisites
 
@@ -31,7 +31,6 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
    ```
 
 2. In `backend/.env`, set `DATABASE_URL` to your Supabase connection string and configure one Firebase Admin credential option:
-
    - `FIREBASE_SERVICE_ACCOUNT_PATH` pointing to a local service-account JSON file, or
    - `FIREBASE_SERVICE_ACCOUNT_JSON` containing the credential JSON.
 
@@ -66,9 +65,9 @@ Open the URL Vite prints, normally `http://127.0.0.1:5173`.
 
 Deploy `frontend2/` as a static Vite application and `backend/` as a Python/FastAPI service. Configure the values below in the hosting provider's encrypted environment-variable settings; never upload or commit a Firebase Admin service-account JSON file.
 
-| Service | Required production configuration |
-| --- | --- |
-| Render backend | Copy the keys in [`backend/.env.production.example`](backend/.env.production.example). Set `CORS_ORIGINS` to the exact Vercel frontend URL. |
+| Service         | Required production configuration                                                                                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Render backend  | Copy the keys in [`backend/.env.production.example`](backend/.env.production.example). Set `CORS_ORIGINS` to the exact Vercel frontend URL.                                           |
 | Vercel frontend | Copy the keys in [`frontend2/.env.production.example`](frontend2/.env.production.example). Keep `VITE_API_BASE_URL=/api` so the checked-in Vercel rewrite proxies requests to Render. |
 
 For the backend, create a Firebase service-account key in Firebase Console under **Project settings → Service accounts**, then store the complete JSON document as `FIREBASE_SERVICE_ACCOUNT_JSON`. `FIREBASE_SERVICE_ACCOUNT_PATH` is for local development only because a path on your computer is unavailable to the hosted service.

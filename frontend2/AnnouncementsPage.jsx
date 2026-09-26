@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Pin, Trash2, Plus, RefreshCw, Megaphone, ChevronUp, Search, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Pin, Trash2, Plus, RefreshCw, Megaphone, ChevronUp, Search, CheckCircle2, AlertCircle, Sparkles, Users, X } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useAuth } from './AuthContext'
@@ -196,7 +196,9 @@ export default function AnnouncementsPage() {
             {feedback.type === 'success' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
             <span>{feedback.message}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="font-bold text-xs p-1">✕</button>
+          <button onClick={() => setFeedback(null)} className="font-bold text-xs p-1" aria-label="Dismiss message">
+            <X size={14} aria-hidden="true" />
+          </button>
         </div>
       )}
 
@@ -206,7 +208,7 @@ export default function AnnouncementsPage() {
           <div className="flex items-center justify-between pb-3 border-b border-[#f0f4f5] mb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-[#e7f5f7] text-[#087f8c] grid place-items-center font-black text-sm">
-                ✦
+                <Sparkles size={15} aria-hidden="true" />
               </div>
               <div>
                 <h2 className="text-sm font-bold text-[#102a2f]">Publish New Announcement</h2>
@@ -219,8 +221,9 @@ export default function AnnouncementsPage() {
               type="button"
               onClick={() => setShowCreateForm(false)}
               className="text-xs text-[#9aa7aa] hover:text-[#102a2f] font-bold p-1"
+              aria-label="Close announcement form"
             >
-              ✕
+              <X size={15} aria-hidden="true" />
             </button>
           </div>
 
@@ -377,8 +380,9 @@ export default function AnnouncementsPage() {
               type="button"
               onClick={() => setSearchQuery('')}
               className="absolute right-2.5 top-2.5 text-xs text-[#9aa7aa] hover:text-[#102a2f]"
+              aria-label="Clear announcement search"
             >
-              ✕
+              <X size={13} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -405,7 +409,7 @@ export default function AnnouncementsPage() {
         {!loading && filteredAnnouncements.length === 0 && (
           <div className="py-12 bg-white rounded-2xl border border-[#e4ecee] text-center p-6 space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-[#f0f7f8] text-[#087f8c] grid place-items-center mx-auto text-xl font-bold">
-              ▤
+              <Megaphone size={22} aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-[#102a2f]">No announcements found</h3>
@@ -456,8 +460,9 @@ export default function AnnouncementsPage() {
                 </span>
 
                 {item.audience && (
-                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#f1f5f6] text-[#55696e] border border-[#e2e9eb]">
-                    👥 {item.audience}
+                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#f1f5f6] text-[#55696e] border border-[#e2e9eb] inline-flex items-center gap-1">
+                    <Users size={10} aria-hidden="true" />
+                    {item.audience}
                   </span>
                 )}
 
@@ -511,5 +516,3 @@ export default function AnnouncementsPage() {
     </div>
   )
 }
-
-

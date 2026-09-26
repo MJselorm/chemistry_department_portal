@@ -1,9 +1,30 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  BookOpen,
+  CalendarClock,
+  CalendarDays,
+  ClipboardCheck,
+  FileQuestion,
+  FolderOpen,
+  GraduationCap,
+  MapPin,
+  Megaphone,
+  Plus,
+  ShieldCheck,
+  Users,
+} from 'lucide-react'
 import { useAuth } from './AuthContext'
 import { MOCK_DASHBOARD_STATS } from './mocks'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
+
+const STAT_ICONS = {
+  events: CalendarDays,
+  resources: BookOpen,
+  students: Users,
+  announcements: Megaphone,
+}
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -41,7 +62,7 @@ export default function DashboardPage() {
               onClick={() => setPreviewAsStudent(true)}
               className="px-2.5 py-1 rounded-xl bg-white border border-[#d6c3f3] text-[#7652b8] text-[10px] font-bold hover:bg-gray-50 transition-colors"
             >
-              👁 Preview Student View
+              Preview Student View
             </button>
           </div>
         </div>
@@ -91,9 +112,10 @@ export default function DashboardPage() {
             <div className="flex flex-wrap gap-3 mt-6">
               <Link
                 to="/admin?tab=events"
-                className="px-4 py-2.5 rounded-xl bg-white text-[#1d1b38] text-xs font-bold shadow hover:bg-gray-50 transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-white text-[#1d1b38] text-xs font-bold shadow hover:bg-gray-50 transition-colors inline-flex items-center gap-2"
               >
-                + Create new event
+                <Plus size={14} aria-hidden="true" />
+                Create new event
               </Link>
               <Link
                 to="/admin?tab=resources"
@@ -109,8 +131,8 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 text-9xl select-none opacity-15 pointer-events-none hidden md:block">
-            ◆
+          <div className="absolute right-10 top-1/2 -translate-y-1/2 select-none opacity-15 pointer-events-none hidden md:block">
+            <ShieldCheck size={120} strokeWidth={1.4} aria-hidden="true" />
           </div>
         </div>
       ) : (
@@ -141,8 +163,8 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 text-9xl select-none opacity-15 pointer-events-none hidden md:block">
-            ⚗
+          <div className="absolute right-10 top-1/2 -translate-y-1/2 select-none opacity-15 pointer-events-none hidden md:block">
+            <GraduationCap size={120} strokeWidth={1.4} aria-hidden="true" />
           </div>
         </div>
       )}
@@ -167,7 +189,9 @@ export default function DashboardPage() {
 
       {/* ── STAT CARDS ──────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {MOCK_DASHBOARD_STATS.map((stat) => (
+        {MOCK_DASHBOARD_STATS.map((stat) => {
+          const Icon = STAT_ICONS[stat.id] || FolderOpen
+          return (
           <div
             key={stat.id}
             className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm"
@@ -179,7 +203,7 @@ export default function DashboardPage() {
                   : 'bg-[#eef7f7] text-[#087f8c]'
               }`}
             >
-              {stat.icon}
+              <Icon size={17} aria-hidden="true" />
             </div>
             <strong className="block text-2xl font-black text-[#102a2f] tracking-tight">{stat.value}</strong>
             <span className="block text-xs text-[#64777d] mt-1">
@@ -190,7 +214,8 @@ export default function DashboardPage() {
                 : stat.label}
             </span>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* ── 2-COLUMN GRID ───────────────────────────────────────── */}
@@ -211,8 +236,8 @@ export default function DashboardPage() {
               A departmental seminar bringing students and researchers together around current developments in chemistry.
             </p>
             <div className="flex gap-4 text-xs text-[#74878b] font-medium my-4">
-              <span>◷ 10:00 AM</span>
-              <span>⌖ Main Auditorium</span>
+              <span className="inline-flex items-center gap-1.5"><CalendarClock size={13} aria-hidden="true" />10:00 AM</span>
+              <span className="inline-flex items-center gap-1.5"><MapPin size={13} aria-hidden="true" />Main Auditorium</span>
             </div>
           </div>
           <Link
@@ -283,7 +308,7 @@ export default function DashboardPage() {
               to="/admin?tab=events"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
             >
-              <span className="block text-xl text-[#7652b8] mb-2 font-bold">◷</span>
+              <CalendarDays className="block text-[#7652b8] mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#7652b8]">
                 Manage Events
               </strong>
@@ -293,7 +318,7 @@ export default function DashboardPage() {
               to="/admin?tab=resources"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
             >
-              <span className="block text-xl text-[#7652b8] mb-2 font-bold">▣</span>
+              <BookOpen className="block text-[#7652b8] mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#7652b8]">
                 Upload Resources
               </strong>
@@ -303,7 +328,7 @@ export default function DashboardPage() {
               to="/admin?tab=users"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
             >
-              <span className="block text-xl text-[#7652b8] mb-2 font-bold">◎</span>
+              <Users className="block text-[#7652b8] mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#7652b8]">
                 Student Accounts
               </strong>
@@ -313,7 +338,7 @@ export default function DashboardPage() {
               to="/announcements?create=true"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
             >
-              <span className="block text-xl text-[#7652b8] mb-2 font-bold">▤</span>
+              <Megaphone className="block text-[#7652b8] mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#7652b8]">
                 Manage Announcements
               </strong>
@@ -327,7 +352,7 @@ export default function DashboardPage() {
               to="/academic"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#b7dfe2] hover:-translate-y-0.5 transition-all block"
             >
-              <span className="block text-xl text-[#087f8c] mb-2">▤</span>
+              <FileQuestion className="block text-[#087f8c] mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-[#102a2f]">Past Questions</strong>
               <small className="block text-[10px] text-[#64777d] mt-1">Exam papers by course & year</small>
             </Link>
@@ -335,7 +360,7 @@ export default function DashboardPage() {
               to="/academic"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#b7dfe2] hover:-translate-y-0.5 transition-all block"
             >
-              <span className="block text-xl text-[#087f8c] mb-2">▣</span>
+              <BookOpen className="block text-[#087f8c] mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-[#102a2f]">Lecture Notes</strong>
               <small className="block text-[10px] text-[#64777d] mt-1">Slides & study materials</small>
             </Link>
@@ -343,7 +368,7 @@ export default function DashboardPage() {
               to="/events"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#b7dfe2] hover:-translate-y-0.5 transition-all block"
             >
-              <span className="block text-xl text-[#087f8c] mb-2">⌁</span>
+              <ClipboardCheck className="block text-[#087f8c] mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-[#102a2f]">Event Check-in</strong>
               <small className="block text-[10px] text-[#64777d] mt-1">Scan or enter attendance code</small>
             </Link>
@@ -351,7 +376,7 @@ export default function DashboardPage() {
               to="/directory"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#b7dfe2] hover:-translate-y-0.5 transition-all block"
             >
-              <span className="block text-xl text-[#087f8c] mb-2">◎</span>
+              <Users className="block text-[#087f8c] mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-[#102a2f]">Department Directory</strong>
               <small className="block text-[10px] text-[#64777d] mt-1">Executives, reps & lecturers</small>
             </Link>

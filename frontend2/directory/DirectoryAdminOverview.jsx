@@ -15,6 +15,7 @@ import {
   Loader2,
   RefreshCw,
   ExternalLink,
+  X,
 } from 'lucide-react'
 import { directoryApi } from './directoryApi'
 import DirectorySubNav from './DirectorySubNav'
@@ -210,8 +211,9 @@ export default function DirectoryAdminOverview() {
                 <button
                   onClick={() => setShowResults(false)}
                   className="hover:text-[#102a2f] font-bold"
+                  aria-label="Close search results"
                 >
-                  ✕
+                  <X size={13} aria-hidden="true" />
                 </button>
               </div>
 

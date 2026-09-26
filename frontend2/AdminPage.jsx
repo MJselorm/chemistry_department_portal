@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, Trash2, Pin, RefreshCw, Search, Megaphone, ChevronDown, ChevronUp, Bell } from 'lucide-react'
+import {
+  Bell,
+  BookOpen,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  FileUp,
+  Megaphone,
+  Plus,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Trash2,
+  Users,
+  X,
+  Zap,
+} from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useAuth } from './AuthContext'
@@ -191,9 +208,10 @@ export default function AdminPage() {
           <button
             onClick={handleAdminTest}
             disabled={testingRole}
-            className="px-3.5 py-2 rounded-xl bg-[#eee7fa] hover:bg-[#e4d8f8] text-[#7652b8] text-xs font-bold border border-[#d6c3f3] transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-[#eee7fa] hover:bg-[#e4d8f8] text-[#7652b8] text-xs font-bold border border-[#d6c3f3] transition-colors inline-flex items-center gap-2"
           >
-            {testingRole ? 'Verifying...' : '⚡ Test Live Admin Endpoint'}
+            <Zap size={13} aria-hidden="true" />
+            {testingRole ? 'Verifying...' : 'Test Live Admin Endpoint'}
           </button>
           <button
             onClick={() => handleTabChange('events')}
@@ -216,7 +234,9 @@ export default function AdminPage() {
           <span>
             <strong>FastAPI Response (/admin/test):</strong> {adminTestResult.message}
           </span>
-          <button onClick={() => setAdminTestResult(null)} className="font-bold ml-2">✕</button>
+          <button onClick={() => setAdminTestResult(null)} className="font-bold ml-2" aria-label="Dismiss admin test result">
+            <X size={14} aria-hidden="true" />
+          </button>
         </div>
       )}
 
@@ -257,21 +277,21 @@ export default function AdminPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
             <div className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm">
               <span className="w-8 h-8 rounded-lg bg-[#f1ebfb] text-[#7652b8] text-sm grid place-items-center mb-3 font-bold">
-                ◷
+                <CalendarDays size={17} aria-hidden="true" />
               </span>
               <strong className="block text-2xl font-black text-[#102a2f]">08</strong>
               <span className="block text-xs text-[#64777d] mt-1">Published events</span>
             </div>
             <div className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm">
               <span className="w-8 h-8 rounded-lg bg-[#eaf4fb] text-[#2776a5] text-sm grid place-items-center mb-3 font-bold">
-                ▣
+                <BookOpen size={17} aria-hidden="true" />
               </span>
               <strong className="block text-2xl font-black text-[#102a2f]">126</strong>
               <span className="block text-xs text-[#64777d] mt-1">Resources</span>
             </div>
             <div className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm">
               <span className="w-8 h-8 rounded-lg bg-[#eaf7f0] text-[#27805a] text-sm grid place-items-center mb-3 font-bold">
-                ◎
+                <Users size={17} aria-hidden="true" />
               </span>
               <strong className="block text-2xl font-black text-[#102a2f]">342</strong>
               <span className="block text-xs text-[#64777d] mt-1">Students</span>
@@ -281,7 +301,7 @@ export default function AdminPage() {
               className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm cursor-pointer hover:border-[#087f8c] transition-colors group"
             >
               <span className="w-8 h-8 rounded-lg bg-[#fff6df] text-[#a66b08] text-sm grid place-items-center mb-3 font-bold">
-                ▤
+                <Megaphone size={17} aria-hidden="true" />
               </span>
               <strong className="block text-2xl font-black text-[#102a2f] group-hover:text-[#087f8c] transition-colors">
                 {String(announcements.length).padStart(2, '0')}
@@ -306,7 +326,7 @@ export default function AdminPage() {
                     </strong>
                     <small className="block text-[10px] text-[#64777d]">Create, edit and publish seminars</small>
                   </div>
-                  <span className="text-[#087f8c] font-bold text-xs">→</span>
+                  <ChevronRight className="text-[#087f8c]" size={15} aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => handleTabChange('resources')}
@@ -318,7 +338,7 @@ export default function AdminPage() {
                     </strong>
                     <small className="block text-[10px] text-[#64777d]">Add notes, manuals and past questions</small>
                   </div>
-                  <span className="text-[#087f8c] font-bold text-xs">→</span>
+                  <ChevronRight className="text-[#087f8c]" size={15} aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => handleTabChange('announcements')}
@@ -330,7 +350,7 @@ export default function AdminPage() {
                     </strong>
                     <small className="block text-[10px] text-[#64777d]">Create, pin, and view department notices</small>
                   </div>
-                  <span className="text-[#087f8c] font-bold text-xs">→</span>
+                  <ChevronRight className="text-[#087f8c]" size={15} aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => handleTabChange('users')}
@@ -342,7 +362,7 @@ export default function AdminPage() {
                     </strong>
                     <small className="block text-[10px] text-[#64777d]">Accounts, roles and directory data</small>
                   </div>
-                  <span className="text-[#087f8c] font-bold text-xs">→</span>
+                  <ChevronRight className="text-[#087f8c]" size={15} aria-hidden="true" />
                 </button>
               </div>
             </section>
@@ -526,7 +546,7 @@ export default function AdminPage() {
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-[#102a2f] mb-1">File upload</label>
                 <div className="border-2 border-dashed border-[#dce6e8] rounded-xl p-8 bg-[#f9fbfb] text-center flex flex-col items-center justify-center">
-                  <span className="text-3xl text-[#91a0a4] mb-1">⇧</span>
+                  <FileUp className="text-[#91a0a4] mb-1" size={30} aria-hidden="true" />
                   <strong className="text-xs text-[#5b6f74]">Drop a file here or browse</strong>
                   <small className="text-[10px] text-[#91a0a4] mt-1">PDF, DOCX up to 25MB (Placeholder upload)</small>
                 </div>
@@ -660,7 +680,7 @@ export default function AdminPage() {
               <div className="flex items-center justify-between pb-3 border-b border-[#f0f4f5] mb-4">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-[#e7f5f7] text-[#087f8c] grid place-items-center font-bold text-xs">
-                    ✦
+                    <Sparkles size={14} aria-hidden="true" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-[#102a2f]">Create announcement</h3>
@@ -671,8 +691,9 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => setShowCreateAnnouncement(false)}
                   className="text-xs text-[#9aa7aa] hover:text-[#102a2f] font-bold p-1"
+                  aria-label="Close announcement form"
                 >
-                  ✕
+                  <X size={15} aria-hidden="true" />
                 </button>
               </div>
 
@@ -829,8 +850,9 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => setAnnouncementSearch('')}
                   className="absolute right-2.5 top-2.5 text-xs text-[#9aa7aa] hover:text-[#102a2f]"
+                  aria-label="Clear announcement search"
                 >
-                  ✕
+                  <X size={13} aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -856,7 +878,7 @@ export default function AdminPage() {
           ) : filteredAnnouncements.length === 0 ? (
             <div className="py-12 bg-white rounded-2xl border border-[#e4ecee] text-center p-6 space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-[#f0f7f8] text-[#087f8c] grid place-items-center mx-auto text-xl font-bold">
-                ▤
+                <Megaphone size={22} aria-hidden="true" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-[#102a2f]">No announcements found</h3>
@@ -909,8 +931,9 @@ export default function AdminPage() {
                         {item.category}
                       </span>
 
-                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#f1f5f6] text-[#55696e] border border-[#e2e9eb]">
-                        👥 {item.audience || 'All students'}
+                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#f1f5f6] text-[#55696e] border border-[#e2e9eb] inline-flex items-center gap-1">
+                        <Users size={10} aria-hidden="true" />
+                        {item.audience || 'All students'}
                       </span>
 
                       {item.is_pinned && (

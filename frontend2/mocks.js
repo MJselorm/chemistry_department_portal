@@ -4,10 +4,10 @@
  */
 
 export const MOCK_DASHBOARD_STATS = [
-  { id: 'events', label: 'Upcoming events', value: '08', icon: '◷', color: 'blue' },
-  { id: 'resources', label: 'Academic resources', value: '126', icon: '▣', color: 'green' },
-  { id: 'students', label: 'Students connected', value: '342', icon: '◎', color: 'amber' },
-  { id: 'announcements', label: 'New announcements', value: '14', icon: '▤', color: 'purple' },
+  { id: 'events', label: 'Upcoming events', value: '08', color: 'blue' },
+  { id: 'resources', label: 'Academic resources', value: '126', color: 'green' },
+  { id: 'students', label: 'Students connected', value: '342', color: 'amber' },
+  { id: 'announcements', label: 'New announcements', value: '14', color: 'purple' },
 ]
 
 export const MOCK_EVENTS = [
@@ -98,12 +98,12 @@ export const MOCK_ANNOUNCEMENTS = [
 ]
 
 export const MOCK_ACADEMIC_CATEGORIES = [
-  { id: 'pq', title: 'Past Questions', description: 'Previous exam papers categorized by course and year.', files: '38 files', icon: '▤', color: 'blue' },
-  { id: 'notes', title: 'Lecture Notes', description: 'Slides and handouts provided by lecturers.', files: '46 files', icon: '▣', color: 'green' },
-  { id: 'textbooks', title: 'Textbooks', description: 'Recommended reading materials and reference books.', files: '21 files', icon: '▥', color: 'amber' },
-  { id: 'manuals', title: 'Lab Manuals', description: 'Procedures, safety guides and report templates.', files: '15 files', icon: '⚗', color: 'purple' },
-  { id: 'outlines', title: 'Course Outlines', description: 'Course descriptions, schedules and assessment details.', files: '06 files', icon: '☑', color: 'red' },
-  { id: 'research', title: 'Research Resources', description: 'Useful databases, journals and research guides.', files: 'Coming soon', icon: '↗', color: 'slate' },
+  { id: 'pq', title: 'Past Questions', description: 'Previous exam papers categorized by course and year.', files: '38 files', color: 'blue' },
+  { id: 'notes', title: 'Lecture Notes', description: 'Slides and handouts provided by lecturers.', files: '46 files', color: 'green' },
+  { id: 'textbooks', title: 'Textbooks', description: 'Recommended reading materials and reference books.', files: '21 files', color: 'amber' },
+  { id: 'manuals', title: 'Lab Manuals', description: 'Procedures, safety guides and report templates.', files: '15 files', color: 'purple' },
+  { id: 'outlines', title: 'Course Outlines', description: 'Course descriptions, schedules and assessment details.', files: '06 files', color: 'red' },
+  { id: 'research', title: 'Research Resources', description: 'Useful databases, journals and research guides.', files: 'Coming soon', color: 'slate' },
 ]
 
 export const MOCK_RECENT_RESOURCES = [

@@ -1,5 +1,24 @@
 import React, { useState } from 'react'
+import {
+  Beaker,
+  BookOpen,
+  Check,
+  ExternalLink,
+  FileQuestion,
+  FlaskConical,
+  Library,
+  Search,
+} from 'lucide-react'
 import { MOCK_ACADEMIC_CATEGORIES, MOCK_RECENT_RESOURCES } from './mocks'
+
+const CATEGORY_ICONS = {
+  pq: FileQuestion,
+  notes: BookOpen,
+  textbooks: Library,
+  manuals: FlaskConical,
+  outlines: Check,
+  research: ExternalLink,
+}
 
 export default function AcademicHubPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -29,7 +48,7 @@ export default function AcademicHubPage() {
           </p>
         </div>
         <div className="w-full sm:w-64 relative">
-          <span className="absolute left-3 top-2.5 text-[#9ba8ac] text-xs">⌕</span>
+          <Search className="absolute left-3 top-2.5 text-[#9ba8ac]" size={14} aria-hidden="true" />
           <input
             type="text"
             placeholder="Search resources"
@@ -44,6 +63,7 @@ export default function AcademicHubPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {MOCK_ACADEMIC_CATEGORIES.map((cat) => {
           const isSelected = selectedCategory === cat.title
+          const Icon = CATEGORY_ICONS[cat.id] || Beaker
           return (
             <div
               key={cat.id}
@@ -69,7 +89,7 @@ export default function AcademicHubPage() {
                     : 'bg-[#eef2f3] text-[#5b7075]'
                 }`}
               >
-                {cat.icon}
+                <Icon size={19} aria-hidden="true" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-xs font-bold text-[#102a2f] mb-1">{cat.title}</h3>
@@ -77,7 +97,7 @@ export default function AcademicHubPage() {
                   {cat.description}
                 </p>
                 <small className="text-[10px] font-bold text-[#087f8c] flex items-center gap-1">
-                  {cat.files} {isSelected ? '✓ Filtered' : '→'}
+                  {cat.files} {isSelected ? 'Filtered' : 'Open'}
                 </small>
               </div>
             </div>

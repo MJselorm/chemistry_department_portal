@@ -1,23 +1,36 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
+import {
+  Building2,
+  Compass,
+  GraduationCap,
+  Landmark,
+  LayoutGrid,
+  Phone,
+  Shield,
+  User,
+  Users,
+} from 'lucide-react'
 
 const DIRECTORY_LINKS = [
-  { to: '/admin/directory', label: 'Overview', icon: '◫' },
-  { to: '/admin/directory/executives', label: 'Executives', icon: '👥' },
-  { to: '/admin/directory/class-representatives', label: 'Class Reps', icon: '👤' },
-  { to: '/admin/directory/lecturers', label: 'Lecturers', icon: '🎓' },
-  { to: '/admin/directory/courses', label: 'Courses', icon: '📖' },
-  { to: '/admin/directory/clubs', label: 'Clubs', icon: '🧭' },
-  { to: '/admin/directory/committees', label: 'Committees', icon: '🛡' },
-  { to: '/admin/directory/departments', label: 'Departments', icon: '🏛' },
-  { to: '/admin/directory/contacts', label: 'Contacts', icon: '📞' },
+  { to: '/admin/directory', label: 'Overview', icon: LayoutGrid },
+  { to: '/admin/directory/executives', label: 'Executives', icon: Users },
+  { to: '/admin/directory/class-representatives', label: 'Class Reps', icon: User },
+  { to: '/admin/directory/lecturers', label: 'Lecturers', icon: GraduationCap },
+  { to: '/admin/directory/courses', label: 'Courses', icon: Landmark },
+  { to: '/admin/directory/clubs', label: 'Clubs', icon: Compass },
+  { to: '/admin/directory/committees', label: 'Committees', icon: Shield },
+  { to: '/admin/directory/departments', label: 'Departments', icon: Building2 },
+  { to: '/admin/directory/contacts', label: 'Contacts', icon: Phone },
 ]
 
 export default function DirectorySubNav() {
   return (
     <div className="bg-white border border-[#e4ecee] rounded-2xl p-1.5 shadow-xs overflow-x-auto no-scrollbar animate-in fade-in slide-in-from-top-2 duration-300">
       <div className="flex items-center gap-1 min-w-max">
-        {DIRECTORY_LINKS.map((item) => (
+        {DIRECTORY_LINKS.map((item) => {
+          const Icon = item.icon
+          return (
           <NavLink
             key={item.to}
             to={item.to}
@@ -30,10 +43,11 @@ export default function DirectorySubNav() {
               }`
             }
           >
-            <span className="text-xs">{item.icon}</span>
+            <Icon size={13} aria-hidden="true" />
             <span>{item.label}</span>
           </NavLink>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

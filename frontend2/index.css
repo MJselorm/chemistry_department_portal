@@ -3,16 +3,168 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+    --background: #f6f9fa;
+    --foreground: #102a2f;
+    --card: #ffffff;
+    --card-foreground: #102a2f;
+    --muted: #f1f7f7;
+    --muted-foreground: #64777d;
+    --border: #e4ecee;
+    --input: #ffffff;
+    --primary: #087f8c;
+    --primary-foreground: #ffffff;
+    --accent: #087f8c;
+    --accent-soft: #e8f6f7;
+    --header: #ffffff;
+    --sidebar: #ffffff;
+    --sidebar-muted: #fbfdfd;
+    --sidebar-border: #e4ecee;
+    --sidebar-foreground: #102a2f;
+    --sidebar-hover: #f1f7f7;
+    --tooltip: #102a2f;
+    --tooltip-foreground: #ffffff;
+  }
+
+  html.dark {
+    color-scheme: dark;
+    --background: #0f171a;
+    --foreground: #e9f3f5;
+    --card: #172225;
+    --card-foreground: #e9f3f5;
+    --muted: #1f2d31;
+    --muted-foreground: #a7b9be;
+    --border: #2b3b40;
+    --input: #132024;
+    --primary: #24c1cf;
+    --primary-foreground: #06282d;
+    --accent: #35c8d6;
+    --accent-soft: #12373d;
+    --header: #121d20;
+    --sidebar: #121d20;
+    --sidebar-muted: #0f191c;
+    --sidebar-border: #2b3b40;
+    --sidebar-foreground: #edf7f8;
+    --sidebar-hover: #1b2a2e;
+    --tooltip: #edf7f8;
+    --tooltip-foreground: #102023;
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
+    background: var(--background);
   }
   body {
-    @apply font-sans text-ink antialiased;
+    @apply font-sans antialiased;
+    background: var(--background);
+    color: var(--foreground);
   }
   /* Visible keyboard focus everywhere, without the default double ring. */
   :focus-visible {
-    @apply outline-none ring-2 ring-cyan-500 ring-offset-2 ring-offset-white;
+    @apply outline-none ring-2 ring-cyan-500 ring-offset-2;
+    --tw-ring-offset-color: var(--background);
   }
+}
+
+@layer utilities {
+  .shadow-xs {
+    box-shadow: 0 1px 2px rgba(16, 40, 72, 0.06);
+  }
+
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar,
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+html.dark .bg-white,
+html.dark [class*="bg-[#fbfdfd]"],
+html.dark [class*="bg-[#fbfcfc]"],
+html.dark [class*="bg-[#fafcfc]"],
+html.dark [class*="bg-[#f9fbfb]"],
+html.dark [class*="bg-[#f8fbfb]"],
+html.dark [class*="bg-[#f7fafb]"] {
+  background-color: var(--card) !important;
+}
+
+html.dark [class*="bg-[#f6f9fa]"],
+html.dark [class*="bg-[#f0f6ff]"] {
+  background-color: var(--background) !important;
+}
+
+html.dark .bg-gray-50,
+html.dark .bg-gray-100,
+html.dark [class*="bg-[#f1f7f7]"],
+html.dark [class*="bg-[#f2f7f8]"],
+html.dark [class*="bg-[#f0f7f8]"],
+html.dark [class*="bg-[#eef2f3]"] {
+  background-color: var(--muted) !important;
+}
+
+html.dark .border-hair,
+html.dark [class*="border-[#e4ecee]"],
+html.dark [class*="border-[#eef2f3]"],
+html.dark [class*="border-[#edf1f2]"],
+html.dark [class*="border-[#f0f4f5]"],
+html.dark [class*="border-[#f4f7f8]"],
+html.dark [class*="border-[#d9e3e5]"],
+html.dark [class*="border-[#d7e2e4]"],
+html.dark [class*="border-[#dce6e8]"],
+html.dark [class*="border-[#dce7e8]"] {
+  border-color: var(--border) !important;
+}
+
+html.dark .text-ink,
+html.dark [class*="text-[#102a2f]"],
+html.dark [class*="text-[#0A1B26]"] {
+  color: var(--foreground) !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-600,
+html.dark .text-slate-700,
+html.dark .text-gray-500,
+html.dark [class*="text-[#64777d]"],
+html.dark [class*="text-[#65767b]"],
+html.dark [class*="text-[#728388]"],
+html.dark [class*="text-[#74878b]"],
+html.dark [class*="text-[#7d9297]"],
+html.dark [class*="text-[#8da0a5]"],
+html.dark [class*="text-[#91a0a5]"],
+html.dark [class*="text-[#93a1a5]"],
+html.dark [class*="text-[#94a1a5]"],
+html.dark [class*="text-[#98a5a8]"],
+html.dark [class*="text-[#9aa7aa]"],
+html.dark [class*="text-[#9ba8ac]"],
+html.dark [class*="text-[#a1adb0]"] {
+  color: var(--muted-foreground) !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #7f9499 !important;
+}
+
+html.dark table,
+html.dark tbody,
+html.dark thead,
+html.dark tr {
+  border-color: var(--border) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

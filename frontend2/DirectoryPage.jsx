@@ -15,6 +15,7 @@ import {
   ExternalLink,
   ChevronRight,
   AlertCircle,
+  X,
 } from 'lucide-react'
 import { DIRECTORY_CATEGORIES } from './directory/directoryConfig'
 import { directoryApi } from './directory/directoryApi'
@@ -199,8 +200,9 @@ export default function DirectoryPage() {
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-2.5 top-2.5 text-[#9ba8ac] hover:text-[#102a2f] text-xs font-bold"
+                aria-label="Clear directory search"
               >
-                ✕
+                <X size={13} aria-hidden="true" />
               </button>
             )}
           </div>

@@ -1,8 +1,9 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { Bell, Menu, Moon, Sun } from 'lucide-react'
 import { useAuth } from './AuthContext'
 
-export default function Topbar({ title, subtitle, onOpenSidebar }) {
+export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onToggleTheme }) {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   
@@ -25,18 +26,18 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
     .toUpperCase() || (isAdmin ? 'AD' : 'ST')
 
   return (
-    <header className="h-16 bg-white/95 backdrop-blur border-b border-[#e4ecee] flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30">
+    <header className="h-16 bg-[var(--header)]/95 backdrop-blur border-b border-[var(--border)] flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30 transition-colors duration-200">
       <div className="flex items-center gap-3">
         <button
           onClick={onOpenSidebar}
-          className="lg:hidden p-2 rounded-lg text-[#728388] hover:bg-gray-100 transition-colors"
+          className="lg:hidden p-2 rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
           aria-label="Open navigation menu"
         >
-          ☰
+          <Menu size={20} aria-hidden="true" />
         </button>
         <div>
           <div className="flex items-center gap-2">
-            <strong className="block text-sm sm:text-base font-bold text-[#102a2f] leading-none">
+            <strong className="block text-sm sm:text-base font-bold text-[var(--foreground)] leading-none">
               {displayTitle}
             </strong>
             <span
@@ -49,26 +50,36 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
               {isAdmin ? 'Admin' : 'Student'}
             </span>
           </div>
-          <small className="block text-[10px] sm:text-[11px] text-[#93a1a5] mt-0.5">
+          <small className="block text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-0.5">
             {displaySubtitle}
           </small>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Placeholder: Notifications */}
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          className="w-8 h-8 rounded-xl border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
+          aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDarkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+        </button>
+
         <button
           onClick={() => alert('Notifications (Placeholder API: /notifications)')}
-          className="w-8 h-8 rounded-xl border border-[#e4ecee] grid place-items-center text-[#728388] hover:bg-gray-50 text-sm transition-colors"
+          className="w-8 h-8 rounded-xl border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
+          aria-label="Open notifications"
           title="Notifications"
         >
-          ♧
+          <Bell size={16} aria-hidden="true" />
         </button>
 
         {/* User profile chip */}
         <Link
           to="/profile"
-          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-[#f1f7f7] border border-transparent hover:border-[#e4ecee] transition-all"
+          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-[var(--muted)] border border-transparent hover:border-[var(--border)] transition-all"
         >
           <span
             className={`w-8 h-8 rounded-full font-extrabold text-xs grid place-items-center ${
@@ -79,7 +90,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
           >
             {initials}
           </span>
-          <span className="hidden sm:block text-xs font-bold text-[#102a2f] max-w-[140px] truncate">
+          <span className="hidden sm:block text-xs font-bold text-[var(--foreground)] max-w-[140px] truncate">
             {displayName}
           </span>
         </Link>
