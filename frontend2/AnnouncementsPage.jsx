@@ -117,7 +117,7 @@ export default function AnnouncementsPage() {
     if (!window.confirm(`Are you sure you want to delete "${title}"?`)) return
     setDeletingId(id)
     try {
-      await api.delete(ENDPOINTS.adminDeleteAnnouncement(id))
+      await api.del(ENDPOINTS.adminDeleteAnnouncement(id))
       setAnnouncements((prev) => prev.filter((a) => a.id !== id))
       showToast('success', 'Announcement deleted successfully.')
     } catch (err) {

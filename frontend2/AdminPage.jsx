@@ -152,7 +152,7 @@ export default function AdminPage() {
     }
     setDeletingId(id)
     try {
-      await api.delete(ENDPOINTS.adminDeleteAnnouncement(id))
+      await api.del(ENDPOINTS.adminDeleteAnnouncement(id))
       setAnnouncements((prev) => prev.filter((a) => a.id !== id))
       showFeedback('Announcement deleted successfully.')
     } catch (err) {
@@ -401,7 +401,7 @@ export default function AdminPage() {
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              showFeedback(`Event "${eventForm.title}" drafted! (Placeholder API: POST /admin/events)`)
+              showFeedback(`Event "${eventForm.title}" was captured for this session. Publishing is not available yet.`)
               setEventForm({ title: '', type: 'Seminar', datetime: '', venue: '', description: '' })
             }}
             className="space-y-4"
@@ -497,7 +497,7 @@ export default function AdminPage() {
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              showFeedback(`Resource "${resourceForm.title}" submitted! (Placeholder API: POST /admin/resources)`)
+              showFeedback(`Resource "${resourceForm.title}" was captured for this session. Upload publishing is not available yet.`)
               setResourceForm({ title: '', category: 'Past Questions', course: '', year: '2026/2027' })
             }}
             className="space-y-4"

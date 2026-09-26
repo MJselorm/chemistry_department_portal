@@ -68,7 +68,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
         </button>
 
         <button
-          onClick={() => alert('Notifications (Placeholder API: /notifications)')}
+          onClick={() => alert('Portal notifications are not available yet.')}
           className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
           aria-label="Open notifications"
           title="Notifications"

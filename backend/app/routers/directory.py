@@ -1,16 +1,21 @@
-from typing import Annotated, Any
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Request, status
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..security import require_admin
+from ..models import User
+from ..security import get_current_user, require_admin
 from .. import directory_models as m
 from .. import directory_schemas as s
 from ..storage import upload_directory_image
 
-router=APIRouter(prefix="/api/directory",tags=["directory"])
-DB=Annotated[Session,Depends(get_db)]; Admin=Annotated[Any,Depends(require_admin)]
+router=APIRouter(
+    prefix="/api/directory",
+    tags=["directory"],
+    dependencies=[Depends(get_current_user)],
+)
+DB=Annotated[Session,Depends(get_db)]; Admin=Annotated[User,Depends(require_admin)]; Current=Annotated[User,Depends(get_current_user)]
 def one(session, model, ident):
     obj=session.get(model,ident)
     if not obj: raise HTTPException(404,"Directory record not found.")
@@ -18,8 +23,15 @@ def one(session, model, ident):
 def save(session,obj):
     try: session.add(obj); session.commit(); session.refresh(obj); return obj
     except IntegrityError as e: session.rollback(); raise HTTPException(409,"A conflicting directory record already exists.") from e
-def listing(model, session, skip, limit, filters):
+def visible_one(session, model, ident, viewer):
+    obj=one(session,model,ident)
+    if viewer.role != "admin" and hasattr(obj,"is_active") and not obj.is_active:
+        raise HTTPException(404,"Directory record not found.")
+    return obj
+def listing(model, session, skip, limit, filters, viewer=None):
     q=session.query(model)
+    if viewer is not None and viewer.role != "admin" and hasattr(model,"is_active"):
+        q=q.filter(model.is_active==True)
     for key,value in filters.items():
         if value is not None and hasattr(model,key): q=q.filter(getattr(model,key)==value)
     total=q.count(); return {"items":q.offset(skip).limit(limit).all(),"total":total,"skip":skip,"limit":limit}
@@ -33,24 +45,11 @@ async def upload_image(file: UploadFile = File(...), _: Admin = None):
     """Upload an image once, then use its returned URL in a directory create/update payload."""
     return {"url": await upload_directory_image(file)}
 
-# Explicit routes preserve clear OpenAPI paths while using shared safe CRUD helpers.
-def crud(prefix, model, create, update, filters=()):
-    @router.get(prefix)
-    def get_all(session:DB,skip:int=Query(0,ge=0),limit:int=Query(50,ge=1,le=100),**kwargs): return listing(model,session,skip,limit,kwargs)
-    @router.get(prefix+"/{record_id}")
-    def get_one(record_id:int,session:DB): return one(session,model,record_id)
-    @router.post(prefix,status_code=201)
-    def create_one(payload:create,session:DB,_:Admin): return save(session,model(**payload.model_dump()))
-    @router.patch(prefix+"/{record_id}")
-    def update_one(record_id:int,payload:update,session:DB,_:Admin): return patch(session,one(session,model,record_id),payload)
-    @router.delete(prefix+"/{record_id}",status_code=204)
-    def delete_one(record_id:int,session:DB,_:Admin): remove(session,one(session,model,record_id))
-
 # FastAPI cannot synthesize **kwargs query parameters, so typed collection routes follow.
 @router.get('/departments')
-def departments(session:DB,skip:int=0,limit:int=50,is_active:bool|None=None): return listing(m.Department,session,skip,limit,{"is_active":is_active})
+def departments(session:DB,viewer:Current,skip:int=Query(0,ge=0),limit:int=Query(50,ge=1,le=100),is_active:bool|None=None): return listing(m.Department,session,skip,limit,{"is_active":is_active},viewer)
 @router.get('/departments/{record_id}')
-def department(record_id:int,session:DB): return one(session,m.Department,record_id)
+def department(record_id:int,session:DB,viewer:Current): return visible_one(session,m.Department,record_id,viewer)
 @router.post('/departments',status_code=201)
 def create_department(payload:s.DepartmentCreate,session:DB,_:Admin): return save(session,m.Department(**payload.model_dump()))
 @router.patch('/departments/{record_id}')
@@ -61,14 +60,14 @@ def delete_department(record_id:int,session:DB,_:Admin): remove(session,one(sess
 def resource_routes(path,model,create,update, filter_fields):
     # Runtime registration with typed body dependencies; filtering remains generic via documented query-free paging.
     @router.get(path)
-    def all_(request:Request,session:DB,skip:int=Query(0,ge=0),limit:int=Query(50,ge=1,le=100),is_active:bool|None=None):
+    def all_(request:Request,session:DB,viewer:Current,skip:int=Query(0,ge=0),limit:int=Query(50,ge=1,le=100),is_active:bool|None=None):
         filters={"is_active":is_active}
         for field in filter_fields:
             value=request.query_params.get(field)
             if value is not None: filters[field]=value
-        return listing(model,session,skip,limit,filters)
+        return listing(model,session,skip,limit,filters,viewer)
     @router.get(path+'/{record_id}')
-    def one_(record_id:int,session:DB): return one(session,model,record_id)
+    def one_(record_id:int,session:DB,viewer:Current): return visible_one(session,model,record_id,viewer)
     @router.post(path,status_code=201)
     def create_(payload:create,session:DB,_:Admin): return save(session,model(**payload.model_dump()))
     @router.patch(path+'/{record_id}')
@@ -87,7 +86,7 @@ for args in [
 ]: resource_routes(*args)
 
 @router.get('/lecturers/{lecturer_id}/consultations')
-def consultations(lecturer_id:int,session:DB,skip:int=0,limit:int=50): one(session,m.Lecturer,lecturer_id); return listing(m.LecturerConsultation,session,skip,limit,{"lecturer_id":lecturer_id})
+def consultations(lecturer_id:int,session:DB,viewer:Current,skip:int=Query(0,ge=0),limit:int=Query(50,ge=1,le=100)): visible_one(session,m.Lecturer,lecturer_id,viewer); return listing(m.LecturerConsultation,session,skip,limit,{"lecturer_id":lecturer_id},viewer)
 @router.post('/lecturers/{lecturer_id}/consultations',status_code=201)
 def add_consultation(lecturer_id:int,payload:s.ConsultationCreate,session:DB,_:Admin): one(session,m.Lecturer,lecturer_id); return save(session,m.LecturerConsultation(lecturer_id=lecturer_id,**payload.model_dump()))
 @router.patch('/consultations/{record_id}')
@@ -95,7 +94,7 @@ def update_consultation(record_id:int,payload:s.ConsultationUpdate,session:DB,_:
 @router.delete('/consultations/{record_id}',status_code=204)
 def delete_consultation(record_id:int,session:DB,_:Admin): remove(session,one(session,m.LecturerConsultation,record_id))
 @router.get('/committees/{committee_id}/members')
-def members(committee_id:int,session:DB): one(session,m.Committee,committee_id); return session.query(m.CommitteeMember).filter_by(committee_id=committee_id).all()
+def members(committee_id:int,session:DB,viewer:Current): visible_one(session,m.Committee,committee_id,viewer); return session.query(m.CommitteeMember).filter_by(committee_id=committee_id).limit(100).all()
 @router.post('/committees/{committee_id}/members',status_code=201)
 def add_member(committee_id:int,payload:s.CommitteeMemberCreate,session:DB,_:Admin): one(session,m.Committee,committee_id); return save(session,m.CommitteeMember(committee_id=committee_id,**payload.model_dump()))
 @router.patch('/committee-members/{record_id}')

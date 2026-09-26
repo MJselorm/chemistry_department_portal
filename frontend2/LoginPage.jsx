@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Lock, Mail, Check } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import { GscsLogo, KnustLogo } from './Logos'
 
 const STATS = [
-  { value: '100 Years', label: 'Of scholarly advancement', accent: false },
-  { value: '24+ Labs', label: 'Under research collaboration', accent: true },
-  { value: '1.2k', label: 'Active global alumni', accent: false },
+  { value: 'Academic', label: 'Resources and schedules', accent: false },
+  { value: 'Department', label: 'Contacts and notices', accent: true },
+  { value: 'Community', label: 'Events and representation', accent: false },
 ]
 
 export default function LoginPage() {
@@ -22,17 +22,24 @@ export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = location.state?.from?.pathname || '/dashboard'
+  const requestedPath = location.state?.from?.pathname
+  const from =
+    typeof requestedPath === 'string' &&
+    requestedPath.startsWith('/') &&
+    !requestedPath.startsWith('//') &&
+    !requestedPath.includes('\\')
+      ? requestedPath
+      : '/dashboard'
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setSubmitting(true)
     try {
-      await login(email.trim(), password)
+      await login(email.trim(), password, keepSignedIn)
       navigate(from, { replace: true })
-    } catch (err) {
-      setError(err.message || 'Those credentials did not match our records.')
+    } catch {
+      setError('We could not sign you in with those credentials. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -43,13 +50,13 @@ export default function LoginPage() {
     setGoogleSubmitting(true)
     try {
       if (loginWithGoogle) {
-        await loginWithGoogle()
+        await loginWithGoogle(keepSignedIn)
       } else {
         await login('chemist.scholar@gmail.com', 'google-auth')
       }
       navigate(from, { replace: true })
-    } catch (err) {
-      setError(err.message || 'Google sign-in failed. Please try again.')
+    } catch {
+      setError('Google sign-in could not be completed. Please try again.')
     } finally {
       setGoogleSubmitting(false)
     }
@@ -84,9 +91,9 @@ export default function LoginPage() {
             Chemical Society
           </h1>
           <p className="mt-7 max-w-[34rem] text-[0.95rem] leading-[1.85] text-white/70">
-            Since 1924, our society has connected aspiring chemists, professional researchers, and
-            industry pioneers. We coordinate weekly laboratory colloquiums, support organic research
-            publications, and steward the frontiers of molecular science.
+            Chemistry Hub brings students, lecturers, representatives, and departmental information
+            into one academic workspace. Access announcements, events, academic resources, and the
+            directory with your authorized account.
           </p>
           <p className="mt-8 flex items-center gap-4 text-[0.68rem] font-semibold tracking-[0.2em] text-[#e8c95b]">
             <span className="h-px w-8 bg-[#e8c95b]" />
@@ -167,12 +174,12 @@ export default function LoginPage() {
                 </span>
                 Keep me signed in
               </label>
-              <a
-                href="/forgot-password"
+              <Link
+                to="/forgot-password"
                 className="text-[0.82rem] font-medium text-primary hover:underline"
               >
                 Forgot password?
-              </a>
+              </Link>
             </div>
 
             {error && (
@@ -208,15 +215,16 @@ export default function LoginPage() {
           </button>
 
           <p className="mt-7 text-center text-[0.82rem] text-slate-500">
-            Not a member yet?{' '}
-            <a href="/register" className="font-semibold text-primary hover:underline">
-              Create account
-            </a>
+            Portal access is limited to authorized Chemistry Hub accounts.
           </p>
         </div>
 
         <footer className="mx-auto mt-16 max-w-sm text-center text-[0.72rem] leading-relaxed text-slate-400">
-          <p>Authorized access only. Subject to university IT usage policy.</p>
+          <p>Authorized access only. Applicable institutional policies govern use.</p>
+          <p className="my-1 flex items-center justify-center gap-3">
+            <Link to="/privacy" className="hover:text-primary hover:underline">Privacy</Link>
+            <Link to="/terms" className="hover:text-primary hover:underline">Terms</Link>
+          </p>
           <p>© {new Date().getFullYear()} Ghana Students' Chemical Society, KNUST</p>
         </footer>
       </section>

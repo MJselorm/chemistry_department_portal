@@ -23,7 +23,7 @@ export default function EventsPage() {
 
   const handleRegister = (event) => {
     setRegisteredIds((prev) => ({ ...prev, [event.id]: true }))
-    alert(`Successfully registered for "${event.title}"! (Placeholder API: POST /events/${event.id}/register)`)
+    alert(`"${event.title}" is marked in this session. Event registration is not connected yet.`)
   }
 
   const handleCheckIn = (e) => {
@@ -31,7 +31,7 @@ export default function EventsPage() {
     if (!checkInCode.trim()) return
     setCheckInStatus({
       success: true,
-      message: `Checked in code "${checkInCode.trim().toUpperCase()}" successfully! (Placeholder API: POST /events/checkin)`
+      message: `Code "${checkInCode.trim().toUpperCase()}" was validated locally. Attendance check-in is not connected yet.`
     })
     setCheckInCode('')
   }
@@ -46,7 +46,7 @@ export default function EventsPage() {
           <p className="text-xs text-muted-foreground mt-1">Discover seminars, workshops, conferences and student activities.</p>
         </div>
         <button
-          onClick={() => alert('Add to calendar feature (Placeholder: iCal / Google Calendar export)')}
+          onClick={() => alert('Calendar export is not available yet.')}
           className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold self-start sm:self-auto transition-colors inline-flex items-center gap-2"
         >
           <CalendarPlus size={14} aria-hidden="true" />

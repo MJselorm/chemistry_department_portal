@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export default function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true)
@@ -18,12 +19,12 @@ export default function SettingsPage() {
       <div>
         <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">PREFERENCES</span>
         <h1 className="text-2xl font-bold text-foreground mt-1">Settings</h1>
-        <p className="text-xs text-muted-foreground mt-1">Configure your portal experience and notifications.</p>
+        <p className="text-xs text-muted-foreground mt-1">Preview notification and directory preferences for this session.</p>
       </div>
 
       {savedNotice && (
         <div className="p-3 rounded-xl bg-[var(--success-soft)] border border-[var(--success-border)] text-success text-xs font-semibold">
-          Preferences updated (Placeholder API: PATCH /users/settings)
+          Preference changed for this session. Server persistence is not yet available.
         </div>
       )}
 
@@ -76,6 +77,18 @@ export default function SettingsPage() {
             className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
           />
         </label>
+      </section>
+
+      <section className="border-t border-border pt-5">
+        <h2 className="text-sm font-bold text-foreground">Privacy and account data</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Review how portal data is handled or contact department administration to request access,
+          correction, or deletion after identity verification.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-4 text-xs font-bold text-primary">
+          <Link to="/privacy" className="hover:underline">Privacy Notice</Link>
+          <Link to="/terms" className="hover:underline">Terms of Use</Link>
+        </div>
       </section>
     </div>
   )

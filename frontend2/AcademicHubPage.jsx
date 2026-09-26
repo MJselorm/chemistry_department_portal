@@ -33,7 +33,7 @@ export default function AcademicHubPage() {
   })
 
   const handleDownload = (resource) => {
-    alert(`Downloading "${resource.name}" (${resource.meta})... (Placeholder API: GET /academic/resources/${resource.id}/download)`)
+    alert(`"${resource.name}" is listed for preview, but resource downloads are not available yet.`)
   }
 
   return (

@@ -1,5 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth'
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  onIdTokenChanged,
+  sendPasswordResetEmail,
+  setPersistence,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth'
 import { api, tokenStore } from './client'
 import { ENDPOINTS } from './endpoints'
 import { firebaseAuth, googleProvider } from './firebase'
@@ -12,7 +21,7 @@ export function AuthProvider({ children }) {
 
   // Firebase restores its own browser session, then the backend verifies and syncs its ID token.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+    const unsubscribe = onIdTokenChanged(firebaseAuth, async (firebaseUser) => {
       if (!firebaseUser) {
         tokenStore.clear()
         setUser(null)
@@ -33,7 +42,11 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [])
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email, password, keepSignedIn = true) => {
+    await setPersistence(
+      firebaseAuth,
+      keepSignedIn ? browserLocalPersistence : browserSessionPersistence
+    )
     const credential = await signInWithEmailAndPassword(firebaseAuth, email, password)
     tokenStore.set(await credential.user.getIdToken())
     await api.post(ENDPOINTS.sync)
@@ -42,7 +55,11 @@ export function AuthProvider({ children }) {
     return profile
   }, [])
 
-  const loginWithGoogle = useCallback(async () => {
+  const loginWithGoogle = useCallback(async (keepSignedIn = true) => {
+    await setPersistence(
+      firebaseAuth,
+      keepSignedIn ? browserLocalPersistence : browserSessionPersistence
+    )
     const credential = await signInWithPopup(firebaseAuth, googleProvider)
     tokenStore.set(await credential.user.getIdToken())
     await api.post(ENDPOINTS.sync)
@@ -57,15 +74,22 @@ export function AuthProvider({ children }) {
     return updated
   }, [])
 
-  const logout = useCallback(() => {
-    signOut(firebaseAuth)
-    tokenStore.clear()
-    setUser(null)
+  const requestPasswordReset = useCallback(async (email) => {
+    await sendPasswordResetEmail(firebaseAuth, email)
+  }, [])
+
+  const logout = useCallback(async () => {
+    try {
+      await signOut(firebaseAuth)
+    } finally {
+      tokenStore.clear()
+      setUser(null)
+    }
   }, [])
 
   const value = useMemo(
-    () => ({ user, booting, login, loginWithGoogle, updateProfile, logout }),
-    [user, booting, login, loginWithGoogle, updateProfile, logout],
+    () => ({ user, booting, login, loginWithGoogle, requestPasswordReset, updateProfile, logout }),
+    [user, booting, login, loginWithGoogle, requestPasswordReset, updateProfile, logout],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

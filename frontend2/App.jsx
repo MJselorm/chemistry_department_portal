@@ -7,6 +7,8 @@ import PortalLayout from './PortalLayout'
 import { ToastProvider } from './directory/Toast'
 
 const LoginPage = lazy(() => import('./LoginPage'))
+const ForgotPasswordPage = lazy(() => import('./ForgotPasswordPage'))
+const LegalPage = lazy(() => import('./LegalPage'))
 const DashboardPage = lazy(() => import('./DashboardPage'))
 const EventsPage = lazy(() => import('./EventsPage'))
 const AcademicHubPage = lazy(() => import('./AcademicHubPage'))
@@ -38,6 +40,9 @@ export default function App() {
           <Routes>
           {/* Landing / Sign In Page (Preserved) */}
           <Route path="/" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/privacy" element={<LegalPage type="privacy" />} />
+          <Route path="/terms" element={<LegalPage type="terms" />} />
 
           {/* Authenticated Department Portal Routes */}
           <Route
