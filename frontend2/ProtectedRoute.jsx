@@ -7,8 +7,11 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
 
   if (booting) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas text-slate-400">
-        Checking your session…
+      <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center" role="status">
+        <div>
+          <span className="mx-auto block h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" aria-hidden="true" />
+          <p className="mt-3 text-sm font-medium text-muted-foreground">Checking your session…</p>
+        </div>
       </div>
     )
   }

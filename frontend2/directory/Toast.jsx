@@ -24,7 +24,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Toast container */}
-      <div className="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+      <div className="fixed left-0 right-0 top-3 z-[80] flex w-full flex-col gap-2 px-3 pointer-events-none sm:left-auto sm:right-5 sm:top-5 sm:max-w-sm sm:px-0" aria-live="polite" aria-atomic="true">
         {toasts.map((t) => {
           const isSuccess = t.type === 'success'
           const isError = t.type === 'error'
@@ -32,6 +32,7 @@ export function ToastProvider({ children }) {
           return (
             <div
               key={t.id}
+              role={isError ? 'alert' : 'status'}
               className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border shadow-card transition-all transform animate-in fade-in slide-in-from-top-2 text-xs font-medium ${
                 isSuccess
                   ? 'bg-[var(--success-soft)] border-[var(--success-border)] text-success'
@@ -48,7 +49,7 @@ export function ToastProvider({ children }) {
               <div className="flex-1 break-words leading-relaxed">{t.message}</div>
               <button
                 onClick={() => removeToast(t.id)}
-                className="opacity-70 hover:opacity-100 p-0.5 ml-1 flex-shrink-0 text-current"
+                className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-current opacity-70 hover:bg-black/5 hover:opacity-100"
                 aria-label="Close notification"
               >
                 <X size={14} />

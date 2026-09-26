@@ -42,11 +42,21 @@ export default function DashboardPage() {
   const [previewAsStudent, setPreviewAsStudent] = useState(false)
   const isDisplayingAdmin = isActualAdmin && !previewAsStudent
   const [announcements, setAnnouncements] = useState([])
+  const [announcementsError, setAnnouncementsError] = useState(false)
 
-  useEffect(() => {
+  const loadAnnouncements = () => {
+    setAnnouncementsError(false)
     api.get(ENDPOINTS.announcements)
       .then((items) => setAnnouncements(items.slice(0, 4)))
-      .catch(() => setAnnouncements([]))
+      .catch((error) => {
+        console.error('Failed to load dashboard announcements:', error)
+        setAnnouncements([])
+        setAnnouncementsError(true)
+      })
+  }
+
+  useEffect(() => {
+    loadAnnouncements()
   }, [])
 
   return (
@@ -196,7 +206,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── STAT CARDS ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {MOCK_DASHBOARD_STATS.map((stat) => {
           const Icon = STAT_ICONS[stat.id] || FolderOpen
           return (
@@ -271,7 +281,15 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="divide-y divide-[#eef2f3]">
-            {announcements.length === 0 && (
+            {announcementsError && (
+              <div className="flex items-center justify-between gap-3 py-3 text-[11px] text-destructive">
+                <span>Announcements could not be loaded.</span>
+                <button type="button" onClick={loadAnnouncements} className="font-bold underline">
+                  Retry
+                </button>
+              </div>
+            )}
+            {!announcementsError && announcements.length === 0 && (
               <p className="py-3 text-[11px] text-muted-foreground">No announcements have been published yet.</p>
             )}
             {announcements.map((item) => (
@@ -307,7 +325,7 @@ export default function DashboardPage() {
 
         {isDisplayingAdmin ? (
           /* Admin Quick Access */
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-4 gap-3">
             <Link
               to="/admin?tab=events"
               className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
@@ -351,7 +369,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           /* Student Quick Access */
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-4 gap-3">
             <Link
               to="/academic"
               className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"

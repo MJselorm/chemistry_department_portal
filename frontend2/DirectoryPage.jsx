@@ -15,6 +15,7 @@ import {
   ExternalLink,
   ChevronRight,
   AlertCircle,
+  Info,
   X,
 } from 'lucide-react'
 import { DIRECTORY_CATEGORIES } from './directory/directoryConfig'
@@ -89,7 +90,8 @@ export default function DirectoryPage() {
       const items = Array.isArray(res) ? res : res?.items || []
       setCache((prev) => ({ ...prev, [catKey]: items }))
     } catch (err) {
-      setError(err.message || 'Unable to load directory data. Please check your network.')
+      console.error('Unable to load directory data:', err)
+      setError('Unable to load directory data right now. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -191,6 +193,7 @@ export default function DirectoryPage() {
             <Search className="absolute left-3 top-2.5 text-[#9ba8ac]" size={14} />
             <input
               type="text"
+              aria-label={`Search ${activeCategory?.plural || 'directory'}`}
               placeholder={`Search ${activeCategory?.plural || 'directory'}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -209,8 +212,9 @@ export default function DirectoryPage() {
 
           <button
             onClick={handleRefresh}
-            className="p-2 rounded-xl border border-border bg-surface text-[#65767b] hover:text-primary hover:bg-[#f3f8f9] transition-colors shadow-xs"
+            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl border border-border bg-surface text-[#65767b] hover:text-primary hover:bg-[#f3f8f9] transition-colors shadow-xs"
             title="Refresh directory records"
+            aria-label="Refresh directory records"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -378,6 +382,8 @@ export default function DirectoryPage() {
                       <img
                         src={photoUrl}
                         alt={displayName}
+                        loading="lazy"
+                        decoding="async"
                         className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border border-border"
                       />
                     ) : (
@@ -414,8 +420,9 @@ export default function DirectoryPage() {
                     {email && (
                       <a
                         href={`mailto:${email}`}
-                        className="w-8 h-8 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
+                        className="w-9 h-9 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
                         title={`Email ${displayName}`}
+                        aria-label={`Email ${displayName}`}
                       >
                         <Mail size={13} />
                       </a>
@@ -423,8 +430,9 @@ export default function DirectoryPage() {
                     {phone && (
                       <a
                         href={`tel:${phone}`}
-                        className="w-8 h-8 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
+                        className="w-9 h-9 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
                         title={`Call ${displayName}`}
+                        aria-label={`Call ${displayName}`}
                       >
                         <Phone size={13} />
                       </a>
@@ -438,8 +446,17 @@ export default function DirectoryPage() {
               return (
                 <article
                   key={item.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View details for ${item.course_code} ${item.course_name}`}
                   onClick={() => handleOpenRecord(item)}
-                  className="bg-surface border border-border rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:border-[var(--primary-border)] cursor-pointer transition-all group"
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      handleOpenRecord(item)
+                    }
+                  }}
+                  className="bg-surface border border-border rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:border-[var(--primary-border)] cursor-pointer transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
@@ -481,6 +498,8 @@ export default function DirectoryPage() {
                         <img
                           src={photoUrl}
                           alt={item.name}
+                          loading="lazy"
+                          decoding="async"
                           className="w-12 h-12 rounded-xl object-cover border border-border flex-shrink-0"
                         />
                       ) : (
@@ -524,8 +543,9 @@ export default function DirectoryPage() {
                       {email && (
                         <a
                           href={`mailto:${email}`}
-                          className="w-7 h-7 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
+                          className="w-9 h-9 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
                           title="Email Club"
+                          aria-label={`Email ${item.name}`}
                         >
                           <Mail size={12} />
                         </a>
@@ -533,8 +553,9 @@ export default function DirectoryPage() {
                       {phone && (
                         <a
                           href={`tel:${phone}`}
-                          className="w-7 h-7 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
+                          className="w-9 h-9 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
                           title="Call Contact"
+                          aria-label={`Call ${item.name}`}
                         >
                           <Phone size={12} />
                         </a>
@@ -636,8 +657,9 @@ export default function DirectoryPage() {
                       {email && (
                         <a
                           href={`mailto:${email}`}
-                          className="w-7 h-7 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
+                          className="w-9 h-9 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
                           title="Send Email"
+                          aria-label={`Email ${item.name}`}
                         >
                           <Mail size={12} />
                         </a>
@@ -645,8 +667,9 @@ export default function DirectoryPage() {
                       {phone && (
                         <a
                           href={`tel:${phone}`}
-                          className="w-7 h-7 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
+                          className="w-9 h-9 rounded-full bg-surface-secondary text-[#5c7277] hover:bg-primary hover:text-white grid place-items-center text-xs transition-colors"
                           title="Call Phone"
+                          aria-label={`Call ${item.name}`}
                         >
                           <Phone size={12} />
                         </a>
@@ -677,6 +700,8 @@ export default function DirectoryPage() {
                     <img
                       src={photoUrl}
                       alt={item.name}
+                      loading="lazy"
+                      decoding="async"
                       className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border border-border"
                     />
                   ) : (
@@ -706,8 +731,9 @@ export default function DirectoryPage() {
                   {email && (
                     <a
                       href={`mailto:${email}`}
-                      className="w-8 h-8 rounded-full bg-[#f2f6f6] text-[#667a7f] hover:bg-[var(--primary-soft)] hover:text-primary grid place-items-center text-xs transition-colors"
+                      className="w-9 h-9 rounded-full bg-[#f2f6f6] text-[#667a7f] hover:bg-[var(--primary-soft)] hover:text-primary grid place-items-center text-xs transition-colors"
                       title={`Email ${item.name}`}
+                      aria-label={`Email ${item.name}`}
                     >
                       <Mail size={13} />
                     </a>
@@ -715,18 +741,20 @@ export default function DirectoryPage() {
                   {phone && (
                     <a
                       href={`tel:${phone}`}
-                      className="w-8 h-8 rounded-full bg-[#f2f6f6] text-[#667a7f] hover:bg-[var(--primary-soft)] hover:text-primary grid place-items-center text-xs transition-colors"
+                      className="w-9 h-9 rounded-full bg-[#f2f6f6] text-[#667a7f] hover:bg-[var(--primary-soft)] hover:text-primary grid place-items-center text-xs transition-colors"
                       title={`Call ${item.name}`}
+                      aria-label={`Call ${item.name}`}
                     >
                       <Phone size={13} />
                     </a>
                   )}
                   <button
                     onClick={() => handleOpenRecord(item)}
-                    className="w-8 h-8 rounded-full bg-[#f2f6f6] text-[#667a7f] hover:bg-[var(--primary-soft)] hover:text-primary grid place-items-center text-xs transition-colors font-bold"
+                    className="w-9 h-9 rounded-full bg-[#f2f6f6] text-[#667a7f] hover:bg-[var(--primary-soft)] hover:text-primary grid place-items-center text-xs transition-colors font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     title="View details"
+                    aria-label={`View details for ${item.name}`}
                   >
-                    ℹ
+                    <Info size={15} aria-hidden="true" />
                   </button>
                 </div>
               </article>

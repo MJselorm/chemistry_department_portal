@@ -51,6 +51,7 @@ export default function AcademicHubPage() {
           <Search className="absolute left-3 top-2.5 text-[#9ba8ac]" size={14} aria-hidden="true" />
           <input
             type="text"
+            aria-label="Search academic resources"
             placeholder="Search resources"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -65,10 +66,12 @@ export default function AcademicHubPage() {
           const isSelected = selectedCategory === cat.title
           const Icon = CATEGORY_ICONS[cat.id] || Beaker
           return (
-            <div
+            <button
+              type="button"
               key={cat.id}
               onClick={() => setSelectedCategory(isSelected ? null : cat.title)}
-              className={`p-4 bg-surface border rounded-2xl shadow-sm cursor-pointer flex gap-3.5 items-start transition-all ${
+              aria-pressed={isSelected}
+              className={`w-full p-4 bg-surface border rounded-2xl shadow-sm text-left flex gap-3.5 items-start transition-all ${
                 isSelected
                   ? 'border-primary ring-2 ring-[var(--primary-border)]'
                   : 'border-border hover:border-[var(--primary-border)]'
@@ -100,7 +103,7 @@ export default function AcademicHubPage() {
                   {cat.files} {isSelected ? 'Filtered' : 'Open'}
                 </small>
               </div>
-            </div>
+            </button>
           )
         })}
       </div>

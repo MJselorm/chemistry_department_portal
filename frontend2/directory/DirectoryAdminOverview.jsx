@@ -189,6 +189,7 @@ export default function DirectoryAdminOverview() {
             <Search size={15} className="absolute left-3.5 top-3 text-[#9ba8ac]" />
             <input
               type="text"
+              aria-label="Search directory management records"
               placeholder="Search directories, courses..."
               value={searchQuery}
               onChange={(e) => {
@@ -205,7 +206,7 @@ export default function DirectoryAdminOverview() {
 
           {/* Search Dropdown Results */}
           {showResults && searchResults && (
-            <div className="absolute top-full mt-2 left-0 right-0 bg-surface rounded-2xl border border-border shadow-card z-50 max-h-96 overflow-y-auto p-3 space-y-3">
+            <div className="absolute top-full mt-2 left-0 right-0 bg-surface rounded-2xl border border-border shadow-card z-[60] max-h-96 overflow-y-auto p-3 space-y-3">
               <div className="flex items-center justify-between text-[11px] text-muted-foreground px-2 border-b border-[#f0f4f5] pb-2">
                 <span>Search results ({totalSearchResultsCount})</span>
                 <button

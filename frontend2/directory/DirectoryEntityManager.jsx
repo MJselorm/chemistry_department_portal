@@ -260,6 +260,7 @@ export default function DirectoryEntityManager({ categoryKey }) {
             disabled={loading}
             className="p-2 rounded-xl border border-border bg-surface hover:bg-gray-50 text-muted-foreground transition-colors shadow-xs disabled:opacity-50"
             title="Refresh records"
+            aria-label="Refresh directory records"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin text-primary' : ''} />
           </button>

@@ -106,7 +106,9 @@ export default function ImageUpload({ value, onChange, label = 'Image', helpText
         </div>
       ) : (
         /* Empty / Upload Dropzone */
-        <div
+        <button
+          type="button"
+          disabled={uploading}
           onDragOver={(e) => {
             e.preventDefault()
             setDragOver(true)
@@ -118,7 +120,7 @@ export default function ImageUpload({ value, onChange, label = 'Image', helpText
             dragOver
               ? 'border-primary bg-[var(--primary-soft)]'
               : 'border-[#dce6e8] bg-[#f9fbfb] hover:bg-[#f2f7f8] hover:border-[#b8d7db]'
-          } ${uploading ? 'opacity-60 pointer-events-none' : ''}`}
+          } ${uploading ? 'opacity-60 cursor-not-allowed' : ''}`}
         >
           {uploading ? (
             <div className="flex flex-col items-center py-2">
@@ -138,7 +140,7 @@ export default function ImageUpload({ value, onChange, label = 'Image', helpText
               </div>
             </>
           )}
-        </div>
+        </button>
       )}
 
       {error && (
@@ -151,6 +153,7 @@ export default function ImageUpload({ value, onChange, label = 'Image', helpText
       <input
         ref={inputRef}
         type="file"
+        aria-label={label}
         accept={ALLOWED_TYPES.join(',')}
         className="hidden"
         onChange={(e) => handleFile(e.target.files?.[0])}

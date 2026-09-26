@@ -3,6 +3,7 @@ import { Users, Plus, Trash2, Edit3, X, Loader2, AlertCircle, Mail, Phone, Hash 
 import { directoryApi } from './directoryApi'
 import { useToast } from './Toast'
 import ImageUpload from './ImageUpload'
+import useDialogAccessibility from '../useDialogAccessibility'
 
 export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
   const { showToast } = useToast()
@@ -13,6 +14,7 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const dialogRef = useDialogAccessibility(onClose, isOpen, saving)
 
   const initialForm = {
     name: '',
@@ -104,17 +106,17 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl bg-surface rounded-2xl border border-border p-6 shadow-card z-10 max-h-[90vh] flex flex-col animate-in zoom-in-95">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="committee-members-title" tabIndex={-1} className="relative w-full max-w-2xl bg-surface rounded-2xl border border-border p-4 sm:p-6 shadow-card z-10 max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] flex flex-col animate-in zoom-in-95">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-border">
           <div>
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
               MEMBERSHIP ROSTER
             </span>
-            <h2 className="text-lg font-bold text-foreground mt-0.5">
+            <h2 id="committee-members-title" className="text-lg font-bold text-foreground mt-0.5">
               {committee?.name}
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -124,6 +126,7 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors"
+            aria-label="Close committee members"
           >
             <X size={18} />
           </button>
@@ -325,6 +328,7 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
                       onClick={() => openEditForm(m)}
                       className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-[var(--primary-soft)] transition-colors"
                       title="Edit member"
+                      aria-label={`Edit ${m.name}`}
                     >
                       <Edit3 size={14} />
                     </button>
@@ -333,6 +337,7 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
                       onClick={() => handleDelete(m.id)}
                       className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-[var(--destructive-soft)] transition-colors disabled:opacity-50"
                       title="Remove member"
+                      aria-label={`Remove ${m.name}`}
                     >
                       {deletingId === m.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                     </button>

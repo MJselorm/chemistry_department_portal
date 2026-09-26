@@ -37,7 +37,8 @@ export default function ProfilePage() {
         setMessage({ type: 'success', text: 'Profile changes saved locally!' })
       }
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to update profile.' })
+      console.error('Failed to update profile:', err)
+      setMessage({ type: 'error', text: 'Your profile could not be updated. Please try again.' })
     } finally {
       setIsSaving(false)
     }
@@ -79,6 +80,7 @@ export default function ProfilePage() {
         {/* Feedback Alert */}
         {message && (
           <div
+            role={message.type === 'error' ? 'alert' : 'status'}
             className={`p-3 rounded-xl mb-6 text-xs font-semibold ${
               message.type === 'success'
                 ? 'bg-[var(--success-soft)] border border-[var(--success-border)] text-success'
@@ -94,10 +96,11 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Full Name (Backed by PATCH /users/me) */}
             <div>
-              <label className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
+              <label htmlFor="profile-full-name" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
                 Full name <span className="text-primary normal-case">(Live API Synced)</span>
               </label>
               <input
+                id="profile-full-name"
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -109,10 +112,11 @@ export default function ProfilePage() {
 
             {/* Student ID */}
             <div>
-              <label className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
+              <label htmlFor="profile-student-id" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
                 Student ID
               </label>
               <input
+                id="profile-student-id"
                 type="text"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
@@ -123,10 +127,11 @@ export default function ProfilePage() {
 
             {/* Email Address */}
             <div>
-              <label className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
+              <label htmlFor="profile-email" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
                 Email address <span className="text-muted-foreground normal-case">(Firebase UID linked)</span>
               </label>
               <input
+                id="profile-email"
                 type="email"
                 value={user?.email || 'student@example.com'}
                 disabled
@@ -136,10 +141,11 @@ export default function ProfilePage() {
 
             {/* Level */}
             <div>
-              <label className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
+              <label htmlFor="profile-level" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
                 Academic Level
               </label>
               <select
+                id="profile-level"
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
@@ -153,11 +159,11 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-[#f4f7f8] flex items-center justify-between">
+          <div className="pt-4 border-t border-[#f4f7f8] flex flex-col items-start gap-3 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between">
             <button
               type="submit"
               disabled={isSaving}
-              className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
+              className="w-full px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50 min-[480px]:w-auto"
             >
               {isSaving ? 'Saving changes...' : 'Save changes'}
             </button>

@@ -78,6 +78,8 @@ export default function DirectoryTable({
           <img
             src={image}
             alt={title}
+            loading="lazy"
+            decoding="async"
             className="w-9 h-9 rounded-xl object-cover border border-border flex-shrink-0"
           />
         ) : (
@@ -212,6 +214,7 @@ export default function DirectoryTable({
           <Search size={15} className="absolute left-3.5 top-3 text-[#9ba8ac]" />
           <input
             type="text"
+            aria-label={`Search ${categoryConfig.plural.toLowerCase()}`}
             placeholder={`Search ${categoryConfig.plural.toLowerCase()} by name, code, role…`}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -225,6 +228,7 @@ export default function DirectoryTable({
           <div className="flex items-center gap-1.5 bg-surface-secondary border border-border rounded-xl px-2.5 py-1 text-xs">
             <Filter size={13} className="text-[#728388]" />
             <select
+              aria-label="Filter by status"
               value={statusFilter}
               onChange={(e) => onStatusFilterChange(e.target.value)}
               className="bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer"
@@ -239,6 +243,7 @@ export default function DirectoryTable({
           {departments.length > 0 && categoryConfig.key !== 'departments' && (
             <div className="flex items-center gap-1.5 bg-surface-secondary border border-border rounded-xl px-2.5 py-1 text-xs">
               <select
+                aria-label="Filter by department"
                 value={departmentFilter}
                 onChange={(e) => onDepartmentFilterChange(e.target.value)}
                 className="bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer max-w-[150px] truncate"
@@ -340,8 +345,7 @@ export default function DirectoryTable({
                   {items.map((item) => (
                     <tr
                       key={item.id}
-                      className="hover:bg-surface-secondary transition-colors group cursor-pointer"
-                      onClick={() => onView(item)}
+                      className="hover:bg-surface-secondary transition-colors group"
                     >
                       {/* Primary Info */}
                       <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
@@ -388,6 +392,7 @@ export default function DirectoryTable({
                               onClick={() => onOpenConsultations?.(item)}
                               className="p-1.5 rounded-lg text-primary bg-[var(--primary-soft)] hover:bg-[#d6f0f2] transition-colors"
                               title="Office Consultation Hours"
+                              aria-label={`Manage office hours for ${item.name || 'lecturer'}`}
                             >
                               <Clock size={14} />
                             </button>
@@ -399,6 +404,7 @@ export default function DirectoryTable({
                               onClick={() => onOpenMembers?.(item)}
                               className="p-1.5 rounded-lg text-primary bg-[var(--primary-soft)] hover:bg-[#e4d8f8] transition-colors"
                               title="Committee Members"
+                              aria-label={`Manage members for ${item.name || 'committee'}`}
                             >
                               <Users size={14} />
                             </button>
@@ -409,6 +415,7 @@ export default function DirectoryTable({
                             onClick={() => onView(item)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-gray-100 transition-colors"
                             title="View details"
+                            aria-label={`View ${item.name || item.course_name || 'record'}`}
                           >
                             <Eye size={14} />
                           </button>
@@ -418,6 +425,7 @@ export default function DirectoryTable({
                             onClick={() => onEdit(item)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-gray-100 transition-colors"
                             title="Edit"
+                            aria-label={`Edit ${item.name || item.course_name || 'record'}`}
                           >
                             <Edit3 size={14} />
                           </button>
@@ -427,6 +435,7 @@ export default function DirectoryTable({
                             onClick={() => onDelete(item)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-[var(--destructive-soft)] transition-colors"
                             title="Delete"
+                            aria-label={`Delete ${item.name || item.course_name || 'record'}`}
                           >
                             <Trash2 size={14} />
                           </button>

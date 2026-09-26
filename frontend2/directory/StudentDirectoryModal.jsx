@@ -17,6 +17,7 @@ import {
   Info,
 } from 'lucide-react'
 import { directoryApi } from './directoryApi'
+import useDialogAccessibility from '../useDialogAccessibility'
 
 /**
  * Formats "HH:MM:SS" or "HH:MM" into "10:00 AM" format.
@@ -53,6 +54,7 @@ export default function StudentDirectoryModal({
   const [loadingConsultations, setLoadingConsultations] = useState(false)
   const [committeeMembers, setCommitteeMembers] = useState([])
   const [loadingMembers, setLoadingMembers] = useState(false)
+  const dialogRef = useDialogAccessibility(onClose, isOpen)
 
   // Copy to clipboard helper
   const handleCopy = (text, fieldKey) => {
@@ -123,7 +125,7 @@ export default function StudentDirectoryModal({
   const phone = record.phone || record.contact_phone
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
@@ -132,7 +134,7 @@ export default function StudentDirectoryModal({
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-xl bg-surface rounded-2xl border border-border shadow-2xl z-10 max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="student-directory-title" tabIndex={-1} className="relative w-full max-w-xl bg-surface rounded-2xl border border-border shadow-2xl z-10 max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Top Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#eef2f3] bg-surface-secondary">
           <div className="flex items-center gap-2">
@@ -143,8 +145,9 @@ export default function StudentDirectoryModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full text-[#6b7f84] hover:bg-[#f1f6f7] hover:text-foreground grid place-items-center transition-colors"
+            className="w-10 h-10 rounded-full text-[#6b7f84] hover:bg-[#f1f6f7] hover:text-foreground grid place-items-center transition-colors"
             title="Close dialog"
+            aria-label="Close directory profile"
           >
             <X size={16} />
           </button>
@@ -158,6 +161,8 @@ export default function StudentDirectoryModal({
               <img
                 src={photoUrl}
                 alt={displayName}
+                loading="lazy"
+                decoding="async"
                 className="w-20 h-20 rounded-2xl object-cover border border-border shadow-sm flex-shrink-0"
               />
             ) : (
@@ -167,7 +172,7 @@ export default function StudentDirectoryModal({
             )}
 
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-foreground leading-snug break-words">
+              <h2 id="student-directory-title" className="text-xl font-bold text-foreground leading-snug break-words">
                 {displayName}
               </h2>
               <p className="text-xs font-bold text-primary mt-0.5 break-words">
@@ -482,8 +487,9 @@ export default function StudentDirectoryModal({
                         {member.email && (
                           <a
                             href={`mailto:${member.email}`}
-                            className="w-7 h-7 rounded-full bg-[#f1f6f7] text-primary hover:bg-primary hover:text-white grid place-items-center transition-colors text-xs"
+                            className="w-9 h-9 rounded-full bg-[#f1f6f7] text-primary hover:bg-primary hover:text-white grid place-items-center transition-colors text-xs"
                             title={`Email ${member.name}`}
+                            aria-label={`Email ${member.name}`}
                           >
                             <Mail size={12} />
                           </a>
@@ -491,8 +497,9 @@ export default function StudentDirectoryModal({
                         {member.phone && (
                           <a
                             href={`tel:${member.phone}`}
-                            className="w-7 h-7 rounded-full bg-[#f1f6f7] text-primary hover:bg-primary hover:text-white grid place-items-center transition-colors text-xs"
+                            className="w-9 h-9 rounded-full bg-[#f1f6f7] text-primary hover:bg-primary hover:text-white grid place-items-center transition-colors text-xs"
                             title={`Call ${member.name}`}
+                            aria-label={`Call ${member.name}`}
                           >
                             <Phone size={12} />
                           </a>

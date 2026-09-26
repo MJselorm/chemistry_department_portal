@@ -411,6 +411,7 @@ export default function AdminPage() {
                 <label className="block text-xs font-bold text-foreground mb-1">Event title</label>
                 <input
                   type="text"
+                  aria-label="Event title"
                   required
                   placeholder="e.g. Chemistry Research Forum"
                   value={eventForm.title}
@@ -421,6 +422,7 @@ export default function AdminPage() {
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Event type</label>
                 <select
+                  aria-label="Event type"
                   value={eventForm.type}
                   onChange={(e) => setEventForm({ ...eventForm, type: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
@@ -435,6 +437,7 @@ export default function AdminPage() {
                 <label className="block text-xs font-bold text-foreground mb-1">Date & time</label>
                 <input
                   type="datetime-local"
+                  aria-label="Event date and time"
                   required
                   value={eventForm.datetime}
                   onChange={(e) => setEventForm({ ...eventForm, datetime: e.target.value })}
@@ -445,6 +448,7 @@ export default function AdminPage() {
                 <label className="block text-xs font-bold text-foreground mb-1">Venue</label>
                 <input
                   type="text"
+                  aria-label="Event venue"
                   required
                   placeholder="Main Auditorium"
                   value={eventForm.venue}
@@ -455,6 +459,7 @@ export default function AdminPage() {
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-foreground mb-1">Description</label>
                 <textarea
+                  aria-label="Event description"
                   rows="4"
                   placeholder="Event description..."
                   value={eventForm.description}
@@ -502,6 +507,7 @@ export default function AdminPage() {
                 <label className="block text-xs font-bold text-foreground mb-1">Resource title</label>
                 <input
                   type="text"
+                  aria-label="Resource title"
                   required
                   placeholder="e.g. CHEM301 Lecture Notes"
                   value={resourceForm.title}
@@ -512,6 +518,7 @@ export default function AdminPage() {
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Category</label>
                 <select
+                  aria-label="Resource category"
                   value={resourceForm.category}
                   onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
@@ -527,6 +534,7 @@ export default function AdminPage() {
                 <label className="block text-xs font-bold text-foreground mb-1">Course / Level</label>
                 <input
                   type="text"
+                  aria-label="Resource course or level"
                   placeholder="CHEM 301 · Level 300"
                   value={resourceForm.course}
                   onChange={(e) => setResourceForm({ ...resourceForm, course: e.target.value })}
@@ -537,6 +545,7 @@ export default function AdminPage() {
                 <label className="block text-xs font-bold text-foreground mb-1">Academic year</label>
                 <input
                   type="text"
+                  aria-label="Resource academic year"
                   placeholder="2026/2027"
                   value={resourceForm.year}
                   onChange={(e) => setResourceForm({ ...resourceForm, year: e.target.value })}
@@ -651,6 +660,7 @@ export default function AdminPage() {
                 disabled={loadingAnnouncements}
                 className="p-2.5 rounded-xl border border-border bg-surface hover:bg-gray-50 text-muted-foreground transition-colors shadow-xs disabled:opacity-50"
                 title="Refresh announcements"
+                aria-label="Refresh announcements"
               >
                 <RefreshCw size={14} className={loadingAnnouncements ? 'animate-spin text-primary' : ''} />
               </button>
@@ -704,6 +714,7 @@ export default function AdminPage() {
                   </label>
                   <input
                     type="text"
+                    aria-label="Announcement headline"
                     required
                     placeholder="e.g. Mid-Semester Examination Timetable Release"
                     value={announcementForm.headline}
@@ -717,6 +728,7 @@ export default function AdminPage() {
                     Message Body <span className="text-destructive">*</span>
                   </label>
                   <textarea
+                    aria-label="Announcement message"
                     rows="4"
                     required
                     placeholder="Provide full details, instructions, venue info or deadlines..."
@@ -730,6 +742,7 @@ export default function AdminPage() {
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Category</label>
                     <select
+                      aria-label="Announcement category"
                       value={announcementForm.category}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, category: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
@@ -743,6 +756,7 @@ export default function AdminPage() {
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Audience</label>
                     <select
+                      aria-label="Announcement audience"
                       value={announcementForm.audience}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, audience: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
@@ -759,6 +773,7 @@ export default function AdminPage() {
                     <label className="block text-xs font-bold text-foreground mb-1">Issued by</label>
                     <input
                       type="text"
+                      aria-label="Announcement issuer"
                       required
                       placeholder="e.g. Chemistry Board of Studies"
                       value={announcementForm.issuer}
@@ -840,6 +855,7 @@ export default function AdminPage() {
               <Search size={14} className="absolute left-3 top-3 text-muted-foreground" />
               <input
                 type="text"
+                aria-label="Search announcements"
                 placeholder="Search announcements..."
                 value={announcementSearch}
                 onChange={(e) => setAnnouncementSearch(e.target.value)}

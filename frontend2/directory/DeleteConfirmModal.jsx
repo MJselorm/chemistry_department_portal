@@ -1,5 +1,6 @@
 import React from 'react'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
+import useDialogAccessibility from '../useDialogAccessibility'
 
 export default function DeleteConfirmModal({
   isOpen,
@@ -10,10 +11,11 @@ export default function DeleteConfirmModal({
   itemName,
   isDeleting = false,
 }) {
+  const dialogRef = useDialogAccessibility(onClose, isOpen, isDeleting)
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in"
@@ -21,7 +23,7 @@ export default function DeleteConfirmModal({
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-md bg-surface rounded-2xl border border-border p-6 shadow-card z-10 animate-in zoom-in-95">
+      <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title" tabIndex={-1} className="relative w-full max-w-md bg-surface rounded-2xl border border-border p-5 sm:p-6 shadow-card z-10 animate-in zoom-in-95">
         <button
           onClick={onClose}
           disabled={isDeleting}
@@ -36,7 +38,7 @@ export default function DeleteConfirmModal({
             <AlertTriangle size={20} />
           </div>
           <div className="flex-1">
-            <h3 className="text-base font-bold text-foreground">{title}</h3>
+            <h3 id="delete-dialog-title" className="text-base font-bold text-foreground pr-6">{title}</h3>
             {itemName && (
               <p className="text-xs font-semibold text-primary mt-1 bg-[var(--primary-soft)] px-2.5 py-1 rounded-md inline-block">
                 {itemName}

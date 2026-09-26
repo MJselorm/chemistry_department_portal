@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { X, Loader2, Check, AlertCircle } from 'lucide-react'
 import ImageUpload from './ImageUpload'
+import useDialogAccessibility from '../useDialogAccessibility'
 
 export default function DirectoryFormModal({
   isOpen,
@@ -15,6 +16,7 @@ export default function DirectoryFormModal({
 }) {
   const [formData, setFormData] = useState({})
   const [errors, setErrors] = useState({})
+  const dialogRef = useDialogAccessibility(onClose, isOpen, isSaving)
 
   const isEdit = Boolean(initialData?.id)
 
@@ -95,19 +97,19 @@ export default function DirectoryFormModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={!isSaving ? onClose : undefined} />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-3xl bg-surface rounded-2xl border border-border p-6 sm:p-7 shadow-card z-10 max-h-[90vh] flex flex-col animate-in zoom-in-95">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="directory-form-title" tabIndex={-1} className="relative w-full max-w-3xl bg-surface rounded-2xl border border-border p-4 sm:p-7 shadow-card z-10 max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] flex flex-col animate-in zoom-in-95">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-border">
           <div>
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
               DIRECTORY MANAGEMENT
             </span>
-            <h2 className="text-xl font-bold text-foreground mt-0.5">
+            <h2 id="directory-form-title" className="text-lg sm:text-xl font-bold text-foreground mt-0.5">
               {isEdit ? `Edit ${categoryConfig.singular}` : `Add New ${categoryConfig.singular}`}
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -130,6 +132,8 @@ export default function DirectoryFormModal({
             {categoryConfig.fields.map((field) => {
               const value = formData[field.name] ?? ''
               const hasError = Boolean(errors[field.name])
+              const fieldId = `directory-field-${field.name}`
+              const errorId = `${fieldId}-error`
 
               if (field.type === 'image') {
                 return (
@@ -159,6 +163,7 @@ export default function DirectoryFormModal({
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
+                        aria-label={field.label}
                         type="checkbox"
                         checked={Boolean(formData[field.name])}
                         onChange={(e) =>
@@ -175,10 +180,13 @@ export default function DirectoryFormModal({
               if (field.type === 'textarea') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-foreground mb-1">
+                    <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                       {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <textarea
+                      id={fieldId}
+                      aria-invalid={hasError}
+                      aria-describedby={hasError ? errorId : undefined}
                       rows={3}
                       placeholder={field.placeholder}
                       value={value}
@@ -191,7 +199,7 @@ export default function DirectoryFormModal({
                           : 'border-border bg-surface focus:border-primary'
                       }`}
                     />
-                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
+                    {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -199,10 +207,13 @@ export default function DirectoryFormModal({
               if (field.type === 'select') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-foreground mb-1">
+                    <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                       {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <select
+                      id={fieldId}
+                      aria-invalid={hasError}
+                      aria-describedby={hasError ? errorId : undefined}
                       value={value}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
@@ -220,7 +231,7 @@ export default function DirectoryFormModal({
                         </option>
                       ))}
                     </select>
-                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
+                    {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -228,10 +239,13 @@ export default function DirectoryFormModal({
               if (field.type === 'department_select') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-foreground mb-1">
+                    <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                       {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <select
+                      id={fieldId}
+                      aria-invalid={hasError}
+                      aria-describedby={hasError ? errorId : undefined}
                       value={value}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
@@ -249,7 +263,7 @@ export default function DirectoryFormModal({
                         </option>
                       ))}
                     </select>
-                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
+                    {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -257,10 +271,13 @@ export default function DirectoryFormModal({
               if (field.type === 'course_select') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-foreground mb-1">
+                    <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                       {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <select
+                      id={fieldId}
+                      aria-invalid={hasError}
+                      aria-describedby={hasError ? errorId : undefined}
                       value={value}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
@@ -278,7 +295,7 @@ export default function DirectoryFormModal({
                         </option>
                       ))}
                     </select>
-                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
+                    {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -286,10 +303,13 @@ export default function DirectoryFormModal({
               if (field.type === 'lecturer_select') {
                 return (
                   <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-foreground mb-1">
+                    <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                       {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
                     <select
+                      id={fieldId}
+                      aria-invalid={hasError}
+                      aria-describedby={hasError ? errorId : undefined}
                       value={value}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
@@ -307,7 +327,7 @@ export default function DirectoryFormModal({
                         </option>
                       ))}
                     </select>
-                    {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
+                    {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
               }
@@ -315,10 +335,13 @@ export default function DirectoryFormModal({
               // Standard inputs (text, email, number, time)
               return (
                 <div key={field.name} className={field.colSpan === 2 ? 'sm:col-span-2' : ''}>
-                  <label className="block text-xs font-bold text-foreground mb-1">
+                  <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                     {field.label} {field.required && <span className="text-destructive">*</span>}
                   </label>
                   <input
+                    id={fieldId}
+                    aria-invalid={hasError}
+                    aria-describedby={hasError ? errorId : undefined}
                     type={field.type || 'text'}
                     placeholder={field.placeholder}
                     value={value}
@@ -331,7 +354,7 @@ export default function DirectoryFormModal({
                         : 'border-border bg-surface focus:border-primary'
                     }`}
                   />
-                  {hasError && <p className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
+                  {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                 </div>
               )
             })}
@@ -339,12 +362,12 @@ export default function DirectoryFormModal({
         </form>
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-border flex items-center justify-end gap-2.5">
+        <div className="pt-4 border-t border-border flex flex-col-reverse gap-2.5 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-end">
           <button
             type="button"
             disabled={isSaving}
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-2.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-gray-50 transition-colors disabled:opacity-50 min-[420px]:w-auto"
           >
             Cancel
           </button>
@@ -352,7 +375,7 @@ export default function DirectoryFormModal({
             type="submit"
             form="directory-form"
             disabled={isSaving}
-            className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+            className="w-full justify-center px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 min-[420px]:w-auto"
           >
             {isSaving && <Loader2 size={13} className="animate-spin" />}
             {isSaving ? 'Saving…' : isEdit ? 'Update Record' : `Create ${categoryConfig.singular}`}

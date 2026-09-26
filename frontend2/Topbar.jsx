@@ -26,22 +26,22 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
     .toUpperCase() || (isAdmin ? 'AD' : 'ST')
 
   return (
-    <header className="min-h-16 bg-[var(--header)] backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8 sticky top-0 z-30 transition-colors duration-200">
-      <div className="flex items-center gap-3">
+    <header className="min-h-16 bg-[var(--header)] backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8 sticky top-0 z-30 transition-colors duration-200">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           onClick={onOpenSidebar}
-          className="lg:hidden p-2 rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
+          className="lg:hidden grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
           aria-label="Open navigation menu"
         >
           <Menu size={20} aria-hidden="true" />
         </button>
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <strong className="block text-sm sm:text-base font-semibold text-[var(--foreground)] leading-none">
+            <strong className="block max-w-[84px] truncate text-sm font-semibold leading-none text-[var(--foreground)] min-[390px]:max-w-[130px] sm:max-w-none sm:text-base">
               {displayTitle}
             </strong>
             <span
-              className={`px-2 py-0.5 text-[9px] font-black uppercase rounded-full tracking-wider ${
+              className={`hidden sm:inline-flex px-2 py-0.5 text-[9px] font-black uppercase rounded-full tracking-wider ${
                 isAdmin
                   ? 'bg-[var(--accent-soft)] text-[var(--warning)] border border-[var(--warning-border)]'
                   : 'bg-[var(--primary-soft)] text-[var(--primary)] border border-[var(--primary-border)]'
@@ -50,7 +50,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
               {isAdmin ? 'Admin' : 'Student'}
             </span>
           </div>
-          <small className="block text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-0.5">
+          <small className="hidden min-[430px]:block text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-0.5 truncate">
             {displaySubtitle}
           </small>
         </div>
@@ -60,7 +60,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
         <button
           type="button"
           onClick={onToggleTheme}
-          className="w-9 h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
+          className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
           aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
@@ -69,7 +69,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
 
         <button
           onClick={() => alert('Notifications (Placeholder API: /notifications)')}
-          className="w-9 h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
+          className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
           aria-label="Open notifications"
           title="Notifications"
         >
@@ -79,7 +79,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
         {/* User profile chip */}
         <Link
           to="/profile"
-          className="flex items-center gap-2.5 px-1.5 sm:px-2.5 py-1 rounded-lg hover:bg-[var(--muted)] border border-transparent hover:border-[var(--border)] transition-all"
+          className="flex h-10 items-center gap-2.5 px-1 sm:h-auto sm:px-2.5 sm:py-1 rounded-lg hover:bg-[var(--muted)] border border-transparent hover:border-[var(--border)] transition-all"
         >
           <span
             className={`w-8 h-8 rounded-full font-extrabold text-xs grid place-items-center ${

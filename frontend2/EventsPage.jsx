@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { CalendarPlus, Camera, Check, Clock, MapPin, QrCode, X } from 'lucide-react'
 import { MOCK_EVENTS } from './mocks'
+import useDialogAccessibility from './useDialogAccessibility'
 
 export default function EventsPage() {
   const [activeFilter, setActiveFilter] = useState('All')
@@ -9,6 +10,10 @@ export default function EventsPage() {
   const [checkInStatus, setCheckInStatus] = useState(null)
   const [isCameraActive, setIsCameraActive] = useState(false)
   const [registeredIds, setRegisteredIds] = useState({})
+  const eventDialogRef = useDialogAccessibility(
+    () => setSelectedEvent(null),
+    Boolean(selectedEvent)
+  )
 
   const filters = ['All', 'Seminars', 'Workshops', 'Conferences', 'Social']
 
@@ -141,9 +146,10 @@ export default function EventsPage() {
               Scan the QR code displayed by the event coordinator or enter your attendance code to record your participation.
             </p>
 
-            <form onSubmit={handleCheckIn} className="flex gap-2 max-w-md pt-2">
+            <form onSubmit={handleCheckIn} className="flex flex-col min-[420px]:flex-row gap-2 max-w-md pt-2">
               <input
                 type="text"
+                aria-label="Event attendance code"
                 placeholder="e.g. CHM-204"
                 value={checkInCode}
                 onChange={(e) => setCheckInCode(e.target.value)}
@@ -151,7 +157,7 @@ export default function EventsPage() {
               />
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
+                className="w-full min-[420px]:w-auto px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
               >
                 Check in
               </button>
@@ -189,11 +195,18 @@ export default function EventsPage() {
 
       {/* Event Details Modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-border relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
+          <div
+            ref={eventDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="event-dialog-title"
+            tabIndex={-1}
+            className="bg-surface rounded-2xl max-w-xl w-full p-5 sm:p-8 shadow-2xl border border-border relative max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh] overflow-y-auto"
+          >
             <button
               onClick={() => setSelectedEvent(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 grid place-items-center text-gray-500 hover:bg-gray-200"
+              className="absolute top-3 right-3 w-10 h-10 rounded-full bg-gray-100 grid place-items-center text-gray-500 hover:bg-gray-200 sm:top-4 sm:right-4"
               aria-label="Close event details"
             >
               <X size={16} aria-hidden="true" />
@@ -201,7 +214,7 @@ export default function EventsPage() {
             <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-[var(--primary-soft)] text-primary">
               {selectedEvent.badge}
             </span>
-            <h2 className="text-2xl font-extrabold text-foreground mt-2 mb-2">{selectedEvent.title}</h2>
+            <h2 id="event-dialog-title" className="text-xl sm:text-2xl font-bold text-foreground mt-2 mb-2 pr-8">{selectedEvent.title}</h2>
             <p className="text-xs text-muted-foreground leading-relaxed mb-6">{selectedEvent.description}</p>
 
             <div className="grid grid-cols-2 gap-4 py-4 border-y border-border text-xs">
@@ -230,7 +243,7 @@ export default function EventsPage() {
               <p className="text-xs text-muted-foreground leading-relaxed">{selectedEvent.details}</p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col-reverse min-[420px]:flex-row gap-2">
               <button
                 onClick={() => {
                   handleRegister(selectedEvent)

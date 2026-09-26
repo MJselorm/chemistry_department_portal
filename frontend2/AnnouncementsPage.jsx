@@ -53,7 +53,10 @@ export default function AnnouncementsPage() {
     setError('')
     api.get(ENDPOINTS.announcements)
       .then((data) => setAnnouncements(Array.isArray(data) ? data : []))
-      .catch((err) => setError(err.message || 'Unable to load announcements.'))
+      .catch((err) => {
+        console.error('Unable to load announcements:', err)
+        setError('Unable to load announcements right now. Please try again.')
+      })
       .finally(() => setLoading(false))
   }
 
@@ -103,7 +106,8 @@ export default function AnnouncementsPage() {
         loadAnnouncements()
       }
     } catch (err) {
-      showToast('error', err.message || 'Failed to publish announcement.')
+      console.error('Failed to publish announcement:', err)
+      showToast('error', 'The announcement could not be published. Please try again.')
     } finally {
       setPublishing(false)
     }
@@ -117,7 +121,8 @@ export default function AnnouncementsPage() {
       setAnnouncements((prev) => prev.filter((a) => a.id !== id))
       showToast('success', 'Announcement deleted successfully.')
     } catch (err) {
-      showToast('error', err.message || 'Failed to delete announcement.')
+      console.error('Failed to delete announcement:', err)
+      showToast('error', 'The announcement could not be deleted. Please try again.')
     } finally {
       setDeletingId(null)
     }
@@ -157,6 +162,7 @@ export default function AnnouncementsPage() {
             disabled={loading}
             className="p-2.5 rounded-xl border border-border bg-surface hover:bg-gray-50 text-muted-foreground transition-colors shadow-xs disabled:opacity-50"
             title="Refresh announcements"
+            aria-label="Refresh announcements"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin text-primary' : ''} />
           </button>
@@ -234,6 +240,7 @@ export default function AnnouncementsPage() {
               </label>
               <input
                 type="text"
+                aria-label="Announcement headline"
                 required
                 placeholder="e.g. Schedule for 2026/2027 Analytical Chemistry Practicals"
                 value={form.title}
@@ -247,6 +254,7 @@ export default function AnnouncementsPage() {
                 Message Body <span className="text-destructive">*</span>
               </label>
               <textarea
+                aria-label="Announcement message"
                 rows="4"
                 required
                 placeholder="Detail the announcement, important deadlines, instructions, and office hours..."
@@ -260,6 +268,7 @@ export default function AnnouncementsPage() {
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Category</label>
                 <select
+                  aria-label="Announcement category"
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
@@ -273,6 +282,7 @@ export default function AnnouncementsPage() {
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Target Audience</label>
                 <select
+                  aria-label="Announcement target audience"
                   value={form.audience}
                   onChange={(e) => setForm({ ...form, audience: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
@@ -289,6 +299,7 @@ export default function AnnouncementsPage() {
                 <label className="block text-xs font-bold text-foreground mb-1">Issued by</label>
                 <input
                   type="text"
+                  aria-label="Announcement issuer"
                   required
                   placeholder="e.g. Chemistry Board of Studies"
                   value={form.issuer}
@@ -370,6 +381,7 @@ export default function AnnouncementsPage() {
           <Search size={14} className="absolute left-3 top-3 text-muted-foreground" />
           <input
             type="text"
+            aria-label="Search announcements"
             placeholder="Search notices..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

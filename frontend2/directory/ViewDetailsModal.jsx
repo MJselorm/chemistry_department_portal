@@ -1,5 +1,6 @@
 import React from 'react'
 import { X, Edit3, Trash2, Power, Clock, Users, ExternalLink } from 'lucide-react'
+import useDialogAccessibility from '../useDialogAccessibility'
 
 export default function ViewDetailsModal({
   isOpen,
@@ -15,6 +16,7 @@ export default function ViewDetailsModal({
   onOpenConsultations,
   onOpenMembers,
 }) {
+  const dialogRef = useDialogAccessibility(onClose, isOpen)
   if (!isOpen || !record) return null
 
   const getDepartmentName = (id) => {
@@ -93,13 +95,13 @@ export default function ViewDetailsModal({
   const imageSrc = categoryConfig.imageField ? record[categoryConfig.imageField] : null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl bg-surface rounded-2xl border border-border p-6 shadow-card z-10 max-h-[90vh] flex flex-col animate-in zoom-in-95">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="view-details-title" tabIndex={-1} className="relative w-full max-w-2xl bg-surface rounded-2xl border border-border p-4 sm:p-6 shadow-card z-10 max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] flex flex-col animate-in zoom-in-95">
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-border">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             {imageSrc ? (
               <img
                 src={imageSrc}
@@ -111,11 +113,11 @@ export default function ViewDetailsModal({
                 {(record.name || record.course_name || record.code || '?')[0].toUpperCase()}
               </div>
             )}
-            <div>
+            <div className="min-w-0">
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
                 {categoryConfig.singular} Profile
               </span>
-              <h2 className="text-xl font-bold text-foreground mt-0.5">
+              <h2 id="view-details-title" className="text-xl font-bold text-foreground mt-0.5">
                 {record.title ? `${record.title} ` : ''}
                 {record.name || record.course_name}
               </h2>
@@ -139,7 +141,8 @@ export default function ViewDetailsModal({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors"
+            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors"
+            aria-label="Close record details"
           >
             <X size={18} />
           </button>
@@ -147,7 +150,7 @@ export default function ViewDetailsModal({
 
         {/* Action Bar for Sub-resources */}
         {(categoryConfig.hasConsultations || categoryConfig.hasMembers) && (
-          <div className="flex flex-wrap gap-2 py-3 border-b border-border bg-[#f9fbfb] px-4 -mx-6">
+          <div className="flex flex-wrap gap-2 py-3 border-b border-border bg-[#f9fbfb] px-4 -mx-4 sm:-mx-6">
             {categoryConfig.hasConsultations && (
               <button
                 onClick={() => {
@@ -197,11 +200,11 @@ export default function ViewDetailsModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-border flex items-center justify-between">
+        <div className="pt-4 border-t border-border flex flex-col gap-2 min-[520px]:flex-row min-[520px]:items-center min-[520px]:justify-between">
           <button
             type="button"
             onClick={() => onToggleActive(record)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+            className={`w-full justify-center px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 min-[520px]:w-auto ${
               record.is_active
                 ? 'border-[var(--destructive-border)] text-destructive hover:bg-[var(--destructive-soft)]'
                 : 'border-[var(--success-border)] text-success hover:bg-[var(--success-soft)]'
@@ -211,14 +214,14 @@ export default function ViewDetailsModal({
             {record.is_active ? 'Deactivate Record' : 'Activate Record'}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 min-[520px]:flex min-[520px]:w-auto min-[520px]:items-center">
             <button
               type="button"
               onClick={() => {
                 onClose()
                 onDelete(record)
               }}
-              className="px-3.5 py-2 rounded-xl border border-[var(--destructive-border)] text-destructive hover:bg-[var(--destructive-soft)] text-xs font-bold transition-colors flex items-center gap-1.5"
+              className="justify-center px-3.5 py-2 rounded-xl border border-[var(--destructive-border)] text-destructive hover:bg-[var(--destructive-soft)] text-xs font-bold transition-colors flex items-center gap-1.5"
             >
               <Trash2 size={13} /> Delete
             </button>
@@ -228,7 +231,7 @@ export default function ViewDetailsModal({
                 onClose()
                 onEdit(record)
               }}
-              className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
+              className="justify-center px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
             >
               <Edit3 size={13} /> Edit Record
             </button>
