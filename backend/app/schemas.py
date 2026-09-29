@@ -5,8 +5,12 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
-class UserProfile(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class StrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class UserProfile(StrictModel):
+    model_config = ConfigDict(from_attributes=True, extra="forbid", str_strip_whitespace=True)
 
     id: UUID
     firebase_uid: str
@@ -17,15 +21,15 @@ class UserProfile(BaseModel):
     updated_at: datetime
 
 
-class UpdateMyProfile(BaseModel):
+class UpdateMyProfile(StrictModel):
     full_name: str | None = Field(default=None, max_length=200)
 
 
-class AnnouncementCreate(BaseModel):
+class AnnouncementCreate(StrictModel):
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1, max_length=10000)
     category: str = Field(default="Department", min_length=1, max_length=50)
-    audience: str = Field(default="All students", max_length=50)
+    audience: str = Field(default="All students", min_length=1, max_length=50)
     issuer: str = Field(default="Chemistry Board of Studies", min_length=1, max_length=200)
     is_pinned: bool = False
 

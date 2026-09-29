@@ -1,7 +1,7 @@
 const ACCENTS = {
   cyan: 'bg-cyan-200 text-cyan-700',
   amber: 'bg-tint-amber text-amber-800',
-  blue: 'bg-tint-blue text-[#1C4E80]',
+  blue: 'bg-tint-blue text-primary',
 }
 
 const STATUS_TONES = {
@@ -42,7 +42,7 @@ export default function ModuleList({ modules = [], loading }) {
         {modules.map((mod, i) => (
           <li
             key={mod.id}
-            className="flex flex-wrap items-center gap-5 rounded-2xl border border-hair bg-white p-4 shadow-card"
+            className="flex flex-wrap items-center gap-5 rounded-2xl border border-hair bg-surface p-4 shadow-card"
           >
             <span
               className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-mono text-[0.85rem] font-semibold ${

@@ -2,7 +2,7 @@ import { Clock, MapPin, CalendarDays } from 'lucide-react'
 
 export default function EventList({ events = [], onRsvp, loading }) {
   return (
-    <section className="rounded-2xl border border-hair bg-white p-5 shadow-card">
+    <section className="rounded-2xl border border-hair bg-surface p-5 shadow-card">
       <header className="flex items-center justify-between gap-4">
         <h2 className="flex items-center gap-2.5 font-head text-[1.05rem] font-bold">
           <CalendarDays size={19} strokeWidth={2} />
@@ -26,10 +26,10 @@ export default function EventList({ events = [], onRsvp, loading }) {
           <li
             key={event.id}
             className={`flex items-center gap-4 rounded-xl border p-3.5 ${
-              event.featured ? 'border-transparent bg-[#E4F1FC]' : 'border-hair bg-white'
+              event.featured ? 'border-transparent bg-[var(--primary-soft)]' : 'border-hair bg-surface'
             }`}
           >
-            <div className="flex w-[3.4rem] shrink-0 flex-col items-center rounded-lg bg-white py-2 ring-1 ring-hair">
+            <div className="flex w-[3.4rem] shrink-0 flex-col items-center rounded-lg bg-surface py-2 ring-1 ring-hair">
               <span className="font-head text-[0.62rem] font-semibold tracking-wide text-slate-500">
                 {event.month}
               </span>
@@ -49,7 +49,7 @@ export default function EventList({ events = [], onRsvp, loading }) {
             </div>
 
             {event.rsvp_status === 'going' ? (
-              <span className="shrink-0 rounded-lg bg-[#D7E9F8] px-3.5 py-2 font-head text-[0.78rem] font-semibold text-[#1C4E80]">
+              <span className="shrink-0 rounded-lg bg-[var(--primary-soft)] px-3.5 py-2 font-head text-[0.78rem] font-semibold text-primary">
                 Going
               </span>
             ) : (

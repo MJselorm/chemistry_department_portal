@@ -33,7 +33,7 @@ export default function DayPanel({ today, selectedDay, onSelectDay, loading }) {
                 className={`rounded-lg px-3 py-2 font-mono text-[0.72rem] tracking-[0.1em] transition-colors ${
                   isSelected
                     ? 'bg-ink text-white'
-                    : 'text-slate-500 hover:bg-white hover:text-ink'
+                    : 'text-slate-500 hover:bg-surface hover:text-ink'
                 }`}
               >
                 {day.label} {day.date}

@@ -1,8 +1,9 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { Bell, Menu, Moon, Sun } from 'lucide-react'
 import { useAuth } from './AuthContext'
 
-export default function Topbar({ title, subtitle, onOpenSidebar }) {
+export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onToggleTheme }) {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   
@@ -25,61 +26,71 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
     .toUpperCase() || (isAdmin ? 'AD' : 'ST')
 
   return (
-    <header className="h-16 bg-white/95 backdrop-blur border-b border-[#e4ecee] flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30">
-      <div className="flex items-center gap-3">
+    <header className="min-h-16 bg-[var(--header)] backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8 sticky top-0 z-30 transition-colors duration-200">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           onClick={onOpenSidebar}
-          className="lg:hidden p-2 rounded-lg text-[#728388] hover:bg-gray-100 transition-colors"
+          className="lg:hidden grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
           aria-label="Open navigation menu"
         >
-          ☰
+          <Menu size={20} aria-hidden="true" />
         </button>
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <strong className="block text-sm sm:text-base font-bold text-[#102a2f] leading-none">
+            <strong className="block max-w-[84px] truncate text-sm font-semibold leading-none text-[var(--foreground)] min-[390px]:max-w-[130px] sm:max-w-none sm:text-base">
               {displayTitle}
             </strong>
             <span
-              className={`px-2 py-0.5 text-[9px] font-black uppercase rounded-full tracking-wider ${
+              className={`hidden sm:inline-flex px-2 py-0.5 text-[9px] font-black uppercase rounded-full tracking-wider ${
                 isAdmin
-                  ? 'bg-[#eee7fa] text-[#7652b8] border border-[#d6c3f3]'
-                  : 'bg-[#e8f6f7] text-[#087f8c] border border-[#bce4e8]'
+                  ? 'bg-[var(--accent-soft)] text-[var(--warning)] border border-[var(--warning-border)]'
+                  : 'bg-[var(--primary-soft)] text-[var(--primary)] border border-[var(--primary-border)]'
               }`}
             >
               {isAdmin ? 'Admin' : 'Student'}
             </span>
           </div>
-          <small className="block text-[10px] sm:text-[11px] text-[#93a1a5] mt-0.5">
+          <small className="hidden min-[430px]:block text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-0.5 truncate">
             {displaySubtitle}
           </small>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Placeholder: Notifications */}
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <button
-          onClick={() => alert('Notifications (Placeholder API: /notifications)')}
-          className="w-8 h-8 rounded-xl border border-[#e4ecee] grid place-items-center text-[#728388] hover:bg-gray-50 text-sm transition-colors"
+          type="button"
+          onClick={onToggleTheme}
+          className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
+          aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDarkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+        </button>
+
+        <button
+          onClick={() => alert('Portal notifications are not available yet.')}
+          className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
+          aria-label="Open notifications"
           title="Notifications"
         >
-          ♧
+          <Bell size={16} aria-hidden="true" />
         </button>
 
         {/* User profile chip */}
         <Link
           to="/profile"
-          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-[#f1f7f7] border border-transparent hover:border-[#e4ecee] transition-all"
+          className="flex h-10 items-center gap-2.5 px-1 sm:h-auto sm:px-2.5 sm:py-1 rounded-lg hover:bg-[var(--muted)] border border-transparent hover:border-[var(--border)] transition-all"
         >
           <span
             className={`w-8 h-8 rounded-full font-extrabold text-xs grid place-items-center ${
               isAdmin
-                ? 'bg-[#eee7fa] text-[#7652b8]'
-                : 'bg-[#d8f0f1] text-[#087f8c]'
+                ? 'bg-[var(--accent-soft)] text-[var(--warning)]'
+                : 'bg-[var(--primary-soft)] text-[var(--primary)]'
             }`}
           >
             {initials}
           </span>
-          <span className="hidden sm:block text-xs font-bold text-[#102a2f] max-w-[140px] truncate">
+          <span className="hidden sm:block text-xs font-bold text-[var(--foreground)] max-w-[140px] truncate">
             {displayName}
           </span>
         </Link>

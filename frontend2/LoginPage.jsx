@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Lock, Mail, Check } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import { GscsLogo, KnustLogo } from './Logos'
 
 const STATS = [
-  { value: '100 Years', label: 'Of scholarly advancement', accent: false },
-  { value: '24+ Labs', label: 'Under research collaboration', accent: true },
-  { value: '1.2k', label: 'Active global alumni', accent: false },
+  { value: 'Academic', label: 'Resources and schedules', accent: false },
+  { value: 'Department', label: 'Contacts and notices', accent: true },
+  { value: 'Community', label: 'Events and representation', accent: false },
 ]
 
 export default function LoginPage() {
@@ -22,17 +22,24 @@ export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = location.state?.from?.pathname || '/dashboard'
+  const requestedPath = location.state?.from?.pathname
+  const from =
+    typeof requestedPath === 'string' &&
+    requestedPath.startsWith('/') &&
+    !requestedPath.startsWith('//') &&
+    !requestedPath.includes('\\')
+      ? requestedPath
+      : '/dashboard'
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setSubmitting(true)
     try {
-      await login(email.trim(), password)
+      await login(email.trim(), password, keepSignedIn)
       navigate(from, { replace: true })
-    } catch (err) {
-      setError(err.message || 'Those credentials did not match our records.')
+    } catch {
+      setError('We could not sign you in with those credentials. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -43,13 +50,13 @@ export default function LoginPage() {
     setGoogleSubmitting(true)
     try {
       if (loginWithGoogle) {
-        await loginWithGoogle()
+        await loginWithGoogle(keepSignedIn)
       } else {
         await login('chemist.scholar@gmail.com', 'google-auth')
       }
       navigate(from, { replace: true })
-    } catch (err) {
-      setError(err.message || 'Google sign-in failed. Please try again.')
+    } catch {
+      setError('Google sign-in could not be completed. Please try again.')
     } finally {
       setGoogleSubmitting(false)
     }
@@ -58,16 +65,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[1.35fr_1fr]">
       {/* ── Left: the society's story ─────────────────────────────── */}
-      <section className="relative flex min-h-[26rem] flex-col justify-between overflow-hidden bg-[#0C1418] px-8 py-10 text-white sm:px-14 lg:min-h-screen lg:px-16 lg:py-14">
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-cover bg-center opacity-40"
-          style={{ backgroundImage: "url('/lab-hero.jpg')" }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-gradient-to-br from-[#0A1218]/95 via-[#0C1A22]/80 to-[#102A33]/70"
-        />
+      <section className="chem-hero relative flex min-h-[26rem] flex-col justify-between overflow-hidden px-8 py-10 text-white sm:px-14 lg:min-h-screen lg:px-16 lg:py-14">
 
         <header className="relative flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
@@ -93,12 +91,12 @@ export default function LoginPage() {
             Chemical Society
           </h1>
           <p className="mt-7 max-w-[34rem] text-[0.95rem] leading-[1.85] text-white/70">
-            Since 1924, our society has connected aspiring chemists, professional researchers, and
-            industry pioneers. We coordinate weekly laboratory colloquiums, support organic research
-            publications, and steward the frontiers of molecular science.
+            Chemistry Hub brings students, lecturers, representatives, and departmental information
+            into one academic workspace. Access announcements, events, academic resources, and the
+            directory with your authorized account.
           </p>
-          <p className="mt-8 flex items-center gap-4 text-[0.68rem] font-semibold tracking-[0.2em] text-cyan-500">
-            <span className="h-px w-8 bg-cyan-500" />
+          <p className="mt-8 flex items-center gap-4 text-[0.68rem] font-semibold tracking-[0.2em] text-[#e8c95b]">
+            <span className="h-px w-8 bg-[#e8c95b]" />
             DISCOVER • CATALYZE • CONNECT
           </p>
         </div>
@@ -108,7 +106,7 @@ export default function LoginPage() {
             <div key={stat.label}>
               <dt
                 className={`font-display text-[1.9rem] font-light ${
-                  stat.accent ? 'text-cyan-500' : 'text-white'
+                  stat.accent ? 'text-[#e8c95b]' : 'text-white'
                 }`}
               >
                 {stat.value}
@@ -138,7 +136,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={setEmail}
-              placeholder="chemist@stjude.edu"
+              placeholder="student@knust.edu.gh"
               autoComplete="username"
             />
 
@@ -171,17 +169,17 @@ export default function LoginPage() {
                   onChange={(e) => setKeepSignedIn(e.target.checked)}
                   className="peer sr-only"
                 />
-                <span className="flex h-[1.05rem] w-[1.05rem] items-center justify-center rounded border border-slate-300 bg-white text-white transition-colors peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500 peer-focus-visible:ring-offset-2">
+                <span className="flex h-[1.05rem] w-[1.05rem] items-center justify-center rounded border border-slate-300 bg-surface text-white transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2">
                   {keepSignedIn && <Check size={12} strokeWidth={3} />}
                 </span>
                 Keep me signed in
               </label>
-              <a
-                href="/forgot-password"
-                className="text-[0.82rem] font-medium text-cyan-600 hover:underline"
+              <Link
+                to="/forgot-password"
+                className="text-[0.82rem] font-medium text-primary hover:underline"
               >
                 Forgot password?
-              </a>
+              </Link>
             </div>
 
             {error && (
@@ -193,7 +191,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting || googleSubmitting}
-              className="w-full rounded-lg bg-ink py-3.5 font-head text-[0.9rem] font-semibold text-white shadow-[0_10px_24px_-14px_rgba(10,27,38,0.9)] transition-colors hover:bg-[#12293a] disabled:opacity-60"
+              className="w-full rounded-lg bg-primary py-3.5 font-head text-[0.9rem] font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {submitting ? 'Signing in…' : 'Sign in'}
             </button>
@@ -210,23 +208,24 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={submitting || googleSubmitting}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white py-3 px-4 font-head text-[0.88rem] font-medium text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-ink focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-surface py-3 px-4 font-head text-[0.88rem] font-medium text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-ink focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:opacity-60"
           >
             <GoogleIcon className="h-4 w-4 shrink-0" />
             <span>{googleSubmitting ? 'Connecting with Google…' : 'Sign in with Google'}</span>
           </button>
 
           <p className="mt-7 text-center text-[0.82rem] text-slate-500">
-            Not a member of Hexagon yet?{' '}
-            <a href="/register" className="font-semibold text-cyan-600 hover:underline">
-              Create account
-            </a>
+            Portal access is limited to authorized Chemistry Hub accounts.
           </p>
         </div>
 
         <footer className="mx-auto mt-16 max-w-sm text-center text-[0.72rem] leading-relaxed text-slate-400">
-          <p>Authorized access only. Subject to university IT usage policy.</p>
-          <p>© {new Date().getFullYear()} St. Jude University Chemical Society</p>
+          <p>Authorized access only. Applicable institutional policies govern use.</p>
+          <p className="my-1 flex items-center justify-center gap-3">
+            <Link to="/privacy" className="hover:text-primary hover:underline">Privacy</Link>
+            <Link to="/terms" className="hover:text-primary hover:underline">Terms</Link>
+          </p>
+          <p>© {new Date().getFullYear()} Ghana Students' Chemical Society, KNUST</p>
         </footer>
       </section>
     </div>
@@ -242,7 +241,7 @@ function Field({ id, label, icon: Icon, value, onChange, trailing, ...props }) {
       >
         {label}
       </label>
-      <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-3 transition-colors focus-within:border-cyan-500">
+      <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-surface px-3.5 py-3 transition-colors focus-within:border-cyan-500">
         <Icon size={16} className="shrink-0 text-slate-400" />
         <input
           id={id}
@@ -280,4 +279,3 @@ function GoogleIcon({ className = 'w-4 h-4' }) {
     </svg>
   )
 }
-

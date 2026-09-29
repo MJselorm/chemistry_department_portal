@@ -1,34 +1,50 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './AuthContext'
 import ProtectedRoute from './ProtectedRoute'
-import LoginPage from './LoginPage'
 import PortalLayout from './PortalLayout'
 
-// Converted Chemistry Hub Pages
-import DashboardPage from './DashboardPage'
-import EventsPage from './EventsPage'
-import AcademicHubPage from './AcademicHubPage'
-import DirectoryPage from './DirectoryPage'
-import AnnouncementsPage from './AnnouncementsPage'
-import ProfilePage from './ProfilePage'
-import SettingsPage from './SettingsPage'
-import AdminPage from './AdminPage'
-import ResourcesPage from './ResourcesPage'
-import AdminResourcesPage from './AdminResourcesPage'
-
-// Student Directory Admin Suite
 import { ToastProvider } from './directory/Toast'
-import DirectoryAdminOverview from './directory/DirectoryAdminOverview'
-import DirectoryEntityManager from './directory/DirectoryEntityManager'
+
+const LoginPage = lazy(() => import('./LoginPage'))
+const ForgotPasswordPage = lazy(() => import('./ForgotPasswordPage'))
+const LegalPage = lazy(() => import('./LegalPage'))
+const DashboardPage = lazy(() => import('./DashboardPage'))
+const EventsPage = lazy(() => import('./EventsPage'))
+const AcademicHubPage = lazy(() => import('./AcademicHubPage'))
+const DirectoryPage = lazy(() => import('./DirectoryPage'))
+const AnnouncementsPage = lazy(() => import('./AnnouncementsPage'))
+const ProfilePage = lazy(() => import('./ProfilePage'))
+const SettingsPage = lazy(() => import('./SettingsPage'))
+const AdminPage = lazy(() => import('./AdminPage'))
+const ResourcesPage = lazy(() => import('./ResourcesPage'))
+const AdminResourcesPage = lazy(() => import('./AdminResourcesPage'))
+const DirectoryAdminOverview = lazy(() => import('./directory/DirectoryAdminOverview'))
+const DirectoryEntityManager = lazy(() => import('./directory/DirectoryEntityManager'))
+
+function RouteLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center" role="status">
+      <div>
+        <span className="mx-auto block h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" aria-hidden="true" />
+        <p className="mt-3 text-sm font-medium text-muted-foreground">Loading Chemistry Hub…</p>
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
+          <Suspense fallback={<RouteLoading />}>
           <Routes>
           {/* Landing / Sign In Page (Preserved) */}
           <Route path="/" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/privacy" element={<LegalPage type="privacy" />} />
+          <Route path="/terms" element={<LegalPage type="terms" />} />
 
           {/* Authenticated Department Portal Routes */}
           <Route
@@ -249,6 +265,7 @@ export default function App() {
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+          </Suspense>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

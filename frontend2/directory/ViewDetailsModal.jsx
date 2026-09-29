@@ -1,5 +1,6 @@
 import React from 'react'
 import { X, Edit3, Trash2, Power, Clock, Users, ExternalLink } from 'lucide-react'
+import useDialogAccessibility from '../useDialogAccessibility'
 
 export default function ViewDetailsModal({
   isOpen,
@@ -15,6 +16,7 @@ export default function ViewDetailsModal({
   onOpenConsultations,
   onOpenMembers,
 }) {
+  const dialogRef = useDialogAccessibility(onClose, isOpen)
   if (!isOpen || !record) return null
 
   const getDepartmentName = (id) => {
@@ -42,7 +44,7 @@ export default function ViewDetailsModal({
       return (
         <span
           className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-            val ? 'bg-[#e7f5ed] text-[#27805a]' : 'bg-[#fdecec] text-[#c84b4b]'
+            val ? 'bg-[var(--success-soft)] text-success' : 'bg-[var(--destructive-soft)] text-destructive'
           }`}
         >
           {val ? 'Active' : 'Inactive'}
@@ -68,7 +70,7 @@ export default function ViewDetailsModal({
           href={val.startsWith('http') ? val : `https://${val}`}
           target="_blank"
           rel="noreferrer"
-          className="text-[#087f8c] font-bold hover:underline inline-flex items-center gap-1"
+          className="text-primary font-bold hover:underline inline-flex items-center gap-1"
         >
           {val} <ExternalLink size={12} />
         </a>
@@ -77,7 +79,7 @@ export default function ViewDetailsModal({
 
     if (field.type === 'email') {
       return (
-        <a href={`mailto:${val}`} className="text-[#087f8c] hover:underline">
+        <a href={`mailto:${val}`} className="text-primary hover:underline">
           {val}
         </a>
       )
@@ -93,45 +95,45 @@ export default function ViewDetailsModal({
   const imageSrc = categoryConfig.imageField ? record[categoryConfig.imageField] : null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl border border-[#e4ecee] p-6 shadow-card z-10 max-h-[90vh] flex flex-col animate-in zoom-in-95">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="view-details-title" tabIndex={-1} className="relative w-full max-w-2xl bg-surface rounded-2xl border border-border p-4 sm:p-6 shadow-card z-10 max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] flex flex-col animate-in zoom-in-95">
         {/* Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-[#e4ecee]">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between pb-4 border-b border-border">
+          <div className="flex min-w-0 items-center gap-3">
             {imageSrc ? (
               <img
                 src={imageSrc}
                 alt={record.name || record.course_name}
-                className="w-14 h-14 rounded-2xl object-cover border border-[#e4ecee] shadow-xs"
+                className="w-14 h-14 rounded-2xl object-cover border border-border shadow-xs"
               />
             ) : (
-              <div className="w-14 h-14 rounded-2xl bg-[#e8f6f7] text-[#087f8c] grid place-items-center font-black text-xl shadow-xs">
+              <div className="w-14 h-14 rounded-2xl bg-[var(--primary-soft)] text-primary grid place-items-center font-black text-xl shadow-xs">
                 {(record.name || record.course_name || record.code || '?')[0].toUpperCase()}
               </div>
             )}
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#087f8c]">
+            <div className="min-w-0">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
                 {categoryConfig.singular} Profile
               </span>
-              <h2 className="text-xl font-bold text-[#102a2f] mt-0.5">
+              <h2 id="view-details-title" className="text-xl font-bold text-foreground mt-0.5">
                 {record.title ? `${record.title} ` : ''}
                 {record.name || record.course_name}
               </h2>
               <div className="flex items-center gap-2 mt-1">
                 <span
                   className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                    record.is_active ? 'bg-[#e7f5ed] text-[#27805a]' : 'bg-[#fdecec] text-[#c84b4b]'
+                    record.is_active ? 'bg-[var(--success-soft)] text-success' : 'bg-[var(--destructive-soft)] text-destructive'
                   }`}
                 >
                   {record.is_active ? 'Active' : 'Inactive'}
                 </span>
                 {record.position && (
-                  <span className="text-xs font-semibold text-[#64777d]">· {record.position}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">· {record.position}</span>
                 )}
                 {record.course_code && (
-                  <span className="text-xs font-semibold text-[#087f8c]">· {record.course_code}</span>
+                  <span className="text-xs font-semibold text-primary">· {record.course_code}</span>
                 )}
               </div>
             </div>
@@ -139,7 +141,8 @@ export default function ViewDetailsModal({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#91a0a5] hover:text-[#102a2f] hover:bg-gray-100 transition-colors"
+            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors"
+            aria-label="Close record details"
           >
             <X size={18} />
           </button>
@@ -147,14 +150,14 @@ export default function ViewDetailsModal({
 
         {/* Action Bar for Sub-resources */}
         {(categoryConfig.hasConsultations || categoryConfig.hasMembers) && (
-          <div className="flex flex-wrap gap-2 py-3 border-b border-[#e4ecee] bg-[#f9fbfb] px-4 -mx-6">
+          <div className="flex flex-wrap gap-2 py-3 border-b border-border bg-[#f9fbfb] px-4 -mx-4 sm:-mx-6">
             {categoryConfig.hasConsultations && (
               <button
                 onClick={() => {
                   onClose()
                   onOpenConsultations?.(record)
                 }}
-                className="px-3 py-1.5 rounded-xl bg-[#e8f6f7] hover:bg-[#d6f0f2] text-[#087f8c] text-xs font-bold flex items-center gap-1.5 transition-colors border border-[#bce4e8]"
+                className="px-3 py-1.5 rounded-xl bg-[var(--primary-soft)] hover:bg-[#d6f0f2] text-primary text-xs font-bold flex items-center gap-1.5 transition-colors border border-[var(--primary-border)]"
               >
                 <Clock size={13} /> Manage Consultation Hours
               </button>
@@ -165,7 +168,7 @@ export default function ViewDetailsModal({
                   onClose()
                   onOpenMembers?.(record)
                 }}
-                className="px-3 py-1.5 rounded-xl bg-[#f0eafb] hover:bg-[#e4d8f8] text-[#7652b8] text-xs font-bold flex items-center gap-1.5 transition-colors border border-[#d6c3f3]"
+                className="px-3 py-1.5 rounded-xl bg-[var(--primary-soft)] hover:bg-[#e4d8f8] text-primary text-xs font-bold flex items-center gap-1.5 transition-colors border border-[#d6c3f3]"
               >
                 <Users size={13} /> Manage Committee Members
               </button>
@@ -188,7 +191,7 @@ export default function ViewDetailsModal({
                   <span className="block text-[10px] font-bold uppercase tracking-wider text-[#8da0a5]">
                     {field.label}
                   </span>
-                  <div className="text-xs font-medium text-[#102a2f] mt-1 break-words">
+                  <div className="text-xs font-medium text-foreground mt-1 break-words">
                     {renderFieldValue(field)}
                   </div>
                 </div>
@@ -197,28 +200,28 @@ export default function ViewDetailsModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-[#e4ecee] flex items-center justify-between">
+        <div className="pt-4 border-t border-border flex flex-col gap-2 min-[520px]:flex-row min-[520px]:items-center min-[520px]:justify-between">
           <button
             type="button"
             onClick={() => onToggleActive(record)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+            className={`w-full justify-center px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 min-[520px]:w-auto ${
               record.is_active
-                ? 'border-[#f5b3b3] text-[#c84b4b] hover:bg-[#fdecec]'
-                : 'border-[#a6dec1] text-[#27805a] hover:bg-[#e7f5ed]'
+                ? 'border-[var(--destructive-border)] text-destructive hover:bg-[var(--destructive-soft)]'
+                : 'border-[var(--success-border)] text-success hover:bg-[var(--success-soft)]'
             }`}
           >
             <Power size={13} />
             {record.is_active ? 'Deactivate Record' : 'Activate Record'}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 min-[520px]:flex min-[520px]:w-auto min-[520px]:items-center">
             <button
               type="button"
               onClick={() => {
                 onClose()
                 onDelete(record)
               }}
-              className="px-3.5 py-2 rounded-xl border border-[#f5b3b3] text-[#c84b4b] hover:bg-[#fdecec] text-xs font-bold transition-colors flex items-center gap-1.5"
+              className="justify-center px-3.5 py-2 rounded-xl border border-[var(--destructive-border)] text-destructive hover:bg-[var(--destructive-soft)] text-xs font-bold transition-colors flex items-center gap-1.5"
             >
               <Trash2 size={13} /> Delete
             </button>
@@ -228,7 +231,7 @@ export default function ViewDetailsModal({
                 onClose()
                 onEdit(record)
               }}
-              className="px-4 py-2 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
+              className="justify-center px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
             >
               <Edit3 size={13} /> Edit Record
             </button>

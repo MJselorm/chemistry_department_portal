@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
+import { CalendarPlus, Camera, Check, Clock, MapPin, QrCode, X } from 'lucide-react'
 import { MOCK_EVENTS } from './mocks'
+import useDialogAccessibility from './useDialogAccessibility'
 
 export default function EventsPage() {
   const [activeFilter, setActiveFilter] = useState('All')
@@ -8,6 +10,10 @@ export default function EventsPage() {
   const [checkInStatus, setCheckInStatus] = useState(null)
   const [isCameraActive, setIsCameraActive] = useState(false)
   const [registeredIds, setRegisteredIds] = useState({})
+  const eventDialogRef = useDialogAccessibility(
+    () => setSelectedEvent(null),
+    Boolean(selectedEvent)
+  )
 
   const filters = ['All', 'Seminars', 'Workshops', 'Conferences', 'Social']
 
@@ -17,7 +23,7 @@ export default function EventsPage() {
 
   const handleRegister = (event) => {
     setRegisteredIds((prev) => ({ ...prev, [event.id]: true }))
-    alert(`Successfully registered for "${event.title}"! (Placeholder API: POST /events/${event.id}/register)`)
+    alert(`"${event.title}" is marked in this session. Event registration is not connected yet.`)
   }
 
   const handleCheckIn = (e) => {
@@ -25,7 +31,7 @@ export default function EventsPage() {
     if (!checkInCode.trim()) return
     setCheckInStatus({
       success: true,
-      message: `Checked in code "${checkInCode.trim().toUpperCase()}" successfully! (Placeholder API: POST /events/checkin)`
+      message: `Code "${checkInCode.trim().toUpperCase()}" was validated locally. Attendance check-in is not connected yet.`
     })
     setCheckInCode('')
   }
@@ -35,15 +41,16 @@ export default function EventsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7d9297]">DEPARTMENT CALENDAR</span>
-          <h1 className="text-2xl font-bold text-[#102a2f] mt-1">Events & seminars</h1>
-          <p className="text-xs text-[#64777d] mt-1">Discover seminars, workshops, conferences and student activities.</p>
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">DEPARTMENT CALENDAR</span>
+          <h1 className="text-2xl font-bold text-foreground mt-1">Events & seminars</h1>
+          <p className="text-xs text-muted-foreground mt-1">Discover seminars, workshops, conferences and student activities.</p>
         </div>
         <button
-          onClick={() => alert('Add to calendar feature (Placeholder: iCal / Google Calendar export)')}
-          className="px-4 py-2.5 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold self-start sm:self-auto transition-colors"
+          onClick={() => alert('Calendar export is not available yet.')}
+          className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold self-start sm:self-auto transition-colors inline-flex items-center gap-2"
         >
-          + Add to calendar
+          <CalendarPlus size={14} aria-hidden="true" />
+          Add to calendar
         </button>
       </div>
 
@@ -55,8 +62,8 @@ export default function EventsPage() {
             onClick={() => setActiveFilter(f)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-colors ${
               activeFilter === f
-                ? 'bg-[#102a2f] border-[#102a2f] text-white'
-                : 'bg-white border-[#e4ecee] text-[#718287] hover:border-[#b7dfe2]'
+                ? 'bg-primary border-primary text-white'
+                : 'bg-surface border-border text-[#718287] hover:border-[var(--primary-border)]'
             }`}
           >
             {f}
@@ -71,7 +78,7 @@ export default function EventsPage() {
           return (
             <article
               key={evt.id}
-              className="bg-white border border-[#e4ecee] rounded-2xl overflow-hidden flex flex-col sm:flex-row shadow-sm hover:shadow-md transition-shadow"
+              className="bg-surface border border-border rounded-2xl overflow-hidden flex flex-col sm:flex-row shadow-sm hover:shadow-md transition-shadow"
             >
               {/* Date Badge */}
               <div
@@ -80,7 +87,7 @@ export default function EventsPage() {
                     ? 'bg-[#27805a]'
                     : evt.badgeColor === 'amber'
                     ? 'bg-[#a66b08]'
-                    : 'bg-[#087f8c]'
+                    : 'bg-primary'
                 }`}
               >
                 <span className="text-[10px] font-extrabold tracking-widest">{evt.month}</span>
@@ -91,14 +98,14 @@ export default function EventsPage() {
               {/* Event Content */}
               <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                 <div>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[#f0eafb] text-[#7652b8]">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[var(--primary-soft)] text-primary">
                     {evt.badge}
                   </span>
-                  <h3 className="text-base font-bold text-[#102a2f] mt-1.5 mb-1">{evt.title}</h3>
-                  <p className="text-xs text-[#64777d] leading-relaxed line-clamp-2">{evt.description}</p>
+                  <h3 className="text-base font-bold text-foreground mt-1.5 mb-1">{evt.title}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{evt.description}</p>
                   <div className="flex flex-wrap gap-3 text-xs text-[#74878b] font-medium my-3">
-                    <span>◷ {evt.time}</span>
-                    <span>⌖ {evt.venue}</span>
+                    <span className="inline-flex items-center gap-1.5"><Clock size={13} aria-hidden="true" />{evt.time}</span>
+                    <span className="inline-flex items-center gap-1.5"><MapPin size={13} aria-hidden="true" />{evt.venue}</span>
                   </div>
                 </div>
                 <div className="flex gap-2 pt-2 border-t border-[#f4f7f8]">
@@ -106,15 +113,19 @@ export default function EventsPage() {
                     onClick={() => handleRegister(evt)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                       isRegistered
-                        ? 'bg-[#e7f5ed] text-[#27805a] border border-[#a6dec1]'
-                        : 'bg-[#087f8c] hover:bg-[#05636d] text-white'
+                        ? 'bg-[var(--success-soft)] text-success border border-[var(--success-border)]'
+                        : 'bg-primary hover:bg-primary-hover text-white'
                     }`}
                   >
-                    {isRegistered ? '✓ Registered' : 'Register'}
+                    {isRegistered ? (
+                      <span className="inline-flex items-center gap-1.5"><Check size={13} aria-hidden="true" />Registered</span>
+                    ) : (
+                      'Register'
+                    )}
                   </button>
                   <button
                     onClick={() => setSelectedEvent(evt)}
-                    className="px-3 py-1.5 rounded-lg border border-[#d7e2e4] text-[#496066] text-xs font-bold hover:bg-gray-50 transition-colors"
+                    className="px-3 py-1.5 rounded-lg border border-[#d7e2e4] text-muted-foreground text-xs font-bold hover:bg-gray-50 transition-colors"
                   >
                     Details
                   </button>
@@ -126,33 +137,34 @@ export default function EventsPage() {
       </div>
 
       {/* Attendance & Event Check-in Section */}
-      <section className="bg-white border border-[#e4ecee] rounded-2xl p-6 shadow-sm" id="checkin">
+      <section className="bg-surface border border-border rounded-2xl p-6 shadow-sm" id="checkin">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
           <div className="md:col-span-2 space-y-3">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#7d9297]">ATTENDANCE</span>
-            <h2 className="text-xl font-bold text-[#102a2f]">Event check-in</h2>
-            <p className="text-xs text-[#64777d] leading-relaxed max-w-lg">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">ATTENDANCE</span>
+            <h2 className="text-xl font-bold text-foreground">Event check-in</h2>
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-lg">
               Scan the QR code displayed by the event coordinator or enter your attendance code to record your participation.
             </p>
 
-            <form onSubmit={handleCheckIn} className="flex gap-2 max-w-md pt-2">
+            <form onSubmit={handleCheckIn} className="flex flex-col min-[420px]:flex-row gap-2 max-w-md pt-2">
               <input
                 type="text"
+                aria-label="Event attendance code"
                 placeholder="e.g. CHM-204"
                 value={checkInCode}
                 onChange={(e) => setCheckInCode(e.target.value)}
-                className="flex-1 px-3.5 py-2 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c]"
+                className="flex-1 px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
               />
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold transition-colors"
+                className="w-full min-[420px]:w-auto px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
               >
                 Check in
               </button>
             </form>
 
             {checkInStatus && (
-              <div className="p-3 rounded-xl bg-[#e7f5ed] border border-[#a6dec1] text-[#27805a] text-xs font-medium max-w-md">
+              <div className="p-3 rounded-xl bg-[var(--success-soft)] border border-[var(--success-border)] text-success text-xs font-medium max-w-md">
                 {checkInStatus.message}
               </div>
             )}
@@ -160,18 +172,21 @@ export default function EventsPage() {
 
           {/* QR Box */}
           <div className="border-2 border-dashed border-[#dce7e8] rounded-xl p-6 bg-[#f8fbfb] flex flex-col items-center justify-center text-center">
-            <span className="text-4xl text-[#8da0a4] mb-1">⌁</span>
+            <QrCode className="text-[#8da0a4] mb-1" size={40} aria-hidden="true" />
             <strong className="text-xs font-bold text-[#53676b]">QR Scanner</strong>
             <small className="text-[10px] text-[#8da0a4] mb-3">Camera integration ready for backend</small>
             <button
               onClick={() => setIsCameraActive(!isCameraActive)}
-              className="px-3 py-1.5 rounded-lg border border-[#d7e2e4] text-xs font-bold text-[#496066] hover:bg-white transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-[#d7e2e4] text-xs font-bold text-muted-foreground hover:bg-surface transition-colors"
             >
               {isCameraActive ? 'Disable camera' : 'Activate camera'}
             </button>
             {isCameraActive && (
               <div className="mt-3 p-3 bg-black text-white text-[10px] rounded-lg w-full text-center">
-                📷 Camera scanning active (Mock Feed)
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  <Camera size={13} aria-hidden="true" />
+                  Camera scanning active (Mock Feed)
+                </span>
               </div>
             )}
           </div>
@@ -180,59 +195,67 @@ export default function EventsPage() {
 
       {/* Event Details Modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-[#e4ecee] relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
+          <div
+            ref={eventDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="event-dialog-title"
+            tabIndex={-1}
+            className="bg-surface rounded-2xl max-w-xl w-full p-5 sm:p-8 shadow-2xl border border-border relative max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh] overflow-y-auto"
+          >
             <button
               onClick={() => setSelectedEvent(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 grid place-items-center text-gray-500 hover:bg-gray-200"
+              className="absolute top-3 right-3 w-10 h-10 rounded-full bg-gray-100 grid place-items-center text-gray-500 hover:bg-gray-200 sm:top-4 sm:right-4"
+              aria-label="Close event details"
             >
-              ✕
+              <X size={16} aria-hidden="true" />
             </button>
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-[#f0eafb] text-[#7652b8]">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-[var(--primary-soft)] text-primary">
               {selectedEvent.badge}
             </span>
-            <h2 className="text-2xl font-extrabold text-[#102a2f] mt-2 mb-2">{selectedEvent.title}</h2>
-            <p className="text-xs text-[#64777d] leading-relaxed mb-6">{selectedEvent.description}</p>
+            <h2 id="event-dialog-title" className="text-xl sm:text-2xl font-bold text-foreground mt-2 mb-2 pr-8">{selectedEvent.title}</h2>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-6">{selectedEvent.description}</p>
 
-            <div className="grid grid-cols-2 gap-4 py-4 border-y border-[#e4ecee] text-xs">
+            <div className="grid grid-cols-2 gap-4 py-4 border-y border-border text-xs">
               <div>
-                <span className="text-[9px] font-extrabold uppercase text-[#7d9297] block">DATE & TIME</span>
-                <strong className="font-bold text-[#102a2f] block mt-0.5">
+                <span className="text-[9px] font-extrabold uppercase text-muted-foreground block">DATE & TIME</span>
+                <strong className="font-bold text-foreground block mt-0.5">
                   {selectedEvent.month} {selectedEvent.day}, {selectedEvent.year} · {selectedEvent.time}
                 </strong>
               </div>
               <div>
-                <span className="text-[9px] font-extrabold uppercase text-[#7d9297] block">VENUE</span>
-                <strong className="font-bold text-[#102a2f] block mt-0.5">{selectedEvent.venue}</strong>
+                <span className="text-[9px] font-extrabold uppercase text-muted-foreground block">VENUE</span>
+                <strong className="font-bold text-foreground block mt-0.5">{selectedEvent.venue}</strong>
               </div>
               <div>
-                <span className="text-[9px] font-extrabold uppercase text-[#7d9297] block">ORGANIZER</span>
-                <strong className="font-bold text-[#102a2f] block mt-0.5">{selectedEvent.organizer}</strong>
+                <span className="text-[9px] font-extrabold uppercase text-muted-foreground block">ORGANIZER</span>
+                <strong className="font-bold text-foreground block mt-0.5">{selectedEvent.organizer}</strong>
               </div>
               <div>
-                <span className="text-[9px] font-extrabold uppercase text-[#7d9297] block">CAPACITY</span>
-                <strong className="font-bold text-[#102a2f] block mt-0.5">{selectedEvent.capacity}</strong>
+                <span className="text-[9px] font-extrabold uppercase text-muted-foreground block">CAPACITY</span>
+                <strong className="font-bold text-foreground block mt-0.5">{selectedEvent.capacity}</strong>
               </div>
             </div>
 
             <div className="my-5">
-              <h4 className="text-xs font-bold text-[#102a2f] mb-1">About this event</h4>
-              <p className="text-xs text-[#64777d] leading-relaxed">{selectedEvent.details}</p>
+              <h4 className="text-xs font-bold text-foreground mb-1">About this event</h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">{selectedEvent.details}</p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col-reverse min-[420px]:flex-row gap-2">
               <button
                 onClick={() => {
                   handleRegister(selectedEvent)
                   setSelectedEvent(null)
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold transition-colors"
+                className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
               >
                 Register for event
               </button>
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="px-4 py-2.5 rounded-xl border border-[#d7e2e4] text-[#496066] text-xs font-bold hover:bg-gray-50"
+                className="px-4 py-2.5 rounded-xl border border-[#d7e2e4] text-muted-foreground text-xs font-bold hover:bg-gray-50"
               >
                 Return to events
               </button>

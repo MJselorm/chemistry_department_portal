@@ -5,14 +5,23 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt && python -m alembic upgrade head
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     plan: free
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: APP_ENV
+        value: production
       - key: DATABASE_URL
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
+      - key: ALLOWED_EMAIL_DOMAINS
+        sync: false
+      - key: ALLOWED_USER_EMAILS
+        sync: false
+      - key: REQUIRE_VERIFIED_EMAIL
+        value: true
       - key: CORS_ORIGINS
         sync: false
       - key: SUPABASE_URL

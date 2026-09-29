@@ -4,22 +4,37 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#0A1B26',        // sign-in button / headings / deadline banner
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        surface: 'var(--surface)',
+        'surface-secondary': 'var(--surface-secondary)',
+        primary: 'var(--primary)',
+        'primary-hover': 'var(--primary-hover)',
+        'primary-foreground': 'var(--primary-foreground)',
+        accent: 'var(--accent)',
+        'accent-foreground': 'var(--accent-foreground)',
+        muted: 'var(--muted)',
+        'muted-foreground': 'var(--muted-foreground)',
+        border: 'var(--border)',
+        success: 'var(--success)',
+        warning: 'var(--warning)',
+        destructive: 'var(--destructive)',
+        ink: 'var(--primary)',
         cyan: {
-          DEFAULT: '#13B8D4',
-          100: '#D6F2F8',
-          200: '#B4E7F1',
-          500: '#13B8D4',
-          600: '#0E9BB8',
-          700: '#0B7E96',
+          DEFAULT: 'var(--primary)',
+          100: 'var(--primary-soft)',
+          200: 'var(--primary-border)',
+          500: 'var(--primary)',
+          600: 'var(--primary)',
+          700: 'var(--primary-hover)',
         },
-        canvas: '#F0F6FF',     // dashboard page background
-        panel: '#F8FAFC',      // login right panel
-        hair: '#E4EDF8',       // card borders
+        canvas: 'var(--background)',
+        panel: 'var(--surface-secondary)',
+        hair: 'var(--border)',
         tint: {
-          blue: '#DCE9F5',     // lecture sessions
-          cyan: '#C7EDF5',     // active lab session
-          amber: '#FBE4C6',    // workshops
+          blue: 'var(--primary-soft)',
+          cyan: 'var(--primary-soft)',
+          amber: 'var(--accent-soft)',
         },
       },
       fontFamily: {
@@ -29,7 +44,7 @@ export default {
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
-        card: '0 1px 2px rgba(16, 40, 72, 0.04), 0 8px 24px -12px rgba(16, 40, 72, 0.12)',
+        card: 'var(--shadow-card)',
       },
     },
   },

@@ -2,13 +2,13 @@ import { Megaphone, TriangleAlert, GraduationCap, FlaskConical } from 'lucide-re
 
 const CATEGORY = {
   safety: { icon: TriangleAlert, className: 'bg-amber-100 text-amber-800' },
-  directory: { icon: GraduationCap, className: 'bg-[#E4F1FC] text-[#1C4E80]' },
+  directory: { icon: GraduationCap, className: 'bg-[var(--primary-soft)] text-primary' },
   execs: { icon: FlaskConical, className: 'bg-emerald-100 text-emerald-700' },
 }
 
 export default function AnnouncementList({ announcements = [], loading }) {
   return (
-    <section className="rounded-2xl border border-hair bg-white p-5 shadow-card">
+    <section className="rounded-2xl border border-hair bg-surface p-5 shadow-card">
       <header className="flex items-center justify-between gap-4">
         <h2 className="flex items-center gap-2.5 font-head text-[1.05rem] font-bold">
           <Megaphone size={19} strokeWidth={2} />

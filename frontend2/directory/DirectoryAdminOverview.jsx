@@ -15,6 +15,7 @@ import {
   Loader2,
   RefreshCw,
   ExternalLink,
+  X,
 } from 'lucide-react'
 import { directoryApi } from './directoryApi'
 import DirectorySubNav from './DirectorySubNav'
@@ -32,37 +33,21 @@ export default function DirectoryAdminOverview() {
   const [showResults, setShowResults] = useState(false)
   const searchContainerRef = useRef(null)
 
-  const loadSummary = useCallback(async (force = false) => {
+  const loadSummary = async () => {
     setLoading(true)
     setError(null)
     try {
-      const data = await directoryApi.getSummary(force)
+      const data = await directoryApi.getSummary()
       setSummary(data || {})
     } catch (err) {
       setError(err?.message || 'Failed to load directory metrics.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }
 
   useEffect(() => {
-    let mounted = true
-    directoryApi.getSummary(false)
-      .then((data) => {
-        if (mounted) {
-          setSummary(data || {})
-          setLoading(false)
-        }
-      })
-      .catch((err) => {
-        if (mounted) {
-          setError(err?.message || 'Failed to load directory metrics.')
-          setLoading(false)
-        }
-      })
-    return () => {
-      mounted = false
-    }
+    loadSummary()
   }, [])
 
   // Handle live search
@@ -183,51 +168,54 @@ export default function DirectoryAdminOverview() {
     : 0
 
   return (
-    <div className="space-y-8">
-      {/* Top Search & Controls Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <nav className="text-xs text-[#8fa0a4] mb-1">
-            <span>Home</span> / <span className="text-[#102a2f] font-semibold">Dashboard</span>
-          </nav>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#102a2f] tracking-tight">
-            Directory Management
-          </h1>
-          <p className="text-xs text-[#64777d] mt-1 max-w-2xl leading-relaxed">
-            Manage the information students see across the department. Control access roles, update courses, and publish contacts.
-          </p>
-        </div>
-
-        {/* Global Live Search Bar */}
-        <div ref={searchContainerRef} className="relative w-full sm:w-80 flex-shrink-0">
-          <div className="relative">
-            <Search size={15} className="absolute left-3.5 top-3 text-[#9ba8ac]" />
-            <input
-              type="text"
-              placeholder="Search directories, courses..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setShowResults(true)
-              }}
-              onFocus={() => setShowResults(true)}
-              className="w-full pl-9 pr-8 py-2 rounded-xl border border-[#e4ecee] bg-white text-xs text-[#102a2f] placeholder-[#9ba8ac] focus:outline-none focus:border-[#087f8c] shadow-xs transition-all"
-            />
-            {searching && (
-              <Loader2 size={14} className="absolute right-3 top-3 animate-spin text-[#087f8c]" />
-            )}
+    <div className="space-y-6">
+      <div className="space-y-4">
+        {/* Top Search & Controls Bar */}
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
+          <div className="min-w-0 max-w-2xl">
+            <nav className="text-xs text-[#8fa0a4] mb-1">
+              <span>Home</span> / <span className="text-foreground font-semibold">Dashboard</span>
+            </nav>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+              Directory Management
+            </h1>
+            <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+              Manage the information students see across the department. Control access roles, update courses, and publish contacts.
+            </p>
           </div>
+
+          {/* Global Live Search Bar */}
+          <div ref={searchContainerRef} className="relative w-full sm:w-[420px] sm:max-w-full sm:self-end xl:flex-shrink-0">
+            <div className="relative">
+              <Search size={15} className="absolute left-3.5 top-3 text-[#9ba8ac]" />
+              <input
+                type="text"
+                aria-label="Search directory management records"
+                placeholder="Search directories, courses..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setShowResults(true)
+                }}
+                onFocus={() => setShowResults(true)}
+                className="w-full pl-9 pr-8 py-2 rounded-xl border border-border bg-surface text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary shadow-xs transition-all"
+              />
+              {searching && (
+                <Loader2 size={14} className="absolute right-3 top-3 animate-spin text-primary" />
+              )}
+            </div>
 
           {/* Search Dropdown Results */}
           {showResults && searchResults && (
-            <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl border border-[#e4ecee] shadow-card z-50 max-h-96 overflow-y-auto p-3 space-y-3">
-              <div className="flex items-center justify-between text-[11px] text-[#64777d] px-2 border-b border-[#f0f4f5] pb-2">
+            <div className="absolute top-full mt-2 left-0 right-0 bg-surface rounded-2xl border border-border shadow-card z-[60] max-h-96 overflow-y-auto p-3 space-y-3">
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground px-2 border-b border-[#f0f4f5] pb-2">
                 <span>Search results ({totalSearchResultsCount})</span>
                 <button
                   onClick={() => setShowResults(false)}
-                  className="hover:text-[#102a2f] font-bold"
+                  className="hover:text-foreground font-bold"
+                  aria-label="Close search results"
                 >
-                  ✕
+                  <X size={13} aria-hidden="true" />
                 </button>
               </div>
 
@@ -253,14 +241,14 @@ export default function DirectoryAdminOverview() {
                           className="w-full text-left p-2 rounded-xl hover:bg-[#f2f7f8] flex items-center justify-between transition-colors text-xs group"
                         >
                           <div>
-                            <strong className="block text-xs text-[#102a2f] group-hover:text-[#087f8c]">
+                            <strong className="block text-xs text-foreground group-hover:text-primary">
                               {item.name || item.course_name || item.code}
                             </strong>
                             <small className="text-[10px] text-[#788a8f]">
                               {item.position || item.course_code || item.role || item.location || ''}
                             </small>
                           </div>
-                          <span className="text-[#087f8c] opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold">
+                          <span className="text-primary opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold">
                             View →
                           </span>
                         </button>
@@ -271,20 +259,21 @@ export default function DirectoryAdminOverview() {
               )}
             </div>
           )}
+          </div>
         </div>
-      </div>
 
-      {/* Directory Category Navigation Tabs */}
-      <DirectorySubNav />
+        {/* Directory Category Navigation Tabs */}
+        <DirectorySubNav />
+      </div>
 
       {/* Directory Overview Section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-[#102a2f]">Directory Overview</h2>
+          <h2 className="text-base font-bold text-foreground">Directory Overview</h2>
           <button
-            onClick={() => loadSummary(true)}
+            onClick={loadSummary}
             disabled={loading}
-            className="text-xs text-[#087f8c] hover:underline font-bold flex items-center gap-1"
+            className="text-xs text-primary hover:underline font-bold flex items-center gap-1"
           >
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
             Refresh metrics
@@ -298,17 +287,17 @@ export default function DirectoryAdminOverview() {
             return (
               <article
                 key={card.key}
-                className="bg-white border border-[#e4ecee] rounded-2xl p-5 shadow-sm hover:border-[#bce4e8] transition-all flex flex-col justify-between group"
+                className="bg-surface border border-border rounded-2xl p-5 shadow-sm hover:border-[var(--primary-border)] transition-all flex flex-col justify-between group"
               >
                 {/* Card Top: Icon & Manage link */}
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#e6f7f8] text-[#087f8c] grid place-items-center transition-colors group-hover:bg-[#087f8c] group-hover:text-white shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-[#e6f7f8] text-primary grid place-items-center transition-colors group-hover:bg-primary group-hover:text-white shadow-xs">
                     <Icon size={20} />
                   </div>
 
                   <Link
                     to={card.route}
-                    className="text-xs font-bold text-[#087f8c] hover:text-[#05636d] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                    className="text-xs font-bold text-primary hover:text-[#05636d] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
                   >
                     Manage <ArrowRight size={13} />
                   </Link>
@@ -316,17 +305,17 @@ export default function DirectoryAdminOverview() {
 
                 {/* Card Bottom: Big Count, Label, and Subnote */}
                 <div className="mt-5">
-                  <span className="text-3xl sm:text-4xl font-black text-[#102a2f] tracking-tight block">
-                    {loading && !summary ? (
+                  <span className="text-3xl sm:text-4xl font-black text-foreground tracking-tight block">
+                    {loading ? (
                       <span className="inline-block w-8 h-8 bg-gray-100 rounded-lg animate-pulse" />
                     ) : (
                       card.count
                     )}
                   </span>
-                  <strong className="text-sm font-bold text-[#102a2f] block mt-1">
+                  <strong className="text-sm font-bold text-foreground block mt-1">
                     {card.title}
                   </strong>
-                  <div className="flex items-center gap-1.5 text-[11px] text-[#64777d] mt-1">
+                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#27805a]" />
                     <span>{card.subnote}</span>
                   </div>
@@ -339,16 +328,16 @@ export default function DirectoryAdminOverview() {
 
       {/* Quick Actions Section */}
       <section className="space-y-3 pt-2">
-        <h2 className="text-base font-bold text-[#102a2f]">Quick Actions</h2>
+        <h2 className="text-base font-bold text-foreground">Quick Actions</h2>
 
         <div className="flex flex-wrap items-center gap-2.5">
           {quickActions.map((action) => (
             <Link
               key={action.label}
               to={action.route}
-              className="px-4 py-2.5 rounded-xl border border-[#d9e3e5] bg-white hover:border-[#087f8c] hover:bg-[#f5fbfb] hover:text-[#087f8c] text-xs font-bold text-[#102a2f] flex items-center gap-1.5 transition-all shadow-xs"
+              className="px-4 py-2.5 rounded-xl border border-border bg-surface hover:border-primary hover:bg-[#f5fbfb] hover:text-primary text-xs font-bold text-foreground flex items-center gap-1.5 transition-all shadow-xs"
             >
-              <Plus size={14} className="text-[#087f8c]" />
+              <Plus size={14} className="text-primary" />
               <span>{action.label}</span>
             </Link>
           ))}

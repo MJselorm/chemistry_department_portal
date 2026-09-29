@@ -3,7 +3,7 @@ import { ArrowRight, CalendarDays } from 'lucide-react'
 export function DepartmentNote({ note }) {
   if (!note) return null
   return (
-    <article className="relative rounded-2xl border border-hair bg-white p-6 shadow-card">
+    <article className="relative rounded-2xl border border-hair bg-surface p-6 shadow-card">
       <span className="absolute right-6 top-6 h-2 w-2 rounded-full bg-amber-400" aria-hidden />
       <p className="font-mono text-[0.66rem] uppercase tracking-[0.16em] text-slate-500">
         {note.eyebrow}
@@ -36,7 +36,7 @@ export function DepartmentEvents({ events = [] }) {
         <ul className="mt-5 space-y-3">
           {events.map((event) => (
             <li key={event.id} className="flex items-center gap-4">
-              <div className="flex w-[3.2rem] shrink-0 flex-col items-center rounded-lg bg-white py-2">
+              <div className="flex w-[3.2rem] shrink-0 flex-col items-center rounded-lg bg-surface py-2">
                 <span className="font-mono text-[0.82rem] font-semibold leading-none">
                   {event.day}
                 </span>
@@ -62,7 +62,7 @@ export function DirectoryCard({ peerCount }) {
   return (
     <a
       href="/members"
-      className="flex items-center gap-4 rounded-2xl border border-hair bg-white p-5 shadow-card transition-colors hover:border-cyan-200"
+      className="flex items-center gap-4 rounded-2xl border border-hair bg-surface p-5 shadow-card transition-colors hover:border-cyan-200"
     >
       <span className="flex shrink-0 items-center" aria-hidden>
         <span className="h-7 w-7 rounded-full bg-tint-amber" />

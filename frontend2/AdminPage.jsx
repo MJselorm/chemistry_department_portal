@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import {
+  Bell,
+  BookOpen,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  FileUp,
+  Megaphone,
   Plus,
-  Trash2,
-  Pin,
   RefreshCw,
   Search,
-  Megaphone,
-  ChevronDown,
-  ChevronUp,
-  Bell,
-  FolderTree,
-  ExternalLink,
-  Loader2,
-  CheckCircle2,
-  AlertTriangle,
+  Sparkles,
+  Trash2,
+  Users,
+  X,
+  Zap,
 } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
-import { resourcesApi } from './resources/resourcesApi'
 import { useAuth } from './AuthContext'
 import { MOCK_ADMIN_USERS, MOCK_ADMIN_ACTIVITY } from './mocks'
 
@@ -48,6 +49,7 @@ export default function AdminPage() {
 
   // Form states
   const [eventForm, setEventForm] = useState({ title: '', type: 'Seminar', datetime: '', venue: '', description: '' })
+  const [resourceForm, setResourceForm] = useState({ title: '', category: 'Past Questions', course: '', year: '2026/2027' })
   const [announcementForm, setAnnouncementForm] = useState({
     headline: '',
     message: '',
@@ -58,12 +60,6 @@ export default function AdminPage() {
   })
   const [publishingAnnouncement, setPublishingAnnouncement] = useState(false)
   const [feedback, setFeedback] = useState(null)
-
-  // Resource sync & count state
-  const [resourceCount, setResourceCount] = useState(null)
-  const [isSyncingResources, setIsSyncingResources] = useState(false)
-  const [syncSummaryResult, setSyncSummaryResult] = useState(null)
-  const [syncErrorMessage, setSyncErrorMessage] = useState(null)
 
   // Announcements list state
   const [announcements, setAnnouncements] = useState([])
@@ -87,20 +83,9 @@ export default function AdminPage() {
     }
   }
 
-  const fetchResourceStats = async () => {
-    try {
-      const res = await resourcesApi.listResources({ page_size: 1 })
-      setResourceCount(res?.total ?? 0)
-    } catch {
-      setResourceCount(0)
-    }
-  }
-
   useEffect(() => {
     fetchAnnouncements()
-    fetchResourceStats()
   }, [])
-
 
   const handleAdminTest = async () => {
     setTestingRole(true)
@@ -167,7 +152,7 @@ export default function AdminPage() {
     }
     setDeletingId(id)
     try {
-      await api.delete(ENDPOINTS.adminDeleteAnnouncement(id))
+      await api.del(ENDPOINTS.adminDeleteAnnouncement(id))
       setAnnouncements((prev) => prev.filter((a) => a.id !== id))
       showFeedback('Announcement deleted successfully.')
     } catch (err) {
@@ -188,9 +173,9 @@ export default function AdminPage() {
 
   const categoryBadgeClass = (category) => {
     const value = (category || '').toLowerCase()
-    if (value === 'urgent') return 'bg-[#fdecec] text-[#c84b4b] border border-[#f5b3b3]'
-    if (value === 'academic') return 'bg-[#e7f5f7] text-[#087f8c] border border-[#b8dfe1]'
-    return 'bg-[#e7f5ed] text-[#27805a] border border-[#a6dec1]'
+    if (value === 'urgent') return 'bg-[var(--destructive-soft)] text-destructive border border-[var(--destructive-border)]'
+    if (value === 'academic') return 'bg-[#e7f5f7] text-primary border border-[#b8dfe1]'
+    return 'bg-[var(--success-soft)] text-success border border-[var(--success-border)]'
   }
 
   const filteredAnnouncements = announcements.filter((item) => {
@@ -211,11 +196,11 @@ export default function AdminPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7652b8]">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
             ADMINISTRATION CONSOLE
           </span>
-          <h1 className="text-2xl font-bold text-[#102a2f] mt-1">Admin Dashboard</h1>
-          <p className="text-xs text-[#64777d] mt-1">
+          <h1 className="text-2xl font-bold text-foreground mt-1">Admin Dashboard</h1>
+          <p className="text-xs text-muted-foreground mt-1">
             Manage portal content, events, academic resources, and user accounts.
           </p>
         </div>
@@ -223,13 +208,14 @@ export default function AdminPage() {
           <button
             onClick={handleAdminTest}
             disabled={testingRole}
-            className="px-3.5 py-2 rounded-xl bg-[#eee7fa] hover:bg-[#e4d8f8] text-[#7652b8] text-xs font-bold border border-[#d6c3f3] transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-[#eee7fa] hover:bg-[#e4d8f8] text-primary text-xs font-bold border border-[#d6c3f3] transition-colors inline-flex items-center gap-2"
           >
-            {testingRole ? 'Verifying...' : '⚡ Test Live Admin Endpoint'}
+            <Zap size={13} aria-hidden="true" />
+            {testingRole ? 'Verifying...' : 'Test Live Admin Endpoint'}
           </button>
           <button
             onClick={() => handleTabChange('events')}
-            className="px-4 py-2 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold transition-colors"
+            className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
           >
             Create event
           </button>
@@ -241,26 +227,28 @@ export default function AdminPage() {
         <div
           className={`p-4 rounded-2xl text-xs font-medium border flex items-center justify-between ${
             adminTestResult.success
-              ? 'bg-[#e7f5ed] border-[#a6dec1] text-[#27805a]'
-              : 'bg-[#fdecec] border-[#f5b3b3] text-[#c84b4b]'
+              ? 'bg-[var(--success-soft)] border-[var(--success-border)] text-success'
+              : 'bg-[var(--destructive-soft)] border-[var(--destructive-border)] text-destructive'
           }`}
         >
           <span>
             <strong>FastAPI Response (/admin/test):</strong> {adminTestResult.message}
           </span>
-          <button onClick={() => setAdminTestResult(null)} className="font-bold ml-2">✕</button>
+          <button onClick={() => setAdminTestResult(null)} className="font-bold ml-2" aria-label="Dismiss admin test result">
+            <X size={14} aria-hidden="true" />
+          </button>
         </div>
       )}
 
       {/* Global Action Feedback */}
       {feedback && (
-        <div className="p-3.5 rounded-xl bg-[#e7f5ed] border border-[#a6dec1] text-[#27805a] text-xs font-semibold">
+        <div className="p-3.5 rounded-xl bg-[var(--success-soft)] border border-[var(--success-border)] text-success text-xs font-semibold">
           {feedback}
         </div>
       )}
 
       {/* Sub-Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-[#e4ecee] pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-border pb-3">
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'events', label: 'Create Event' },
@@ -273,8 +261,8 @@ export default function AdminPage() {
             onClick={() => handleTabChange(tab.id)}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
               activeTab === tab.id
-                ? 'bg-[#102a2f] text-white'
-                : 'bg-white border border-[#e4ecee] text-[#64777d] hover:border-[#b7dfe2]'
+                ? 'bg-primary text-white'
+                : 'bg-surface border border-border text-muted-foreground hover:border-[var(--primary-border)]'
             }`}
           >
             {tab.label}
@@ -287,108 +275,102 @@ export default function AdminPage() {
         <div className="space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-            <div className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm">
-              <span className="w-8 h-8 rounded-lg bg-[#f1ebfb] text-[#7652b8] text-sm grid place-items-center mb-3 font-bold">
-                ◷
+            <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
+              <span className="w-8 h-8 rounded-lg bg-[#f1ebfb] text-primary text-sm grid place-items-center mb-3 font-bold">
+                <CalendarDays size={17} aria-hidden="true" />
               </span>
-              <strong className="block text-2xl font-black text-[#102a2f]">08</strong>
-              <span className="block text-xs text-[#64777d] mt-1">Published events</span>
+              <strong className="block text-2xl font-black text-foreground">08</strong>
+              <span className="block text-xs text-muted-foreground mt-1">Published events</span>
             </div>
-            <Link
-              to="/admin/resources"
-              className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm hover:border-[#087f8c] transition-colors group block"
-            >
+            <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
               <span className="w-8 h-8 rounded-lg bg-[#eaf4fb] text-[#2776a5] text-sm grid place-items-center mb-3 font-bold">
-                ▣
+                <BookOpen size={17} aria-hidden="true" />
               </span>
-              <strong className="block text-2xl font-black text-[#102a2f] group-hover:text-[#087f8c] transition-colors">
-                {resourceCount !== null ? String(resourceCount).padStart(2, '0') : '—'}
-              </strong>
-              <span className="block text-xs text-[#64777d] mt-1">Resources Indexed</span>
-            </Link>
-            <div className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm">
-              <span className="w-8 h-8 rounded-lg bg-[#eaf7f0] text-[#27805a] text-sm grid place-items-center mb-3 font-bold">
-                ◎
+              <strong className="block text-2xl font-black text-foreground">126</strong>
+              <span className="block text-xs text-muted-foreground mt-1">Resources</span>
+            </div>
+            <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
+              <span className="w-8 h-8 rounded-lg bg-[#eaf7f0] text-success text-sm grid place-items-center mb-3 font-bold">
+                <Users size={17} aria-hidden="true" />
               </span>
-              <strong className="block text-2xl font-black text-[#102a2f]">342</strong>
-              <span className="block text-xs text-[#64777d] mt-1">Students</span>
+              <strong className="block text-2xl font-black text-foreground">342</strong>
+              <span className="block text-xs text-muted-foreground mt-1">Students</span>
             </div>
             <div
               onClick={() => handleTabChange('announcements')}
-              className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm cursor-pointer hover:border-[#087f8c] transition-colors group"
+              className="bg-surface border border-border rounded-2xl p-4 shadow-sm cursor-pointer hover:border-primary transition-colors group"
             >
               <span className="w-8 h-8 rounded-lg bg-[#fff6df] text-[#a66b08] text-sm grid place-items-center mb-3 font-bold">
-                ▤
+                <Megaphone size={17} aria-hidden="true" />
               </span>
-              <strong className="block text-2xl font-black text-[#102a2f] group-hover:text-[#087f8c] transition-colors">
+              <strong className="block text-2xl font-black text-foreground group-hover:text-primary transition-colors">
                 {String(announcements.length).padStart(2, '0')}
               </strong>
-              <span className="block text-xs text-[#64777d] mt-1">Announcements</span>
+              <span className="block text-xs text-muted-foreground mt-1">Announcements</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Quick Management Shortcuts */}
-            <section className="bg-white border border-[#e4ecee] rounded-2xl p-5 shadow-sm">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#7d9297]">CONTENT</span>
-              <h2 className="text-base font-bold text-[#102a2f] mt-0.5 mb-3">Quick management</h2>
+            <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">CONTENT</span>
+              <h2 className="text-base font-bold text-foreground mt-0.5 mb-3">Quick management</h2>
               <div className="space-y-2">
                 <button
                   onClick={() => handleTabChange('events')}
-                  className="w-full text-left p-3 rounded-xl border border-[#e4ecee] hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
+                  className="w-full text-left p-3 rounded-xl border border-border hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
                 >
                   <div>
-                    <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
+                    <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
                       Manage events
                     </strong>
-                    <small className="block text-[10px] text-[#64777d]">Create, edit and publish seminars</small>
+                    <small className="block text-[10px] text-muted-foreground">Create, edit and publish seminars</small>
                   </div>
-                  <span className="text-[#087f8c] font-bold text-xs">→</span>
+                  <ChevronRight className="text-primary" size={15} aria-hidden="true" />
                 </button>
-                <Link
-                  to="/admin/resources"
-                  className="w-full text-left p-3 rounded-xl border border-[#e4ecee] hover:border-[#c4dde0] flex items-center justify-between transition-colors group block"
+                <button
+                  onClick={() => handleTabChange('resources')}
+                  className="w-full text-left p-3 rounded-xl border border-border hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
                 >
                   <div>
-                    <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
-                      Academic Resources & Drive Sync
+                    <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
+                      Upload resources
                     </strong>
-                    <small className="block text-[10px] text-[#64777d]">Sync Google Drive folders, edit metadata and publish files</small>
+                    <small className="block text-[10px] text-muted-foreground">Add notes, manuals and past questions</small>
                   </div>
-                  <span className="text-[#087f8c] font-bold text-xs">→</span>
-                </Link>
-
+                  <ChevronRight className="text-primary" size={15} aria-hidden="true" />
+                </button>
                 <button
                   onClick={() => handleTabChange('announcements')}
-                  className="w-full text-left p-3 rounded-xl border border-[#e4ecee] hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
+                  className="w-full text-left p-3 rounded-xl border border-border hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
                 >
                   <div>
-                    <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
+                    <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
                       Manage announcements
                     </strong>
-                    <small className="block text-[10px] text-[#64777d]">Create, pin, and view department notices</small>
+                    <small className="block text-[10px] text-muted-foreground">Create, pin, and view department notices</small>
                   </div>
-                  <span className="text-[#087f8c] font-bold text-xs">→</span>
+                  <ChevronRight className="text-primary" size={15} aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => handleTabChange('users')}
-                  className="w-full text-left p-3 rounded-xl border border-[#e4ecee] hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
+                  className="w-full text-left p-3 rounded-xl border border-border hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
                 >
                   <div>
-                    <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
+                    <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
                       Manage students
                     </strong>
-                    <small className="block text-[10px] text-[#64777d]">Accounts, roles and directory data</small>
+                    <small className="block text-[10px] text-muted-foreground">Accounts, roles and directory data</small>
                   </div>
-                  <span className="text-[#087f8c] font-bold text-xs">→</span>
+                  <ChevronRight className="text-primary" size={15} aria-hidden="true" />
                 </button>
               </div>
             </section>
 
             {/* Recent Activity */}
-            <section className="bg-white border border-[#e4ecee] rounded-2xl p-5 shadow-sm">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#7d9297]">ACTIVITY</span>
-              <h2 className="text-base font-bold text-[#102a2f] mt-0.5 mb-3">Recent activity</h2>
+            <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">ACTIVITY</span>
+              <h2 className="text-base font-bold text-foreground mt-0.5 mb-3">Recent activity</h2>
               <div className="divide-y divide-[#eef2f3]">
                 {MOCK_ADMIN_ACTIVITY.map((act) => (
                   <div key={act.id} className="py-3 flex items-start gap-2.5">
@@ -397,8 +379,8 @@ export default function AdminPage() {
                       style={{ backgroundColor: act.dotColor }}
                     />
                     <div className="flex-1">
-                      <strong className="block text-xs font-bold text-[#102a2f]">{act.text}</strong>
-                      <p className="text-[11px] text-[#64777d] mt-0.5">{act.desc}</p>
+                      <strong className="block text-xs font-bold text-foreground">{act.text}</strong>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{act.desc}</p>
                     </div>
                     <time className="text-[10px] text-[#a1adb0]">{act.time}</time>
                   </div>
@@ -411,37 +393,39 @@ export default function AdminPage() {
 
       {/* ── Tab: CREATE EVENT ───────────────────────────────────── */}
       {activeTab === 'events' && (
-        <section className="bg-white border border-[#e4ecee] rounded-2xl p-6 shadow-sm max-w-3xl">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#7d9297]">
+        <section className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-3xl">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
             EVENT MANAGEMENT
           </span>
-          <h2 className="text-xl font-bold text-[#102a2f] mt-0.5 mb-4">Create an event</h2>
+          <h2 className="text-xl font-bold text-foreground mt-0.5 mb-4">Create an event</h2>
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              showFeedback(`Event "${eventForm.title}" drafted! (Placeholder API: POST /admin/events)`)
+              showFeedback(`Event "${eventForm.title}" was captured for this session. Publishing is not available yet.`)
               setEventForm({ title: '', type: 'Seminar', datetime: '', venue: '', description: '' })
             }}
             className="space-y-4"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">Event title</label>
+                <label className="block text-xs font-bold text-foreground mb-1">Event title</label>
                 <input
                   type="text"
+                  aria-label="Event title"
                   required
                   placeholder="e.g. Chemistry Research Forum"
                   value={eventForm.title}
                   onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">Event type</label>
+                <label className="block text-xs font-bold text-foreground mb-1">Event type</label>
                 <select
+                  aria-label="Event type"
                   value={eventForm.type}
                   onChange={(e) => setEventForm({ ...eventForm, type: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c] bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
                 >
                   <option value="Seminar">Seminar</option>
                   <option value="Workshop">Workshop</option>
@@ -450,48 +434,51 @@ export default function AdminPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">Date & time</label>
+                <label className="block text-xs font-bold text-foreground mb-1">Date & time</label>
                 <input
                   type="datetime-local"
+                  aria-label="Event date and time"
                   required
                   value={eventForm.datetime}
                   onChange={(e) => setEventForm({ ...eventForm, datetime: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">Venue</label>
+                <label className="block text-xs font-bold text-foreground mb-1">Venue</label>
                 <input
                   type="text"
+                  aria-label="Event venue"
                   required
                   placeholder="Main Auditorium"
                   value={eventForm.venue}
                   onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">Description</label>
+                <label className="block text-xs font-bold text-foreground mb-1">Description</label>
                 <textarea
+                  aria-label="Event description"
                   rows="4"
                   placeholder="Event description..."
                   value={eventForm.description}
                   onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
                 />
               </div>
             </div>
             <div className="flex gap-2 pt-3 border-t border-[#f4f7f8]">
               <button
                 type="submit"
-                className="px-4 py-2.5 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
               >
                 Publish event
               </button>
               <button
                 type="button"
                 onClick={() => showFeedback('Draft saved locally.')}
-                className="px-4 py-2.5 rounded-xl border border-[#d7e2e4] text-[#496066] text-xs font-bold hover:bg-gray-50"
+                className="px-4 py-2.5 rounded-xl border border-[#d7e2e4] text-muted-foreground text-xs font-bold hover:bg-gray-50"
               >
                 Save draft
               </button>
@@ -500,160 +487,106 @@ export default function AdminPage() {
         </section>
       )}
 
-      {/* ── Tab: RESOURCE MANAGEMENT ───────────────────────────── */}
+      {/* ── Tab: UPLOAD RESOURCES ────────────────────────────────── */}
       {activeTab === 'resources' && (
-        <section className="bg-white border border-[#e4ecee] rounded-2xl p-6 shadow-sm max-w-3xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#f0f4f5] pb-4">
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#087f8c]">
-                REPOSITORY MANAGEMENT
-              </span>
-              <h2 className="text-xl font-bold text-[#102a2f] mt-0.5">Google Drive Academic Resources</h2>
-              <p className="text-xs text-[#64777d] mt-1">
-                Synchronize departmental notes, past questions, and handouts directly from your configured Google Drive folder.
-              </p>
-            </div>
-            <Link
-              to="/admin/resources"
-              className="px-4 py-2.5 rounded-xl bg-[#087f8c] hover:bg-[#066570] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 whitespace-nowrap self-start sm:self-auto"
-            >
-              <span>Open Full Console</span>
-              <ExternalLink size={13} />
-            </Link>
-          </div>
-
-          {/* Sync Trigger Card */}
-          <div className="p-5 rounded-2xl bg-[#f6f9fa] border border-[#e4ecee] space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#e8f6f7] text-[#087f8c] grid place-items-center font-black">
-                  <RefreshCw size={18} className={isSyncingResources ? 'animate-spin' : ''} />
-                </div>
-                <div>
-                  <strong className="block text-xs font-bold text-[#102a2f]">
-                    Google Drive Synchronization
-                  </strong>
-                  <span className="text-[11px] text-[#64777d]">
-                    {resourceCount !== null ? `${resourceCount} active resources currently indexed` : 'Connecting to database...'}
-                  </span>
+        <section className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-3xl">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+            RESOURCE MANAGEMENT
+          </span>
+          <h2 className="text-xl font-bold text-foreground mt-0.5 mb-4">Academic resources</h2>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              showFeedback(`Resource "${resourceForm.title}" was captured for this session. Upload publishing is not available yet.`)
+              setResourceForm({ title: '', category: 'Past Questions', course: '', year: '2026/2027' })
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1">Resource title</label>
+                <input
+                  type="text"
+                  aria-label="Resource title"
+                  required
+                  placeholder="e.g. CHEM301 Lecture Notes"
+                  value={resourceForm.title}
+                  onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1">Category</label>
+                <select
+                  aria-label="Resource category"
+                  value={resourceForm.category}
+                  onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
+                >
+                  <option value="Past Questions">Past Questions</option>
+                  <option value="Lecture Notes">Lecture Notes</option>
+                  <option value="Textbooks">Textbooks</option>
+                  <option value="Lab Manuals">Lab Manuals</option>
+                  <option value="Course Outlines">Course Outlines</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1">Course / Level</label>
+                <input
+                  type="text"
+                  aria-label="Resource course or level"
+                  placeholder="CHEM 301 · Level 300"
+                  value={resourceForm.course}
+                  onChange={(e) => setResourceForm({ ...resourceForm, course: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1">Academic year</label>
+                <input
+                  type="text"
+                  aria-label="Resource academic year"
+                  placeholder="2026/2027"
+                  value={resourceForm.year}
+                  onChange={(e) => setResourceForm({ ...resourceForm, year: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-foreground mb-1">File upload</label>
+                <div className="border-2 border-dashed border-[#dce6e8] rounded-xl p-8 bg-[#f9fbfb] text-center flex flex-col items-center justify-center">
+                  <FileUp className="text-[#91a0a4] mb-1" size={30} aria-hidden="true" />
+                  <strong className="text-xs text-[#5b6f74]">Drop a file here or browse</strong>
+                  <small className="text-[10px] text-[#91a0a4] mt-1">PDF, DOCX up to 25MB (Placeholder upload)</small>
                 </div>
               </div>
-
+            </div>
+            <div className="pt-3 border-t border-[#f4f7f8]">
               <button
-                type="button"
-                disabled={isSyncingResources}
-                onClick={async () => {
-                  setIsSyncingResources(true)
-                  setSyncErrorMessage(null)
-                  setSyncSummaryResult(null)
-                  try {
-                    const result = await resourcesApi.syncResources()
-                    setSyncSummaryResult(result)
-                    fetchResourceStats()
-                    showFeedback('Google Drive sync completed successfully!')
-                  } catch (err) {
-                    setSyncErrorMessage(err?.message || 'Sync failed. Please verify Drive credentials.')
-                  } finally {
-                    setIsSyncingResources(false)
-                  }
-                }}
-                className="px-4 py-2 rounded-xl bg-[#102a2f] hover:bg-[#1a3f46] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-60"
+                type="submit"
+                className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
               >
-                {isSyncingResources ? (
-                  <>
-                    <Loader2 size={13} className="animate-spin" />
-                    <span>Syncing...</span>
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw size={13} />
-                    <span>Sync Now</span>
-                  </>
-                )}
+                Upload resource
               </button>
             </div>
-
-            {/* Error banner */}
-            {syncErrorMessage && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
-                <AlertTriangle size={15} className="flex-shrink-0" />
-                <span>{syncErrorMessage}</span>
-              </div>
-            )}
-
-            {/* Sync Summary Result */}
-            {syncSummaryResult && (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 space-y-3">
-                <div className="flex items-center gap-2 font-bold">
-                  <CheckCircle2 size={16} className="text-emerald-600" />
-                  <span>Sync Finished Successfully</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                  <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
-                    <strong className="block text-emerald-900">{syncSummaryResult.files_scanned ?? 0}</strong>
-                    <span className="text-[10px] text-emerald-700">Files Scanned</span>
-                  </div>
-                  <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
-                    <strong className="block text-emerald-900">{syncSummaryResult.new_resources ?? 0}</strong>
-                    <span className="text-[10px] text-emerald-700">New Resources</span>
-                  </div>
-                  <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
-                    <strong className="block text-emerald-900">{syncSummaryResult.updated_resources ?? 0}</strong>
-                    <span className="text-[10px] text-emerald-700">Updated</span>
-                  </div>
-                  <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
-                    <strong className="block text-emerald-900">{syncSummaryResult.folders_scanned ?? 0}</strong>
-                    <span className="text-[10px] text-emerald-700">Folders</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Shortcuts */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Link
-              to="/admin/resources"
-              className="p-4 rounded-2xl border border-[#e4ecee] bg-white hover:border-[#087f8c] transition-all group block"
-            >
-              <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
-                Manage All Resources →
-              </strong>
-              <p className="text-[11px] text-[#64777d] mt-1">
-                Filter by level and course code, edit metadata titles, and toggle resource visibility.
-              </p>
-            </Link>
-
-            <Link
-              to="/resources"
-              className="p-4 rounded-2xl border border-[#e4ecee] bg-white hover:border-[#087f8c] transition-all group block"
-            >
-              <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
-                Student View →
-              </strong>
-              <p className="text-[11px] text-[#64777d] mt-1">
-                Preview the resource catalog and test file viewing and downloads exactly as students see it.
-              </p>
-            </Link>
-          </div>
+          </form>
         </section>
       )}
 
-
       {/* ── Tab: STUDENTS & USERS ───────────────────────────────── */}
       {activeTab === 'users' && (
-        <section className="bg-white border border-[#e4ecee] rounded-2xl p-6 shadow-sm">
+        <section className="bg-surface border border-border rounded-2xl p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#7d9297]">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
                 USER MANAGEMENT
               </span>
-              <h2 className="text-xl font-bold text-[#102a2f]">Student accounts</h2>
+              <h2 className="text-xl font-bold text-foreground">Student accounts</h2>
             </div>
             <input
               type="text"
               placeholder="Search students"
-              className="px-3.5 py-2 rounded-xl border border-[#e4ecee] text-xs focus:outline-none focus:border-[#087f8c]"
+              className="px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
             />
           </div>
 
@@ -672,19 +605,19 @@ export default function AdminPage() {
                 {MOCK_ADMIN_USERS.map((usr) => (
                   <tr key={usr.id} className="py-3">
                     <td className="py-3">
-                      <strong className="block text-xs font-bold text-[#102a2f]">{usr.name}</strong>
+                      <strong className="block text-xs font-bold text-foreground">{usr.name}</strong>
                       <small className="text-[10px] text-[#98a5a8]">{usr.status}</small>
                     </td>
-                    <td className="py-3 text-[#64777d]">{usr.studentId}</td>
-                    <td className="py-3 text-[#64777d]">{usr.level}</td>
+                    <td className="py-3 text-muted-foreground">{usr.studentId}</td>
+                    <td className="py-3 text-muted-foreground">{usr.level}</td>
                     <td className="py-3">
                       <span
                         className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
                           usr.badgeColor === 'blue'
-                            ? 'bg-[#e7f5f7] text-[#087f8c]'
+                            ? 'bg-[#e7f5f7] text-primary'
                             : usr.badgeColor === 'green'
-                            ? 'bg-[#e7f5ed] text-[#27805a]'
-                            : 'bg-[#f0eafb] text-[#7652b8]'
+                            ? 'bg-[var(--success-soft)] text-success'
+                            : 'bg-[var(--primary-soft)] text-primary'
                         }`}
                       >
                         {usr.role}
@@ -693,7 +626,7 @@ export default function AdminPage() {
                     <td className="py-3 text-right">
                       <button
                         onClick={() => showFeedback(`Selected user: ${usr.name}`)}
-                        className="text-xs font-bold text-[#087f8c] hover:underline"
+                        className="text-xs font-bold text-primary hover:underline"
                       >
                         Edit
                       </button>
@@ -710,13 +643,13 @@ export default function AdminPage() {
       {activeTab === 'announcements' && (
         <div className="space-y-6">
           {/* Header Card with Actions */}
-          <div className="bg-white border border-[#e4ecee] rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#7652b8]">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">
                 COMMUNICATIONS
               </span>
-              <h2 className="text-xl font-bold text-[#102a2f] mt-0.5">Department Announcements</h2>
-              <p className="text-xs text-[#64777d] mt-0.5">
+              <h2 className="text-xl font-bold text-foreground mt-0.5">Department Announcements</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Broadcast notices to students, pin urgent advisories, and manage live feeds.
               </p>
             </div>
@@ -725,15 +658,16 @@ export default function AdminPage() {
                 type="button"
                 onClick={fetchAnnouncements}
                 disabled={loadingAnnouncements}
-                className="p-2.5 rounded-xl border border-[#d9e3e5] bg-white hover:bg-gray-50 text-[#496066] transition-colors shadow-xs disabled:opacity-50"
+                className="p-2.5 rounded-xl border border-border bg-surface hover:bg-gray-50 text-muted-foreground transition-colors shadow-xs disabled:opacity-50"
                 title="Refresh announcements"
+                aria-label="Refresh announcements"
               >
-                <RefreshCw size={14} className={loadingAnnouncements ? 'animate-spin text-[#087f8c]' : ''} />
+                <RefreshCw size={14} className={loadingAnnouncements ? 'animate-spin text-primary' : ''} />
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateAnnouncement(!showCreateAnnouncement)}
-                className="px-4 py-2.5 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold transition-colors flex items-center gap-2 shadow-xs"
+                className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors flex items-center gap-2 shadow-xs"
               >
                 {showCreateAnnouncement ? (
                   <>
@@ -752,62 +686,66 @@ export default function AdminPage() {
 
           {/* Create Announcement Form */}
           {showCreateAnnouncement && (
-            <section className="bg-white border-2 border-[#bce4e8] rounded-2xl p-6 shadow-card animate-in fade-in slide-in-from-top-3 duration-200">
+            <section className="bg-surface border-2 border-[var(--primary-border)] rounded-2xl p-6 shadow-card animate-in fade-in slide-in-from-top-3 duration-200">
               <div className="flex items-center justify-between pb-3 border-b border-[#f0f4f5] mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#e7f5f7] text-[#087f8c] grid place-items-center font-bold text-xs">
-                    ✦
+                  <div className="w-7 h-7 rounded-lg bg-[#e7f5f7] text-primary grid place-items-center font-bold text-xs">
+                    <Sparkles size={14} aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#102a2f]">Create announcement</h3>
-                    <p className="text-[11px] text-[#64777d]">This will be published live to all signed-in portal users.</p>
+                    <h3 className="text-sm font-bold text-foreground">Create announcement</h3>
+                    <p className="text-[11px] text-muted-foreground">This will be published live to all signed-in portal users.</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowCreateAnnouncement(false)}
-                  className="text-xs text-[#9aa7aa] hover:text-[#102a2f] font-bold p-1"
+                  className="text-xs text-muted-foreground hover:text-foreground font-bold p-1"
+                  aria-label="Close announcement form"
                 >
-                  ✕
+                  <X size={15} aria-hidden="true" />
                 </button>
               </div>
 
               <form onSubmit={publishAnnouncement} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#102a2f] mb-1">
-                    Headline / Title <span className="text-[#c84b4b]">*</span>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Headline / Title <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="text"
+                    aria-label="Announcement headline"
                     required
                     placeholder="e.g. Mid-Semester Examination Timetable Release"
                     value={announcementForm.headline}
                     onChange={(e) => setAnnouncementForm({ ...announcementForm, headline: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c] shadow-xs"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary shadow-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#102a2f] mb-1">
-                    Message Body <span className="text-[#c84b4b]">*</span>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Message Body <span className="text-destructive">*</span>
                   </label>
                   <textarea
+                    aria-label="Announcement message"
                     rows="4"
                     required
                     placeholder="Provide full details, instructions, venue info or deadlines..."
                     value={announcementForm.message}
                     onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c] shadow-xs"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary shadow-xs"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                   <div>
-                    <label className="block text-xs font-bold text-[#102a2f] mb-1">Category</label>
+                    <label className="block text-xs font-bold text-foreground mb-1">Category</label>
                     <select
+                      aria-label="Announcement category"
                       value={announcementForm.category}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, category: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c] bg-white shadow-xs"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
                     >
                       <option value="Academic">Academic</option>
                       <option value="Department">Department</option>
@@ -816,11 +754,12 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#102a2f] mb-1">Audience</label>
+                    <label className="block text-xs font-bold text-foreground mb-1">Audience</label>
                     <select
+                      aria-label="Announcement audience"
                       value={announcementForm.audience}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, audience: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c] bg-white shadow-xs"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
                     >
                       <option value="All students">All students</option>
                       <option value="Level 100">Level 100</option>
@@ -831,27 +770,28 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#102a2f] mb-1">Issued by</label>
+                    <label className="block text-xs font-bold text-foreground mb-1">Issued by</label>
                     <input
                       type="text"
+                      aria-label="Announcement issuer"
                       required
                       placeholder="e.g. Chemistry Board of Studies"
                       value={announcementForm.issuer}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, issuer: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c] shadow-xs"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary shadow-xs"
                     />
                   </div>
                 </div>
 
                 <div className="pt-2">
-                  <label className="inline-flex items-center gap-2 text-xs font-bold text-[#102a2f] cursor-pointer bg-[#f7fafb] px-3.5 py-2 rounded-xl border border-[#e4ecee]">
+                  <label className="inline-flex items-center gap-2 text-xs font-bold text-foreground cursor-pointer bg-[#f7fafb] px-3.5 py-2 rounded-xl border border-border">
                     <input
                       type="checkbox"
                       checked={announcementForm.pin}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, pin: e.target.checked })}
-                      className="w-4 h-4 rounded text-[#087f8c] focus:ring-[#087f8c]"
+                      className="w-4 h-4 rounded text-primary focus:ring-primary"
                     />
-                    <Pin size={13} className={announcementForm.pin ? 'text-[#087f8c]' : 'text-[#8a999d]'} />
+                    <Pin size={13} className={announcementForm.pin ? 'text-primary' : 'text-[#8a999d]'} />
                     <span>Pin announcement to top of feed & dashboard</span>
                   </label>
                 </div>
@@ -860,7 +800,7 @@ export default function AdminPage() {
                   <button
                     type="submit"
                     disabled={publishingAnnouncement}
-                    className="px-5 py-2.5 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold transition-colors flex items-center gap-2 shadow-xs disabled:opacity-60"
+                    className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors flex items-center gap-2 shadow-xs disabled:opacity-60"
                   >
                     {publishingAnnouncement ? (
                       <>
@@ -877,7 +817,7 @@ export default function AdminPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreateAnnouncement(false)}
-                    className="px-4 py-2.5 rounded-xl border border-[#d7e2e4] text-[#496066] text-xs font-bold hover:bg-gray-50"
+                    className="px-4 py-2.5 rounded-xl border border-[#d7e2e4] text-muted-foreground text-xs font-bold hover:bg-gray-50"
                   >
                     Cancel
                   </button>
@@ -901,8 +841,8 @@ export default function AdminPage() {
                     onClick={() => setAnnouncementCategoryFilter(cat)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                       announcementCategoryFilter === cat
-                        ? 'bg-[#102a2f] text-white shadow-xs'
-                        : 'bg-white border border-[#e4ecee] text-[#64777d] hover:border-[#b7dfe2]'
+                        ? 'bg-primary text-white shadow-xs'
+                        : 'bg-surface border border-border text-muted-foreground hover:border-[var(--primary-border)]'
                     }`}
                   >
                     {cat} ({count})
@@ -912,21 +852,23 @@ export default function AdminPage() {
             </div>
 
             <div className="relative w-full sm:w-72">
-              <Search size={14} className="absolute left-3 top-3 text-[#9aa7aa]" />
+              <Search size={14} className="absolute left-3 top-3 text-muted-foreground" />
               <input
                 type="text"
+                aria-label="Search announcements"
                 placeholder="Search announcements..."
                 value={announcementSearch}
                 onChange={(e) => setAnnouncementSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 rounded-xl border border-[#e4ecee] bg-white text-xs text-[#102a2f] placeholder-[#9ba8ac] focus:outline-none focus:border-[#087f8c] shadow-xs"
+                className="w-full pl-8 pr-3 py-2 rounded-xl border border-border bg-surface text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary shadow-xs"
               />
               {announcementSearch && (
                 <button
                   type="button"
                   onClick={() => setAnnouncementSearch('')}
-                  className="absolute right-2.5 top-2.5 text-xs text-[#9aa7aa] hover:text-[#102a2f]"
+                  className="absolute right-2.5 top-2.5 text-xs text-muted-foreground hover:text-foreground"
+                  aria-label="Clear announcement search"
                 >
-                  ✕
+                  <X size={13} aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -934,12 +876,12 @@ export default function AdminPage() {
 
           {/* Announcements Feed / View List */}
           {loadingAnnouncements && announcements.length === 0 ? (
-            <div className="py-12 bg-white rounded-2xl border border-[#e4ecee] text-center">
-              <RefreshCw size={20} className="animate-spin text-[#087f8c] mx-auto mb-2" />
-              <p className="text-xs text-[#64777d]">Loading announcements feed…</p>
+            <div className="py-12 bg-surface rounded-2xl border border-border text-center">
+              <RefreshCw size={20} className="animate-spin text-primary mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Loading announcements feed…</p>
             </div>
           ) : announcementsError ? (
-            <div className="p-4 bg-[#fdecec] border border-[#f5b3b3] rounded-2xl text-xs text-[#c84b4b] flex items-center justify-between">
+            <div className="p-4 bg-[var(--destructive-soft)] border border-[var(--destructive-border)] rounded-2xl text-xs text-destructive flex items-center justify-between">
               <span>{announcementsError}</span>
               <button
                 type="button"
@@ -950,13 +892,13 @@ export default function AdminPage() {
               </button>
             </div>
           ) : filteredAnnouncements.length === 0 ? (
-            <div className="py-12 bg-white rounded-2xl border border-[#e4ecee] text-center p-6 space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#f0f7f8] text-[#087f8c] grid place-items-center mx-auto text-xl font-bold">
-                ▤
+            <div className="py-12 bg-surface rounded-2xl border border-border text-center p-6 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#f0f7f8] text-primary grid place-items-center mx-auto text-xl font-bold">
+                <Megaphone size={22} aria-hidden="true" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#102a2f]">No announcements found</h3>
-                <p className="text-xs text-[#64777d] mt-1">
+                <h3 className="text-sm font-bold text-foreground">No announcements found</h3>
+                <p className="text-xs text-muted-foreground mt-1">
                   {announcementSearch || announcementCategoryFilter !== 'All'
                     ? 'No announcements match your search or filter criteria.'
                     : 'No department announcements have been created yet.'}
@@ -969,7 +911,7 @@ export default function AdminPage() {
                     setAnnouncementSearch('')
                     setAnnouncementCategoryFilter('All')
                   }}
-                  className="text-xs text-[#087f8c] font-bold hover:underline"
+                  className="text-xs text-primary font-bold hover:underline"
                 >
                   Clear search & filters
                 </button>
@@ -977,7 +919,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateAnnouncement(true)}
-                  className="px-4 py-2 rounded-xl bg-[#087f8c] text-white text-xs font-bold hover:bg-[#05636d] transition-colors"
+                  className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors"
                 >
                   + Create first announcement
                 </button>
@@ -988,10 +930,10 @@ export default function AdminPage() {
               {filteredAnnouncements.map((item) => (
                 <article
                   key={item.id}
-                  className={`bg-white border rounded-2xl p-5 shadow-xs transition-all ${
+                  className={`bg-surface border rounded-2xl p-5 shadow-xs transition-all ${
                     item.is_pinned
                       ? 'border-[#f2d89f] bg-gradient-to-r from-[#fffdfa] to-white ring-1 ring-[#f2d89f]/40'
-                      : 'border-[#e4ecee] hover:border-[#b8dfe1]'
+                      : 'border-border hover:border-[var(--primary-border)]'
                   }`}
                 >
                   {/* Card Header */}
@@ -1005,8 +947,9 @@ export default function AdminPage() {
                         {item.category}
                       </span>
 
-                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#f1f5f6] text-[#55696e] border border-[#e2e9eb]">
-                        👥 {item.audience || 'All students'}
+                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#f1f5f6] text-[#55696e] border border-[#e2e9eb] inline-flex items-center gap-1">
+                        <Users size={10} aria-hidden="true" />
+                        {item.audience || 'All students'}
                       </span>
 
                       {item.is_pinned && (
@@ -1018,14 +961,14 @@ export default function AdminPage() {
                     </div>
 
                     <div className="flex items-center gap-3 ml-auto">
-                      <small className="text-[11px] text-[#9aa7aa] font-medium">
+                      <small className="text-[11px] text-muted-foreground font-medium">
                         {timeAgo(item.published_at)}
                       </small>
                       <button
                         type="button"
                         onClick={() => handleDeleteAnnouncement(item.id, item.title)}
                         disabled={deletingId === item.id}
-                        className="text-[#b64a4a] hover:text-[#8e2929] hover:bg-[#fdecec] p-1.5 rounded-lg transition-colors text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
+                        className="text-[#b64a4a] hover:text-[#8e2929] hover:bg-[var(--destructive-soft)] p-1.5 rounded-lg transition-colors text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
                         title="Delete announcement"
                       >
                         <Trash2 size={13} className={deletingId === item.id ? 'animate-spin' : ''} />
@@ -1035,16 +978,16 @@ export default function AdminPage() {
                   </div>
 
                   {/* Title & Body */}
-                  <h3 className="text-base font-bold text-[#102a2f] mb-1.5">{item.title}</h3>
+                  <h3 className="text-base font-bold text-foreground mb-1.5">{item.title}</h3>
                   <p className="text-xs text-[#52656a] leading-relaxed mb-3 whitespace-pre-line">
                     {item.body}
                   </p>
 
                   {/* Card Footer */}
-                  <div className="flex items-center justify-between text-[11px] text-[#9aa7aa] border-t border-[#f4f7f8] pt-2.5">
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground border-t border-[#f4f7f8] pt-2.5">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-[#667a7f]">Issued by:</span>
-                      <span className="text-[#102a2f] font-bold">{item.issuer}</span>
+                      <span className="text-foreground font-bold">{item.issuer}</span>
                     </div>
                     {item.published_at && (
                       <span className="text-[10px]">

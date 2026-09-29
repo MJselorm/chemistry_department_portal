@@ -24,7 +24,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Toast container */}
-      <div className="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+      <div className="fixed left-0 right-0 top-3 z-[80] flex w-full flex-col gap-2 px-3 pointer-events-none sm:left-auto sm:right-5 sm:top-5 sm:max-w-sm sm:px-0" aria-live="polite" aria-atomic="true">
         {toasts.map((t) => {
           const isSuccess = t.type === 'success'
           const isError = t.type === 'error'
@@ -32,23 +32,24 @@ export function ToastProvider({ children }) {
           return (
             <div
               key={t.id}
+              role={isError ? 'alert' : 'status'}
               className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border shadow-card transition-all transform animate-in fade-in slide-in-from-top-2 text-xs font-medium ${
                 isSuccess
-                  ? 'bg-[#e7f5ed] border-[#a6dec1] text-[#27805a]'
+                  ? 'bg-[var(--success-soft)] border-[var(--success-border)] text-success'
                   : isError
-                  ? 'bg-[#fdecec] border-[#f5b3b3] text-[#c84b4b]'
-                  : 'bg-[#e8f6f7] border-[#bce4e8] text-[#087f8c]'
+                  ? 'bg-[var(--destructive-soft)] border-[var(--destructive-border)] text-destructive'
+                  : 'bg-[var(--primary-soft)] border-[var(--primary-border)] text-primary'
               }`}
             >
               <div className="mt-0.5 flex-shrink-0">
-                {isSuccess && <CheckCircle2 size={16} className="text-[#27805a]" />}
-                {isError && <AlertCircle size={16} className="text-[#c84b4b]" />}
-                {!isSuccess && !isError && <Info size={16} className="text-[#087f8c]" />}
+                {isSuccess && <CheckCircle2 size={16} className="text-success" />}
+                {isError && <AlertCircle size={16} className="text-destructive" />}
+                {!isSuccess && !isError && <Info size={16} className="text-primary" />}
               </div>
               <div className="flex-1 break-words leading-relaxed">{t.message}</div>
               <button
                 onClick={() => removeToast(t.id)}
-                className="opacity-70 hover:opacity-100 p-0.5 ml-1 flex-shrink-0 text-current"
+                className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-current opacity-70 hover:bg-black/5 hover:opacity-100"
                 aria-label="Close notification"
               >
                 <X size={14} />

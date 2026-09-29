@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export default function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true)
@@ -16,24 +17,24 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-3xl">
       {/* Page Head */}
       <div>
-        <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7d9297]">PREFERENCES</span>
-        <h1 className="text-2xl font-bold text-[#102a2f] mt-1">Settings</h1>
-        <p className="text-xs text-[#64777d] mt-1">Configure your portal experience and notifications.</p>
+        <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">PREFERENCES</span>
+        <h1 className="text-2xl font-bold text-foreground mt-1">Settings</h1>
+        <p className="text-xs text-muted-foreground mt-1">Preview notification and directory preferences for this session.</p>
       </div>
 
       {savedNotice && (
-        <div className="p-3 rounded-xl bg-[#e7f5ed] border border-[#a6dec1] text-[#27805a] text-xs font-semibold">
-          Preferences updated (Placeholder API: PATCH /users/settings)
+        <div className="p-3 rounded-xl bg-[var(--success-soft)] border border-[var(--success-border)] text-success text-xs font-semibold">
+          Preference changed for this session. Server persistence is not yet available.
         </div>
       )}
 
       {/* Settings Panel */}
-      <section className="bg-white border border-[#e4ecee] rounded-2xl divide-y divide-[#e4ecee] shadow-sm overflow-hidden">
+      <section className="bg-surface border border-border rounded-2xl divide-y divide-border shadow-sm overflow-hidden">
         {/* Email notifications */}
-        <label className="flex items-center justify-between gap-4 p-5 hover:bg-[#fbfcfc] cursor-pointer transition-colors">
+        <label className="flex items-center justify-between gap-4 p-5 hover:bg-surface-secondary cursor-pointer transition-colors">
           <div>
-            <strong className="block text-xs font-bold text-[#102a2f]">Email notifications</strong>
-            <small className="block text-[11px] text-[#64777d] mt-0.5">
+            <strong className="block text-xs font-bold text-foreground">Email notifications</strong>
+            <small className="block text-[11px] text-muted-foreground mt-0.5">
               Receive event announcements and departmental updates directly in your inbox.
             </small>
           </div>
@@ -41,15 +42,15 @@ export default function SettingsPage() {
             type="checkbox"
             checked={emailNotifications}
             onChange={(e) => handleChange(setEmailNotifications, e.target.checked)}
-            className="w-4 h-4 rounded text-[#087f8c] focus:ring-[#087f8c] border-gray-300"
+            className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
           />
         </label>
 
         {/* Event reminders */}
-        <label className="flex items-center justify-between gap-4 p-5 hover:bg-[#fbfcfc] cursor-pointer transition-colors">
+        <label className="flex items-center justify-between gap-4 p-5 hover:bg-surface-secondary cursor-pointer transition-colors">
           <div>
-            <strong className="block text-xs font-bold text-[#102a2f]">Event reminders</strong>
-            <small className="block text-[11px] text-[#64777d] mt-0.5">
+            <strong className="block text-xs font-bold text-foreground">Event reminders</strong>
+            <small className="block text-[11px] text-muted-foreground mt-0.5">
               Get reminders 24 hours before registered seminars and workshops.
             </small>
           </div>
@@ -57,15 +58,15 @@ export default function SettingsPage() {
             type="checkbox"
             checked={eventReminders}
             onChange={(e) => handleChange(setEventReminders, e.target.checked)}
-            className="w-4 h-4 rounded text-[#087f8c] focus:ring-[#087f8c] border-gray-300"
+            className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
           />
         </label>
 
         {/* Public directory profile */}
-        <label className="flex items-center justify-between gap-4 p-5 hover:bg-[#fbfcfc] cursor-pointer transition-colors">
+        <label className="flex items-center justify-between gap-4 p-5 hover:bg-surface-secondary cursor-pointer transition-colors">
           <div>
-            <strong className="block text-xs font-bold text-[#102a2f]">Public directory profile</strong>
-            <small className="block text-[11px] text-[#64777d] mt-0.5">
+            <strong className="block text-xs font-bold text-foreground">Public directory profile</strong>
+            <small className="block text-[11px] text-muted-foreground mt-0.5">
               Allow your basic student name and class level to appear in the department student directory.
             </small>
           </div>
@@ -73,9 +74,21 @@ export default function SettingsPage() {
             type="checkbox"
             checked={publicDirectory}
             onChange={(e) => handleChange(setPublicDirectory, e.target.checked)}
-            className="w-4 h-4 rounded text-[#087f8c] focus:ring-[#087f8c] border-gray-300"
+            className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
           />
         </label>
+      </section>
+
+      <section className="border-t border-border pt-5">
+        <h2 className="text-sm font-bold text-foreground">Privacy and account data</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Review how portal data is handled or contact department administration to request access,
+          correction, or deletion after identity verification.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-4 text-xs font-bold text-primary">
+          <Link to="/privacy" className="hover:underline">Privacy Notice</Link>
+          <Link to="/terms" className="hover:underline">Terms of Use</Link>
+        </div>
       </section>
     </div>
   )

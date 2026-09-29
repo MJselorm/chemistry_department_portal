@@ -19,12 +19,16 @@ function resolveBaseUrl() {
 }
 
 const BASE_URL = resolveBaseUrl()
-const TOKEN_KEY = 'gscs.access_token'
+let accessToken = null
 
 export const tokenStore = {
-  get: () => localStorage.getItem(TOKEN_KEY),
-  set: (token) => localStorage.setItem(TOKEN_KEY, token),
-  clear: () => localStorage.removeItem(TOKEN_KEY),
+  get: () => accessToken,
+  set: (token) => {
+    accessToken = token
+  },
+  clear: () => {
+    accessToken = null
+  },
 }
 
 export class ApiError extends Error {
@@ -80,7 +84,7 @@ async function request(path, { method = 'GET', body, form, auth = true, signal, 
   const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
   let res
   try {
-    res = await fetch(targetUrl, { method, headers, body: payload, signal })
+    res = await fetch(targetUrl, { method, headers, body: payload, signal, credentials: 'omit' })
   } catch (err) {
     if (retryCount > 0 && (err.name === 'TypeError' || err.message?.includes('fetch'))) {
       // Server may be spinning up from cold sleep (e.g. Render free tier). Wait 2s and retry once.
@@ -128,6 +132,7 @@ export const api = {
         headers,
         body: formData,
         signal: opts.signal,
+        credentials: 'omit',
       })
     } catch (err) {
       if (err.name === 'TypeError' || err.message?.includes('fetch')) {
