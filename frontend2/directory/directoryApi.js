@@ -15,10 +15,38 @@ function buildQueryString(params = {}) {
   return str ? `?${str}` : ''
 }
 
+// Cache & in-flight deduplication to prevent repetitive network requests
+let cachedSummary = null
+let summaryInFlight = null
+let lastSummaryTime = 0
+const SUMMARY_TTL_MS = 30000 // 30 seconds
+
 export const directoryApi = {
   // Summary & Search
-  getSummary: async () => {
-    return await api.get(DIRECTORY_ENDPOINTS.summary)
+  getSummary: async (forceRefresh = false) => {
+    const now = Date.now()
+    if (!forceRefresh && cachedSummary && (now - lastSummaryTime < SUMMARY_TTL_MS)) {
+      return cachedSummary
+    }
+    if (summaryInFlight) {
+      return await summaryInFlight
+    }
+    summaryInFlight = (async () => {
+      try {
+        const data = await api.get(DIRECTORY_ENDPOINTS.summary)
+        cachedSummary = data || {}
+        lastSummaryTime = Date.now()
+        return cachedSummary
+      } finally {
+        summaryInFlight = null
+      }
+    })()
+    return await summaryInFlight
+  },
+
+  invalidateSummary: () => {
+    cachedSummary = null
+    lastSummaryTime = 0
   },
 
   search: async (q) => {
@@ -42,19 +70,27 @@ export const directoryApi = {
   },
 
   createEntity: async (endpoint, data) => {
-    return await api.post(endpoint, data)
+    const res = await api.post(endpoint, data)
+    directoryApi.invalidateSummary()
+    return res
   },
 
   updateEntity: async (endpoint, id, data) => {
-    return await api.patch(`${endpoint}/${id}`, data)
+    const res = await api.patch(`${endpoint}/${id}`, data)
+    directoryApi.invalidateSummary()
+    return res
   },
 
   deleteEntity: async (endpoint, id) => {
-    return await api.del(`${endpoint}/${id}`)
+    const res = await api.del(`${endpoint}/${id}`)
+    directoryApi.invalidateSummary()
+    return res
   },
 
   toggleActive: async (endpoint, id, currentIsActive) => {
-    return await api.patch(`${endpoint}/${id}`, { is_active: !currentIsActive })
+    const res = await api.patch(`${endpoint}/${id}`, { is_active: !currentIsActive })
+    directoryApi.invalidateSummary()
+    return res
   },
 
   // Lecturer Consultations

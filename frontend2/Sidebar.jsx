@@ -18,6 +18,11 @@ export default function Sidebar({ isOpen, onClose }) {
     { to: '/events', label: 'Events', icon: '◷' },
     { to: '/academic', label: 'Academic Hub', icon: '▣' },
     {
+      to: isAdmin ? '/admin/resources' : '/resources',
+      label: 'Academic Resources',
+      icon: '📖',
+    },
+    {
       to: isAdmin ? '/admin/directory' : '/directory',
       label: 'Directory',
       icon: '◎',
@@ -68,6 +73,10 @@ export default function Sidebar({ isOpen, onClose }) {
               item.label === 'Directory' &&
               (location.pathname.startsWith('/admin/directory') || location.pathname === '/directory')
 
+            const isResourcesActive =
+              item.label === 'Academic Resources' &&
+              (location.pathname.startsWith('/admin/resources') || location.pathname === '/resources')
+
             return (
               <NavLink
                 key={item.to}
@@ -75,7 +84,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive || isDirectoryActive
+                    isActive || isDirectoryActive || isResourcesActive
                       ? isAdmin && item.to === '/dashboard'
                         ? 'bg-[#f0eafb] text-[#7652b8] font-bold shadow-xs'
                         : 'bg-[#e8f6f7] text-[#087f8c] font-bold shadow-xs'

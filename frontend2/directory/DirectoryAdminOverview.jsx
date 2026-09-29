@@ -32,21 +32,37 @@ export default function DirectoryAdminOverview() {
   const [showResults, setShowResults] = useState(false)
   const searchContainerRef = useRef(null)
 
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async (force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await directoryApi.getSummary()
+      const data = await directoryApi.getSummary(force)
       setSummary(data || {})
     } catch (err) {
       setError(err?.message || 'Failed to load directory metrics.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    loadSummary()
+    let mounted = true
+    directoryApi.getSummary(false)
+      .then((data) => {
+        if (mounted) {
+          setSummary(data || {})
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (mounted) {
+          setError(err?.message || 'Failed to load directory metrics.')
+          setLoading(false)
+        }
+      })
+    return () => {
+      mounted = false
+    }
   }, [])
 
   // Handle live search
@@ -266,7 +282,7 @@ export default function DirectoryAdminOverview() {
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-[#102a2f]">Directory Overview</h2>
           <button
-            onClick={loadSummary}
+            onClick={() => loadSummary(true)}
             disabled={loading}
             className="text-xs text-[#087f8c] hover:underline font-bold flex items-center gap-1"
           >
@@ -301,7 +317,7 @@ export default function DirectoryAdminOverview() {
                 {/* Card Bottom: Big Count, Label, and Subnote */}
                 <div className="mt-5">
                   <span className="text-3xl sm:text-4xl font-black text-[#102a2f] tracking-tight block">
-                    {loading ? (
+                    {loading && !summary ? (
                       <span className="inline-block w-8 h-8 bg-gray-100 rounded-lg animate-pulse" />
                     ) : (
                       card.count

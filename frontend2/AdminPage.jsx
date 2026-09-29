@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Plus, Trash2, Pin, RefreshCw, Search, Megaphone, ChevronDown, ChevronUp, Bell } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import {
+  Plus,
+  Trash2,
+  Pin,
+  RefreshCw,
+  Search,
+  Megaphone,
+  ChevronDown,
+  ChevronUp,
+  Bell,
+  FolderTree,
+  ExternalLink,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+} from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
+import { resourcesApi } from './resources/resourcesApi'
 import { useAuth } from './AuthContext'
 import { MOCK_ADMIN_USERS, MOCK_ADMIN_ACTIVITY } from './mocks'
 
@@ -32,7 +48,6 @@ export default function AdminPage() {
 
   // Form states
   const [eventForm, setEventForm] = useState({ title: '', type: 'Seminar', datetime: '', venue: '', description: '' })
-  const [resourceForm, setResourceForm] = useState({ title: '', category: 'Past Questions', course: '', year: '2026/2027' })
   const [announcementForm, setAnnouncementForm] = useState({
     headline: '',
     message: '',
@@ -43,6 +58,12 @@ export default function AdminPage() {
   })
   const [publishingAnnouncement, setPublishingAnnouncement] = useState(false)
   const [feedback, setFeedback] = useState(null)
+
+  // Resource sync & count state
+  const [resourceCount, setResourceCount] = useState(null)
+  const [isSyncingResources, setIsSyncingResources] = useState(false)
+  const [syncSummaryResult, setSyncSummaryResult] = useState(null)
+  const [syncErrorMessage, setSyncErrorMessage] = useState(null)
 
   // Announcements list state
   const [announcements, setAnnouncements] = useState([])
@@ -66,9 +87,20 @@ export default function AdminPage() {
     }
   }
 
+  const fetchResourceStats = async () => {
+    try {
+      const res = await resourcesApi.listResources({ page_size: 1 })
+      setResourceCount(res?.total ?? 0)
+    } catch {
+      setResourceCount(0)
+    }
+  }
+
   useEffect(() => {
     fetchAnnouncements()
+    fetchResourceStats()
   }, [])
+
 
   const handleAdminTest = async () => {
     setTestingRole(true)
@@ -262,13 +294,18 @@ export default function AdminPage() {
               <strong className="block text-2xl font-black text-[#102a2f]">08</strong>
               <span className="block text-xs text-[#64777d] mt-1">Published events</span>
             </div>
-            <div className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm">
+            <Link
+              to="/admin/resources"
+              className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm hover:border-[#087f8c] transition-colors group block"
+            >
               <span className="w-8 h-8 rounded-lg bg-[#eaf4fb] text-[#2776a5] text-sm grid place-items-center mb-3 font-bold">
                 ▣
               </span>
-              <strong className="block text-2xl font-black text-[#102a2f]">126</strong>
-              <span className="block text-xs text-[#64777d] mt-1">Resources</span>
-            </div>
+              <strong className="block text-2xl font-black text-[#102a2f] group-hover:text-[#087f8c] transition-colors">
+                {resourceCount !== null ? String(resourceCount).padStart(2, '0') : '—'}
+              </strong>
+              <span className="block text-xs text-[#64777d] mt-1">Resources Indexed</span>
+            </Link>
             <div className="bg-white border border-[#e4ecee] rounded-2xl p-4 shadow-sm">
               <span className="w-8 h-8 rounded-lg bg-[#eaf7f0] text-[#27805a] text-sm grid place-items-center mb-3 font-bold">
                 ◎
@@ -308,18 +345,19 @@ export default function AdminPage() {
                   </div>
                   <span className="text-[#087f8c] font-bold text-xs">→</span>
                 </button>
-                <button
-                  onClick={() => handleTabChange('resources')}
-                  className="w-full text-left p-3 rounded-xl border border-[#e4ecee] hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
+                <Link
+                  to="/admin/resources"
+                  className="w-full text-left p-3 rounded-xl border border-[#e4ecee] hover:border-[#c4dde0] flex items-center justify-between transition-colors group block"
                 >
                   <div>
                     <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
-                      Upload resources
+                      Academic Resources & Drive Sync
                     </strong>
-                    <small className="block text-[10px] text-[#64777d]">Add notes, manuals and past questions</small>
+                    <small className="block text-[10px] text-[#64777d]">Sync Google Drive folders, edit metadata and publish files</small>
                   </div>
                   <span className="text-[#087f8c] font-bold text-xs">→</span>
-                </button>
+                </Link>
+
                 <button
                   onClick={() => handleTabChange('announcements')}
                   className="w-full text-left p-3 rounded-xl border border-[#e4ecee] hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
@@ -462,87 +500,145 @@ export default function AdminPage() {
         </section>
       )}
 
-      {/* ── Tab: UPLOAD RESOURCES ────────────────────────────────── */}
+      {/* ── Tab: RESOURCE MANAGEMENT ───────────────────────────── */}
       {activeTab === 'resources' && (
-        <section className="bg-white border border-[#e4ecee] rounded-2xl p-6 shadow-sm max-w-3xl">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#7d9297]">
-            RESOURCE MANAGEMENT
-          </span>
-          <h2 className="text-xl font-bold text-[#102a2f] mt-0.5 mb-4">Academic resources</h2>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              showFeedback(`Resource "${resourceForm.title}" submitted! (Placeholder API: POST /admin/resources)`)
-              setResourceForm({ title: '', category: 'Past Questions', course: '', year: '2026/2027' })
-            }}
-            className="space-y-4"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">Resource title</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. CHEM301 Lecture Notes"
-                  value={resourceForm.title}
-                  onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">Category</label>
-                <select
-                  value={resourceForm.category}
-                  onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c] bg-white"
-                >
-                  <option value="Past Questions">Past Questions</option>
-                  <option value="Lecture Notes">Lecture Notes</option>
-                  <option value="Textbooks">Textbooks</option>
-                  <option value="Lab Manuals">Lab Manuals</option>
-                  <option value="Course Outlines">Course Outlines</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">Course / Level</label>
-                <input
-                  type="text"
-                  placeholder="CHEM 301 · Level 300"
-                  value={resourceForm.course}
-                  onChange={(e) => setResourceForm({ ...resourceForm, course: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">Academic year</label>
-                <input
-                  type="text"
-                  placeholder="2026/2027"
-                  value={resourceForm.year}
-                  onChange={(e) => setResourceForm({ ...resourceForm, year: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d9e3e5] text-xs focus:outline-none focus:border-[#087f8c]"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-[#102a2f] mb-1">File upload</label>
-                <div className="border-2 border-dashed border-[#dce6e8] rounded-xl p-8 bg-[#f9fbfb] text-center flex flex-col items-center justify-center">
-                  <span className="text-3xl text-[#91a0a4] mb-1">⇧</span>
-                  <strong className="text-xs text-[#5b6f74]">Drop a file here or browse</strong>
-                  <small className="text-[10px] text-[#91a0a4] mt-1">PDF, DOCX up to 25MB (Placeholder upload)</small>
+        <section className="bg-white border border-[#e4ecee] rounded-2xl p-6 shadow-sm max-w-3xl space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#f0f4f5] pb-4">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#087f8c]">
+                REPOSITORY MANAGEMENT
+              </span>
+              <h2 className="text-xl font-bold text-[#102a2f] mt-0.5">Google Drive Academic Resources</h2>
+              <p className="text-xs text-[#64777d] mt-1">
+                Synchronize departmental notes, past questions, and handouts directly from your configured Google Drive folder.
+              </p>
+            </div>
+            <Link
+              to="/admin/resources"
+              className="px-4 py-2.5 rounded-xl bg-[#087f8c] hover:bg-[#066570] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 whitespace-nowrap self-start sm:self-auto"
+            >
+              <span>Open Full Console</span>
+              <ExternalLink size={13} />
+            </Link>
+          </div>
+
+          {/* Sync Trigger Card */}
+          <div className="p-5 rounded-2xl bg-[#f6f9fa] border border-[#e4ecee] space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#e8f6f7] text-[#087f8c] grid place-items-center font-black">
+                  <RefreshCw size={18} className={isSyncingResources ? 'animate-spin' : ''} />
+                </div>
+                <div>
+                  <strong className="block text-xs font-bold text-[#102a2f]">
+                    Google Drive Synchronization
+                  </strong>
+                  <span className="text-[11px] text-[#64777d]">
+                    {resourceCount !== null ? `${resourceCount} active resources currently indexed` : 'Connecting to database...'}
+                  </span>
                 </div>
               </div>
-            </div>
-            <div className="pt-3 border-t border-[#f4f7f8]">
+
               <button
-                type="submit"
-                className="px-4 py-2.5 rounded-xl bg-[#087f8c] hover:bg-[#05636d] text-white text-xs font-bold transition-colors"
+                type="button"
+                disabled={isSyncingResources}
+                onClick={async () => {
+                  setIsSyncingResources(true)
+                  setSyncErrorMessage(null)
+                  setSyncSummaryResult(null)
+                  try {
+                    const result = await resourcesApi.syncResources()
+                    setSyncSummaryResult(result)
+                    fetchResourceStats()
+                    showFeedback('Google Drive sync completed successfully!')
+                  } catch (err) {
+                    setSyncErrorMessage(err?.message || 'Sync failed. Please verify Drive credentials.')
+                  } finally {
+                    setIsSyncingResources(false)
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-[#102a2f] hover:bg-[#1a3f46] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-60"
               >
-                Upload resource
+                {isSyncingResources ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    <span>Syncing...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={13} />
+                    <span>Sync Now</span>
+                  </>
+                )}
               </button>
             </div>
-          </form>
+
+            {/* Error banner */}
+            {syncErrorMessage && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
+                <AlertTriangle size={15} className="flex-shrink-0" />
+                <span>{syncErrorMessage}</span>
+              </div>
+            )}
+
+            {/* Sync Summary Result */}
+            {syncSummaryResult && (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 space-y-3">
+                <div className="flex items-center gap-2 font-bold">
+                  <CheckCircle2 size={16} className="text-emerald-600" />
+                  <span>Sync Finished Successfully</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                  <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
+                    <strong className="block text-emerald-900">{syncSummaryResult.files_scanned ?? 0}</strong>
+                    <span className="text-[10px] text-emerald-700">Files Scanned</span>
+                  </div>
+                  <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
+                    <strong className="block text-emerald-900">{syncSummaryResult.new_resources ?? 0}</strong>
+                    <span className="text-[10px] text-emerald-700">New Resources</span>
+                  </div>
+                  <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
+                    <strong className="block text-emerald-900">{syncSummaryResult.updated_resources ?? 0}</strong>
+                    <span className="text-[10px] text-emerald-700">Updated</span>
+                  </div>
+                  <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
+                    <strong className="block text-emerald-900">{syncSummaryResult.folders_scanned ?? 0}</strong>
+                    <span className="text-[10px] text-emerald-700">Folders</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Shortcuts */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Link
+              to="/admin/resources"
+              className="p-4 rounded-2xl border border-[#e4ecee] bg-white hover:border-[#087f8c] transition-all group block"
+            >
+              <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
+                Manage All Resources →
+              </strong>
+              <p className="text-[11px] text-[#64777d] mt-1">
+                Filter by level and course code, edit metadata titles, and toggle resource visibility.
+              </p>
+            </Link>
+
+            <Link
+              to="/resources"
+              className="p-4 rounded-2xl border border-[#e4ecee] bg-white hover:border-[#087f8c] transition-all group block"
+            >
+              <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#087f8c]">
+                Student View →
+              </strong>
+              <p className="text-[11px] text-[#64777d] mt-1">
+                Preview the resource catalog and test file viewing and downloads exactly as students see it.
+              </p>
+            </Link>
+          </div>
         </section>
       )}
+
 
       {/* ── Tab: STUDENTS & USERS ───────────────────────────────── */}
       {activeTab === 'users' && (

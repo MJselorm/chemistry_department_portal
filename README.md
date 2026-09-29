@@ -20,6 +20,7 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
 - Python 3.10 or later
 - A Firebase project with Email/Password sign-in enabled
 - A Supabase PostgreSQL project
+- A Google Cloud service account with the Drive API enabled
 
 ## Configure local environment
 
@@ -36,6 +37,12 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
    - `FIREBASE_SERVICE_ACCOUNT_JSON` containing the credential JSON.
 
    Use the `postgresql+psycopg://` URL scheme and URL-encode special characters in the database password. Keep all credentials out of version control.
+
+   To enable Academic Resources, set `GOOGLE_DRIVE_ROOT_FOLDER_ID` and one Google
+   Drive credential option. Share the repository folder with the Google service
+   account's `client_email` as Viewer (or a minimally sufficient read role). The
+   service account key is server-only: use `GOOGLE_DRIVE_SERVICE_ACCOUNT_PATH`
+   locally and `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` in the production secret store.
 
 3. In `frontend2/.env`, set the `VITE_FIREBASE_*` values from the Firebase web app and set `VITE_API_BASE_URL` if the API is not at `http://127.0.0.1:8000`. The Firebase web configuration is client-visible, but the local `.env` remains untracked to keep environments separate.
 
@@ -84,6 +91,27 @@ All protected endpoints require `Authorization: Bearer <firebase_id_token>`.
 - `GET /users/me` reads the authenticated profile.
 - `PATCH /users/me` updates the profile's `full_name`.
 - `GET /admin/test` verifies the database-backed admin role check.
+- `GET /api/resources` lists active academic resources for signed-in users, with
+  `page`, `page_size`, `course`, `course_code`, `level`, `category`,
+  `resource_type`, `folder`, and `search` filters.
+- `GET /api/resources/{id}`, `/view`, and `/download` return metadata and stream
+  an inline view or attachment directly from Drive through the authenticated API.
+- `POST /api/resources/sync` and `PATCH /api/resources/{id}` require an admin.
+
+## Academic resource repository
+
+Run the database migration before the first synchronization:
+
+```powershell
+cd backend
+python -m alembic upgrade head
+```
+
+Then sign in as an existing `admin` user and call `POST /api/resources/sync` with
+that user's Firebase bearer token. The endpoint recursively indexes the shared
+Drive folder in PostgreSQL. It never copies file binaries to Supabase Storage;
+Google Drive IDs remain the permanent file references. Subsequent syncs update
+metadata without duplicates and mark Drive-missing resources inactive.
 
 ## Database migrations
 

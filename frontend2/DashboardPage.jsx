@@ -96,7 +96,7 @@ export default function DashboardPage() {
                 + Create new event
               </Link>
               <Link
-                to="/admin?tab=resources"
+                to="/admin/resources"
                 className="px-4 py-2.5 rounded-xl border border-white/30 bg-white/10 text-white text-xs font-bold hover:bg-white/20 transition-colors"
               >
                 Upload resource
@@ -134,11 +134,12 @@ export default function DashboardPage() {
                 Explore events
               </Link>
               <Link
-                to="/academic"
+                to="/resources"
                 className="px-4 py-2.5 rounded-xl border border-white/30 bg-white/10 text-white text-xs font-bold hover:bg-white/20 transition-colors"
               >
                 Browse resources
               </Link>
+
             </div>
           </div>
           <div className="absolute right-6 top-1/2 -translate-y-1/2 text-9xl select-none opacity-15 pointer-events-none hidden md:block">
@@ -290,14 +291,14 @@ export default function DashboardPage() {
               <small className="block text-[10px] text-[#64777d] mt-1">Schedule & edit seminars</small>
             </Link>
             <Link
-              to="/admin?tab=resources"
+              to="/admin/resources"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
             >
               <span className="block text-xl text-[#7652b8] mb-2 font-bold">▣</span>
               <strong className="block text-xs font-bold text-[#102a2f] group-hover:text-[#7652b8]">
-                Upload Resources
+                Academic Resources
               </strong>
-              <small className="block text-[10px] text-[#64777d] mt-1">Lecture notes & handouts</small>
+              <small className="block text-[10px] text-[#64777d] mt-1">Sync Drive & manage syllabus</small>
             </Link>
             <Link
               to="/admin?tab=users"
@@ -324,7 +325,7 @@ export default function DashboardPage() {
           /* Student Quick Access */
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Link
-              to="/academic"
+              to="/resources?category=Past%20Questions"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#b7dfe2] hover:-translate-y-0.5 transition-all block"
             >
               <span className="block text-xl text-[#087f8c] mb-2">▤</span>
@@ -332,13 +333,14 @@ export default function DashboardPage() {
               <small className="block text-[10px] text-[#64777d] mt-1">Exam papers by course & year</small>
             </Link>
             <Link
-              to="/academic"
+              to="/resources?category=Lecture%20Notes"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#b7dfe2] hover:-translate-y-0.5 transition-all block"
             >
               <span className="block text-xl text-[#087f8c] mb-2">▣</span>
               <strong className="block text-xs font-bold text-[#102a2f]">Lecture Notes</strong>
               <small className="block text-[10px] text-[#64777d] mt-1">Slides & study materials</small>
             </Link>
+
             <Link
               to="/events"
               className="border border-[#e4ecee] p-4 rounded-xl bg-[#fbfcfc] hover:border-[#b7dfe2] hover:-translate-y-0.5 transition-all block"

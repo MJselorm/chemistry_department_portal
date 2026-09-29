@@ -58,16 +58,16 @@ export default function DirectoryPage() {
   const activeCategory = DIRECTORY_CATEGORIES[activeTabKey]
 
   // 1. Fetch directory summary for tab counters
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async (forceRefresh = false) => {
     try {
-      const summary = await directoryApi.getSummary()
+      const summary = await directoryApi.getSummary(forceRefresh)
       if (summary && typeof summary === 'object') {
         setSummaryCounts(summary)
       }
     } catch {
       // Non-fatal if summary fails
     }
-  }
+  }, [])
 
   // 2. Fetch records for active category
   const loadCategoryData = async (catKey, forceRefresh = false) => {
@@ -96,7 +96,17 @@ export default function DirectoryPage() {
 
   // Load summary on mount
   useEffect(() => {
-    fetchSummary()
+    let mounted = true
+    directoryApi.getSummary(false)
+      .then((summary) => {
+        if (mounted && summary && typeof summary === 'object') {
+          setSummaryCounts(summary)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
   }, [])
 
   // Load data when active tab changes
@@ -107,7 +117,7 @@ export default function DirectoryPage() {
   }, [activeTabKey])
 
   const handleRefresh = () => {
-    fetchSummary()
+    fetchSummary(true)
     loadCategoryData(activeTabKey, true)
   }
 

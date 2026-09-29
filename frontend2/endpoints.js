@@ -71,3 +71,15 @@ export const DIRECTORY_ENDPOINTS = {
   contacts: '/api/directory/contacts',
   contact: (id) => `/api/directory/contacts/${id}`,
 }
+
+export const RESOURCE_ENDPOINTS = {
+  list: '/api/resources',
+  sync: '/api/resources/sync',
+  detail: (id) => `/api/resources/${id}`,
+  view: (id) => `/api/resources/${id}/view`,
+  download: (id) => `/api/resources/${id}/download`,
+  folders: '/api/resources/folders',
+  search: '/api/resources/search',
+  health: '/api/resources/health',
+}
+

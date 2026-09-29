@@ -13,6 +13,8 @@ import AnnouncementsPage from './AnnouncementsPage'
 import ProfilePage from './ProfilePage'
 import SettingsPage from './SettingsPage'
 import AdminPage from './AdminPage'
+import ResourcesPage from './ResourcesPage'
+import AdminResourcesPage from './AdminResourcesPage'
 
 // Student Directory Admin Suite
 import { ToastProvider } from './directory/Toast'
@@ -57,6 +59,17 @@ export default function App() {
               <ProtectedRoute>
                 <PortalLayout title="Academic Hub" subtitle="Study Centre">
                   <AcademicHubPage />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/resources"
+            element={
+              <ProtectedRoute>
+                <PortalLayout title="Academic Resources" subtitle="Access lecture notes, past questions, textbooks, labs, and other academic materials.">
+                  <ResourcesPage />
                 </PortalLayout>
               </ProtectedRoute>
             }
@@ -112,6 +125,17 @@ export default function App() {
               <ProtectedRoute adminOnly>
                 <PortalLayout title="Admin Dashboard" subtitle="Administration Console">
                   <AdminPage />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/resources"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Academic Resources" subtitle="Google Drive Repository Administration">
+                  <AdminResourcesPage />
                 </PortalLayout>
               </ProtectedRoute>
             }
