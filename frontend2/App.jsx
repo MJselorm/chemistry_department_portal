@@ -17,8 +17,6 @@ const AnnouncementsPage = lazy(() => import('./AnnouncementsPage'))
 const ProfilePage = lazy(() => import('./ProfilePage'))
 const SettingsPage = lazy(() => import('./SettingsPage'))
 const AdminPage = lazy(() => import('./AdminPage'))
-const ResourcesPage = lazy(() => import('./ResourcesPage'))
-const AdminResourcesPage = lazy(() => import('./AdminResourcesPage'))
 const DirectoryAdminOverview = lazy(() => import('./directory/DirectoryAdminOverview'))
 const DirectoryEntityManager = lazy(() => import('./directory/DirectoryEntityManager'))
 
@@ -81,17 +79,6 @@ export default function App() {
           />
 
           <Route
-            path="/resources"
-            element={
-              <ProtectedRoute>
-                <PortalLayout title="Academic Resources" subtitle="Access lecture notes, past questions, textbooks, labs, and other academic materials.">
-                  <ResourcesPage />
-                </PortalLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
             path="/directory"
             element={
               <ProtectedRoute>
@@ -141,17 +128,6 @@ export default function App() {
               <ProtectedRoute adminOnly>
                 <PortalLayout title="Admin Dashboard" subtitle="Administration Console">
                   <AdminPage />
-                </PortalLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin/resources"
-            element={
-              <ProtectedRoute adminOnly>
-                <PortalLayout title="Academic Resources" subtitle="Google Drive Repository Administration">
-                  <AdminResourcesPage />
                 </PortalLayout>
               </ProtectedRoute>
             }

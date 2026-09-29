@@ -151,52 +151,6 @@ export const api = {
     }
     return data
   },
-  blob: async (path, opts = {}) => {
-    const headers = {}
-    if (opts.auth !== false) {
-      const token = tokenStore.get()
-      if (token) headers.Authorization = `Bearer ${token}`
-    }
-    const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
-    let res
-    try {
-      res = await fetch(targetUrl, {
-        method: 'GET',
-        headers,
-        signal: opts.signal,
-      })
-    } catch (err) {
-      if (err.name === 'TypeError' || err.message?.includes('fetch')) {
-        throw new ApiError(
-          'Unable to reach the file server. The server may be waking up or offline. Please retry in a moment.',
-          0,
-          null
-        )
-      }
-      throw err
-    }
-    if (res.status === 401 && opts.auth !== false) tokenStore.clear()
-    if (!res.ok) {
-      const data = await parseBody(res)
-      throw new ApiError(messageFromDetail(data, `Request failed (${res.status})`), res.status, data)
-    }
-    const blob = await res.blob()
-    const disposition = res.headers.get('content-disposition') || ''
-    let filename = ''
-    const match = disposition.match(/filename\*?=(?:UTF-8'')?([^;]+)/i)
-    if (match && match[1]) {
-      try {
-        filename = decodeURIComponent(match[1].replace(/["']/g, '').trim())
-      } catch {
-        filename = match[1].replace(/["']/g, '').trim()
-      }
-    }
-    return {
-      blob,
-      filename,
-      contentType: res.headers.get('content-type') || 'application/octet-stream',
-    }
-  },
 }
 
 export { BASE_URL }

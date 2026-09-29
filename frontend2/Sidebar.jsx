@@ -2,7 +2,6 @@ import React from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   CalendarDays,
-  BookOpen,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -31,7 +30,6 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     },
     { to: '/events', label: 'Events', icon: CalendarDays },
     { to: '/academic', label: 'Academic Hub', icon: GraduationCap },
-    { to: isAdmin ? '/admin/resources' : '/resources', label: 'Academic Resources', icon: BookOpen },
     {
       to: isAdmin ? '/admin/directory' : '/directory',
       label: 'Directory',
@@ -112,9 +110,6 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
             const isDirectoryActive =
               item.label === 'Directory' &&
               (location.pathname.startsWith('/admin/directory') || location.pathname === '/directory')
-            const isResourcesActive =
-              item.label === 'Academic Resources' &&
-              (location.pathname.startsWith('/admin/resources') || location.pathname === '/resources')
 
             return (
               <NavLink
@@ -126,7 +121,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                   `group relative flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
                     isCollapsed ? 'lg:justify-center' : ''
                   } ${
-                    isActive || isDirectoryActive || isResourcesActive
+                    isActive || isDirectoryActive
                       ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-bold before:absolute before:left-0 before:h-5 before:w-0.5 before:rounded-full before:bg-[var(--accent)]'
                       : 'text-[var(--muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)]'
                   }`
