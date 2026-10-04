@@ -3,21 +3,21 @@ import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { GscsLogo } from './Logos'
 
-const UPDATED_DATE = 'September 26, 2026'
+const UPDATED_DATE = 'October 4, 2026'
 const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL?.trim()
 
 const privacySections = [
   {
     title: 'Information processed',
-    body: 'Chemistry Hub processes Firebase account identifiers, email address, display name, application role, and account timestamps. Directory records may include names, student or staff identifiers, academic roles, contact details, biographies, office information, and profile images when administrators provide them.',
+    body: 'Chemistry Hub processes Firebase account identifiers, email address, display name, student details, application role, account timestamps, notification read state, and an optional user-provided profile photo. Directory records may include names, student or staff identifiers, academic roles, contact details, biographies, office information, and images when administrators provide them.',
   },
   {
     title: 'Why it is used',
-    body: 'This information is used to authenticate members, apply student and administrator permissions, maintain profiles, publish department information, and provide the academic directory and announcements.',
+    body: 'This information is used to authenticate members, apply student and administrator permissions, maintain profiles, remember which portal updates have been read, publish department information, and provide academic resources, events, the directory, and announcements.',
   },
   {
     title: 'Services and storage',
-    body: 'Authentication is provided by Firebase. Application records are stored in PostgreSQL hosted by Supabase, and approved directory images may be stored in Supabase Storage. The API and frontend are configured for Render and Vercel deployment. Google Fonts is loaded by the frontend and may receive standard connection information such as an IP address and browser metadata.',
+    body: 'Authentication is provided by Firebase. Application records are stored in PostgreSQL hosted by Supabase. Approved directory images, private profile photos, and private academic files may be stored in separate Supabase Storage buckets. The API and frontend are configured for Render and Vercel deployment. Google Fonts is loaded by the frontend and may receive standard connection information such as an IP address and browser metadata.',
   },
   {
     title: 'Cookies and browser storage',

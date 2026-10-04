@@ -1,13 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Announcement, User
 from ..schemas import AnnouncementCreate, AnnouncementOut
-from ..security import require_admin
+from ..security import get_current_user, require_admin
 
 router = APIRouter(tags=["announcements"])
 DB = Annotated[Session, Depends(get_db)]
@@ -15,10 +15,16 @@ Admin = Annotated[User, Depends(require_admin)]
 
 
 @router.get("/announcements", response_model=list[AnnouncementOut])
-def list_announcements(session: DB, limit: int = 50):
-    """Published department notices visible to every signed-in portal user."""
+def list_announcements(session: DB, user: Annotated[User, Depends(get_current_user)], limit: int = Query(50, ge=1, le=100)):
+    """Published department notices visible to the signed-in user's audience."""
+    query = session.query(Announcement)
+    if user.role != "admin":
+        audiences = ["All students"]
+        if user.level:
+            audiences.append(f"Level {user.level}")
+        query = query.filter(Announcement.audience.in_(audiences))
     return (
-        session.query(Announcement)
+        query
         .order_by(Announcement.is_pinned.desc(), Announcement.published_at.desc())
         .limit(min(limit, 100))
         .all()
@@ -42,4 +48,3 @@ def delete_announcement(id: UUID, session: DB, admin: Admin):
     session.delete(announcement)
     session.commit()
     return None
-

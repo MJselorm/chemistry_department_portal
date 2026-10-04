@@ -36,10 +36,11 @@ def sync_user(session: Session, claims: dict) -> User:
         raise
 
 
-def update_profile(session: Session, firebase_uid: str, full_name: str | None) -> User | None:
+def update_profile(session: Session, firebase_uid: str, changes: dict) -> User | None:
     user = find_by_firebase_uid(session, firebase_uid)
     if user:
-        user.full_name = full_name
+        for field, value in changes.items():
+            setattr(user, field, value or None)
         session.commit()
         session.refresh(user)
     return user

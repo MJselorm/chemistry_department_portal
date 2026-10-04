@@ -7,10 +7,8 @@ class ResourceOut(BaseModel):
     id: int; name: str; description: str | None = None; resource_type: str | None = None
     title: str | None = None; file_name: str | None = None; label: str | None = None
     course_code: str | None = None; course_name: str | None = None; level: str | None = None
-    category: str | None = None; folder_path: str; google_drive_file_id: str
-    google_drive_parent_id: str | None = None; mime_type: str | None = None; file_size: int | None = None
-    web_view_link: str | None = None; web_content_link: str | None = None
-    supabase_bucket: str | None = None; supabase_storage_path: str | None = None
+    category: str | None = None; folder_path: str
+    mime_type: str | None = None; file_size: int | None = None
     storage_migrated_at: datetime | None = None
     academic_year: str | None = None; semester: str | None = None; lecturer: str | None = None; department: str | None = None
     download_available: bool; is_active: bool; is_missing: bool

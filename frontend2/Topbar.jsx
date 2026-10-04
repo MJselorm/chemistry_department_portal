@@ -1,10 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, Menu, Moon, Sun } from 'lucide-react'
+import { Menu, Moon, Sun } from 'lucide-react'
 import { useAuth } from './AuthContext'
+import NotificationsMenu from './NotificationsMenu'
 
 export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onToggleTheme }) {
-  const { user } = useAuth()
+  const { user, profilePhotoUrl } = useAuth()
   const isAdmin = user?.role === 'admin'
   
   // Dynamically designate Student vs Admin on dashboard
@@ -67,28 +68,22 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
           {isDarkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
         </button>
 
-        <button
-          onClick={() => alert('Portal notifications are not available yet.')}
-          className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
-          aria-label="Open notifications"
-          title="Notifications"
-        >
-          <Bell size={16} aria-hidden="true" />
-        </button>
+        <NotificationsMenu />
 
         {/* User profile chip */}
         <Link
           to="/profile"
+          aria-label={`Open profile for ${displayName}`}
           className="flex h-10 items-center gap-2.5 px-1 sm:h-auto sm:px-2.5 sm:py-1 rounded-lg hover:bg-[var(--muted)] border border-transparent hover:border-[var(--border)] transition-all"
         >
           <span
-            className={`w-8 h-8 rounded-full font-extrabold text-xs grid place-items-center ${
+            className={`w-8 h-8 overflow-hidden rounded-full font-extrabold text-xs grid place-items-center ${
               isAdmin
                 ? 'bg-[var(--accent-soft)] text-[var(--warning)]'
                 : 'bg-[var(--primary-soft)] text-[var(--primary)]'
             }`}
           >
-            {initials}
+            {profilePhotoUrl ? <img src={profilePhotoUrl} alt="" className="h-full w-full rounded-full object-cover" /> : initials}
           </span>
           <span className="hidden sm:block text-xs font-bold text-[var(--foreground)] max-w-[140px] truncate">
             {displayName}

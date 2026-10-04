@@ -10,7 +10,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Configure every `VITE_FIREBASE_*` value. Point `VITE_API_BASE_URL` at FastAPI, normally `http://127.0.0.1:8000`. `VITE_USE_MOCKS=true` enables sample content for optional dashboard features that do not yet have backend routes. Set `VITE_SUPPORT_EMAIL` to a verified public institutional address before production.
+Configure every `VITE_FIREBASE_*` value. Point `VITE_API_BASE_URL` at FastAPI, normally `http://127.0.0.1:8000`. Set `VITE_SUPPORT_EMAIL` to a verified public institutional address before production.
 
 ## Architecture
 
@@ -21,6 +21,7 @@ Configure every `VITE_FIREBASE_*` value. Point `VITE_API_BASE_URL` at FastAPI, n
 | `client.js` | Authenticated Fetch wrapper and safe API error normalization |
 | `endpoints.js` | Central API route definitions |
 | `academic/` | Resource cards, secure preview modal, and download helpers |
+| `NotificationsMenu.jsx` | Authenticated notification feed and read-state controls |
 | `directory/` | Student directory views and admin CRUD interfaces |
 | `LegalPage.jsx` | Privacy Notice and Terms of Use |
 | `vercel.json` | Render API rewrites and production security headers |
@@ -41,7 +42,9 @@ Do not add credentials, personal records, API responses, or authorization state 
 All application routes except `/health` require `Authorization: Bearer <firebase_id_token>`.
 
 - `POST /auth/sync`: provision or read the Firebase-linked profile
-- `GET/PATCH /users/me`: read or update the authenticated profile
+- `GET/PATCH /users/me`: read or update allowlisted authenticated profile fields
+- `GET/POST/DELETE /users/me/photo`: private profile-photo stream and self-service controls
+- `GET/POST /notifications/*`: notification feed and per-user read state
 - `GET /announcements`: authenticated announcements
 - `POST/DELETE /admin/announcements`: admin-only announcement management
 - `/api/directory/*`: authenticated reads and admin-only writes/uploads
@@ -55,7 +58,7 @@ The Academic Hub never receives Supabase service credentials, bucket paths, or p
 
 When the frontend calls FastAPI directly from a different origin during development, CORS must expose the `Content-Disposition` response header so downloads can preserve the server-provided filename. The production `/api` rewrite is same-origin.
 
-Some optional notification and settings endpoints in `endpoints.js` remain placeholders. Do not present those workflows as production-complete until matching backend routes exist.
+Settings only presents controls supported by the live backend; it does not claim email delivery or locally simulated preferences.
 
 ## Production deployment
 

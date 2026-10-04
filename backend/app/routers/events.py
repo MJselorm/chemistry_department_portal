@@ -21,7 +21,7 @@ Admin = Annotated[User, Depends(require_admin)]
 
 
 @router.get("/health")
-def health(): return {"status": "ok", "module": "events"}
+def health(_: UserAuth): return {"status": "ok", "module": "events"}
 
 
 @router.get("/upcoming", response_model=list[EventOut])

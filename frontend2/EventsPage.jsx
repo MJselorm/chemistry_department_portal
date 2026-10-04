@@ -21,8 +21,18 @@ const formatEventTimeRange = (startIso, endIso) => {
   return `${startTime} – ${endTime}`
 }
 
+const safeExternalUrl = (value) => {
+  try {
+    const url = new URL(value)
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : null
+  } catch {
+    return null
+  }
+}
+
 export default function EventsPage() {
   const [events, setEvents] = useState([])
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [selectedType, setSelectedType] = useState('All')
   const [loading, setLoading] = useState(true)
@@ -50,7 +60,7 @@ export default function EventsPage() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault()
-    loadEvents()
+    setSearch(searchInput.trim())
   }
 
   return (
@@ -70,8 +80,8 @@ export default function EventsPage() {
         <form onSubmit={handleSearchSubmit} className="w-full sm:w-72 relative">
           <Search className="absolute left-3 top-2.5 text-muted-foreground" size={14} aria-hidden="true" />
           <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search events by title or topic…"
             className="w-full pl-8 pr-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary shadow-xs"
           />
@@ -142,6 +152,7 @@ export default function EventsPage() {
             const startDate = new Date(event.start_datetime)
             const dayNum = startDate.getDate()
             const monthStr = startDate.toLocaleString([], { month: 'short' }).toUpperCase()
+            const registrationUrl = safeExternalUrl(event.registration_url)
 
             return (
               <article
@@ -198,10 +209,10 @@ export default function EventsPage() {
                       )}
                     </div>
 
-                    {event.registration_url && (
+                    {registrationUrl && (
                       <div className="pt-1">
                         <a
-                          href={event.registration_url}
+                          href={registrationUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors shadow-xs"

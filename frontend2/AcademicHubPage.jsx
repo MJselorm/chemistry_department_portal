@@ -40,7 +40,12 @@ export default function AcademicHubPage() {
     setLoading(true)
     setError('')
     try {
-      const params = new URLSearchParams({ page: String(page), page_size: '12', sort_by: sortBy })
+      const params = new URLSearchParams({
+        page: String(page),
+        page_size: '12',
+        sort_by: sortBy,
+        sort_order: sortBy === 'name' ? 'asc' : 'desc',
+      })
       if (search) params.set('search', search)
       if (selectedCategory !== 'All Categories') params.set('category', selectedCategory)
       if (selectedLevel !== 'All Levels') params.set('level', selectedLevel.replace('Level ', ''))

@@ -15,10 +15,10 @@ Security fixes are applied to the currently deployed Chemistry Hub release. Expe
 - Firebase authenticates users and issues short-lived ID tokens.
 - FastAPI verifies tokens and loads the user's database-backed role.
 - Production account provisioning is restricted by configured email domains and/or explicit email exceptions and fails closed when no policy is configured.
-- Students receive authenticated read access and a narrowly allowlisted profile update.
+- Students receive authenticated, audience-filtered read access and narrowly allowlisted self-profile/photo updates.
 - Administrative directory and announcement writes require server-side admin authorization.
 - SQLAlchemy uses parameterized database queries.
-- Supabase PostgreSQL and Storage credentials remain server-side.
+- Supabase PostgreSQL and Storage credentials remain server-side; RLS and revoked browser-role table privileges provide defense in depth.
 - Vercel and the API apply security headers; sensitive API responses use `Cache-Control: no-store`.
 
 Frontend role checks are not a security boundary. Never weaken or remove backend dependencies from protected routes merely because the UI hides an action.

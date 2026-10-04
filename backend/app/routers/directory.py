@@ -4,12 +4,12 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..security import require_admin
+from ..security import get_current_user, require_admin
 from .. import directory_models as m
 from .. import directory_schemas as s
 from ..storage import upload_directory_image
 
-router=APIRouter(prefix="/api/directory",tags=["directory"])
+router=APIRouter(prefix="/api/directory",tags=["directory"],dependencies=[Depends(get_current_user)])
 DB=Annotated[Session,Depends(get_db)]; Admin=Annotated[Any,Depends(require_admin)]
 def one(session, model, ident):
     obj=session.get(model,ident)

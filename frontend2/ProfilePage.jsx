@@ -1,177 +1,167 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { Camera, RefreshCw, Save, Trash2 } from 'lucide-react'
 import { useAuth } from './AuthContext'
 
 export default function ProfilePage() {
-  const { user, updateProfile } = useAuth()
-  const [fullName, setFullName] = useState(user?.full_name || '')
-  const [studentId, setStudentId] = useState('CHM/2026/001')
-  const [level, setLevel] = useState('Level 300')
+  const { user, profilePhotoUrl, updateProfile, uploadProfilePhoto, removeProfilePhoto } = useAuth()
+  const [form, setForm] = useState({
+    full_name: user?.full_name || '',
+    student_id: user?.student_id || '',
+    level: user?.level || '',
+  })
   const [isSaving, setIsSaving] = useState(false)
+  const [photoAction, setPhotoAction] = useState('')
   const [message, setMessage] = useState(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
-    if (user?.full_name) {
-      setFullName(user.full_name)
-    }
-  }, [user?.full_name])
+    setForm({
+      full_name: user?.full_name || '',
+      student_id: user?.student_id || '',
+      level: user?.level || '',
+    })
+  }, [user?.full_name, user?.student_id, user?.level])
 
-  const displayName = fullName || user?.email?.split('@')[0] || 'Dela Gogah'
-  const initials = displayName
-    .split(' ')
-    .filter(Boolean)
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || 'DG'
+  const displayName = user?.full_name || user?.email?.split('@')[0] || 'Portal member'
+  const initials = displayName.split(' ').filter(Boolean).map((part) => part[0]).slice(0, 2).join('').toUpperCase() || 'PM'
+  const showError = () => setMessage({ type: 'error', text: 'Something went wrong. Please try again.' })
 
-  const handleSave = async (e) => {
-    e.preventDefault()
+  const handleSave = async (event) => {
+    event.preventDefault()
     setIsSaving(true)
     setMessage(null)
     try {
-      // Connects live to backend PATCH /users/me !
-      if (updateProfile) {
-        await updateProfile(fullName)
-        setMessage({ type: 'success', text: 'Profile updated successfully on the backend!' })
-      } else {
-        setMessage({ type: 'success', text: 'Profile changes saved locally!' })
-      }
-    } catch (err) {
-      console.error('Failed to update profile:', err)
-      setMessage({ type: 'error', text: 'Your profile could not be updated. Please try again.' })
+      await updateProfile(form)
+      setMessage({ type: 'success', text: 'Your profile has been updated.' })
+    } catch (error) {
+      console.error('Profile update failed.', error)
+      showError()
     } finally {
       setIsSaving(false)
     }
   }
 
-  return (
-    <div className="space-y-6 max-w-3xl">
-      {/* Page Head */}
-      <div>
-        <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">ACCOUNT</span>
-        <h1 className="text-2xl font-bold text-foreground mt-1">My profile</h1>
-        <p className="text-xs text-muted-foreground mt-1">Manage your department identity and student details.</p>
-      </div>
+  const handlePhotoSelected = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Choose a JPEG, PNG, or WebP image no larger than 5 MB.' })
+      return
+    }
+    setPhotoAction('upload')
+    setMessage(null)
+    try {
+      await uploadProfilePhoto(file)
+      setMessage({ type: 'success', text: 'Your profile photo has been updated.' })
+    } catch (error) {
+      console.error('Profile photo upload failed.', error)
+      showError()
+    } finally {
+      setPhotoAction('')
+    }
+  }
 
-      <section className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
-        {/* Profile Hero Header */}
-        <div className="flex items-center gap-4 sm:gap-6 pb-6 border-b border-border mb-6">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#d8f0f1] text-primary font-black text-xl sm:text-2xl grid place-items-center flex-shrink-0">
-            {initials}
+  const handlePhotoRemoval = async () => {
+    if (!window.confirm('Remove your current profile photo?')) return
+    setPhotoAction('remove')
+    setMessage(null)
+    try {
+      await removeProfilePhoto()
+      setMessage({ type: 'success', text: 'Your profile photo has been removed.' })
+    } catch (error) {
+      console.error('Profile photo removal failed.', error)
+      showError()
+    } finally {
+      setPhotoAction('')
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-5">
+      <header>
+        <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Account</span>
+        <h1 className="mt-1 text-2xl font-bold text-foreground">My profile</h1>
+        <p className="mt-1 text-xs text-muted-foreground">Manage your department identity and profile photo.</p>
+      </header>
+
+      <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:p-6">
+          <div className="relative h-20 w-20 shrink-0">
+            {profilePhotoUrl ? (
+              <img src={profilePhotoUrl} alt={`${displayName}'s profile`} className="h-20 w-20 rounded-full border border-border object-cover" />
+            ) : (
+              <div className="grid h-20 w-20 place-items-center rounded-full bg-[var(--primary-soft)] text-xl font-black text-primary" aria-label={`${displayName} initials`}>
+                {initials}
+              </div>
+            )}
+            {photoAction && <span className="absolute inset-0 grid place-items-center rounded-full bg-black/45"><RefreshCw size={20} className="animate-spin text-white" /></span>}
           </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">{displayName}</h2>
-            <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-              {user?.role === 'admin' ? 'Administrator' : 'Student'} · Chemistry · {level}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[var(--success-soft)] text-success">
-                Active account
-              </span>
-              {user?.role && (
-                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[var(--primary-soft)] text-primary">
-                  Role: {user.role}
-                </span>
+
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-xl font-extrabold text-foreground">{displayName}</h2>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{user?.email}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoSelected} className="sr-only" />
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={Boolean(photoAction)} className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold text-white hover:bg-primary-hover disabled:opacity-50">
+                <Camera size={14} /> {profilePhotoUrl ? 'Change photo' : 'Add photo'}
+              </button>
+              {profilePhotoUrl && (
+                <button type="button" onClick={handlePhotoRemoval} disabled={Boolean(photoAction)} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[var(--destructive-border)] px-3 text-xs font-bold text-destructive hover:bg-[var(--destructive-soft)] disabled:opacity-50">
+                  <Trash2 size={14} /> Remove
+                </button>
               )}
             </div>
+            <p className="mt-2 text-[10px] text-muted-foreground">JPEG, PNG, or WebP. Maximum 5 MB.</p>
           </div>
         </div>
 
-        {/* Feedback Alert */}
-        {message && (
-          <div
-            role={message.type === 'error' ? 'alert' : 'status'}
-            className={`p-3 rounded-xl mb-6 text-xs font-semibold ${
-              message.type === 'success'
-                ? 'bg-[var(--success-soft)] border border-[var(--success-border)] text-success'
-                : 'bg-[var(--destructive-soft)] border border-[var(--destructive-border)] text-destructive'
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
+        <div className="p-5 sm:p-6">
+          {message && (
+            <div role={message.type === 'error' ? 'alert' : 'status'} className={`mb-5 rounded-lg border p-3 text-xs font-semibold ${message.type === 'success' ? 'border-[var(--success-border)] bg-[var(--success-soft)] text-success' : 'border-[var(--destructive-border)] bg-[var(--destructive-soft)] text-destructive'}`}>
+              {message.text}
+            </div>
+          )}
 
-        {/* Edit Form */}
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Full Name (Backed by PATCH /users/me) */}
-            <div>
-              <label htmlFor="profile-full-name" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Full name <span className="text-primary normal-case">(Live API Synced)</span>
+          <form onSubmit={handleSave} className="space-y-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold text-foreground">Full name</span>
+                <input type="text" value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} minLength={2} maxLength={200} required autoComplete="name" className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none" />
               </label>
-              <input
-                id="profile-full-name"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
-                placeholder="Your full name"
-              />
+
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold text-foreground">Student ID</span>
+                <input type="text" value={form.student_id} onChange={(event) => setForm({ ...form, student_id: event.target.value })} maxLength={50} pattern="[A-Za-z0-9/_-]*" placeholder="Optional" className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none" />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold text-foreground">Email address</span>
+                <input type="email" value={user?.email || ''} disabled className="w-full cursor-not-allowed rounded-lg border border-border bg-surface-secondary px-3.5 py-2.5 text-xs text-muted-foreground" />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold text-foreground">Academic level</span>
+                <select value={form.level} onChange={(event) => setForm({ ...form, level: event.target.value })} className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none">
+                  <option value="">Not specified</option>
+                  <option value="100">Level 100</option>
+                  <option value="200">Level 200</option>
+                  <option value="300">Level 300</option>
+                  <option value="400">Level 400</option>
+                  <option value="Postgraduate">Postgraduate</option>
+                </select>
+              </label>
             </div>
 
-            {/* Student ID */}
-            <div>
-              <label htmlFor="profile-student-id" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Student ID
-              </label>
-              <input
-                id="profile-student-id"
-                type="text"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
-                placeholder="e.g. CHM/2026/001"
-              />
+            <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-[10px] text-muted-foreground">Role: {user?.role === 'admin' ? 'Administrator' : 'Student'}</span>
+              <button type="submit" disabled={isSaving} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-xs font-bold text-white hover:bg-primary-hover disabled:opacity-50">
+                {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                {isSaving ? 'Saving...' : 'Save changes'}
+              </button>
             </div>
-
-            {/* Email Address */}
-            <div>
-              <label htmlFor="profile-email" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Email address <span className="text-muted-foreground normal-case">(Firebase UID linked)</span>
-              </label>
-              <input
-                id="profile-email"
-                type="email"
-                value={user?.email || 'student@example.com'}
-                disabled
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs bg-gray-50 text-muted-foreground cursor-not-allowed"
-              />
-            </div>
-
-            {/* Level */}
-            <div>
-              <label htmlFor="profile-level" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Academic Level
-              </label>
-              <select
-                id="profile-level"
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
-              >
-                <option value="Level 100">Level 100</option>
-                <option value="Level 200">Level 200</option>
-                <option value="Level 300">Level 300</option>
-                <option value="Level 400">Level 400</option>
-                <option value="Postgraduate">Postgraduate</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-[#f4f7f8] flex flex-col items-start gap-3 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="w-full px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50 min-[480px]:w-auto"
-            >
-              {isSaving ? 'Saving changes...' : 'Save changes'}
-            </button>
-            <span className="text-[10px] text-muted-foreground">
-              Profile is stored in Supabase PostgreSQL
-            </span>
-          </div>
-        </form>
+          </form>
+        </div>
       </section>
     </div>
   )

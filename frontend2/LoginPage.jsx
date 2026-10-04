@@ -44,7 +44,7 @@ export default function LoginPage() {
       navigate(from, { replace: true })
     } catch (err) {
       console.error('Email sign-in error:', err)
-      setError(err?.message || 'We could not sign you in with those credentials. Please try again.')
+      setError('We could not sign you in with those credentials. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -54,11 +54,7 @@ export default function LoginPage() {
     setError('')
     setGoogleSubmitting(true)
     try {
-      if (loginWithGoogle) {
-        await loginWithGoogle(keepSignedIn)
-      } else {
-        await login('chemist.scholar@gmail.com', 'google-auth')
-      }
+      await loginWithGoogle(keepSignedIn)
       navigate(from, { replace: true })
     } catch (err) {
       console.error('Google sign-in error:', err)
@@ -68,13 +64,11 @@ export default function LoginPage() {
       } else if (code === 'auth/popup-blocked') {
         setError('Google sign-in pop-up was blocked by your browser. Please allow pop-ups for this site and retry.')
       } else if (code === 'auth/unauthorized-domain') {
-        setError('Domain not authorized in Firebase Console. Go to Firebase Console > Authentication > Settings > Authorized domains and add "localhost".')
+        setError('Google sign-in is not available for this site. Please contact portal support.')
       } else if (code === 'auth/cancelled-popup-request') {
         setError('Sign-in request was cancelled. Please try again.')
-      } else if (err?.message?.includes('backend') || err?.message?.includes('fetch') || err?.status === 0) {
-        setError('Connected to Google, but could not reach local backend server (http://127.0.0.1:8000). Ensure the FastAPI backend is running.')
       } else {
-        setError(err?.message || 'Google sign-in could not be completed. Please try again.')
+        setError('Google sign-in could not be completed. Please try again.')
       }
     } finally {
       setGoogleSubmitting(false)

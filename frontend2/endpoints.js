@@ -12,7 +12,11 @@
 export const ENDPOINTS = {
   // Live Backend Routes (FastAPI + Supabase PostgreSQL)
   sync: '/auth/sync',              // POST: Sync/provision Firebase profile
-  me: '/users/me',                 // GET: Read authenticated profile, PATCH: update full_name
+  me: '/users/me',                 // GET/PATCH: authenticated profile
+  myProfilePhoto: '/users/me/photo',
+  notifications: '/notifications',
+  markNotificationRead: (id) => `/notifications/${encodeURIComponent(id)}/read`,
+  markAllNotificationsRead: '/notifications/read-all',
   adminTest: '/admin/test',        // GET: Check admin role requirement
   health: '/health',               // GET: Health check
 

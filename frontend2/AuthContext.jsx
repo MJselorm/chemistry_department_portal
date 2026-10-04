@@ -18,6 +18,8 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [booting, setBooting] = useState(true)
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState(null)
+  const [photoRevision, setPhotoRevision] = useState(0)
   // Signing in triggers onIdTokenChanged as well as the explicit login call.
   // Share the in-flight profile request so those two paths cannot race each other.
   const profileRequests = useRef(new Map())
@@ -62,6 +64,27 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [syncProfile])
 
+  useEffect(() => {
+    if (!user?.has_profile_photo) {
+      setProfilePhotoUrl(null)
+      return undefined
+    }
+    const controller = new AbortController()
+    let objectUrl = null
+    api.blob(ENDPOINTS.myProfilePhoto, { signal: controller.signal })
+      .then(({ blob }) => {
+        objectUrl = URL.createObjectURL(blob)
+        setProfilePhotoUrl(objectUrl)
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') setProfilePhotoUrl(null)
+      })
+    return () => {
+      controller.abort()
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [user?.id, user?.has_profile_photo, photoRevision])
+
   const login = useCallback(async (email, password, keepSignedIn = true) => {
     await setPersistence(
       firebaseAuth,
@@ -104,10 +127,23 @@ export function AuthProvider({ children }) {
     }
   }, [syncProfile])
 
-  const updateProfile = useCallback(async (fullName) => {
-    const updated = await api.patch(ENDPOINTS.me, { full_name: fullName })
+  const updateProfile = useCallback(async (changes) => {
+    const updated = await api.patch(ENDPOINTS.me, changes)
     setUser(updated)
     return updated
+  }, [])
+
+  const uploadProfilePhoto = useCallback(async (file) => {
+    const updated = await api.upload(ENDPOINTS.myProfilePhoto, file)
+    setUser(updated)
+    setPhotoRevision((value) => value + 1)
+    return updated
+  }, [])
+
+  const removeProfilePhoto = useCallback(async () => {
+    await api.del(ENDPOINTS.myProfilePhoto)
+    setUser((current) => current ? { ...current, has_profile_photo: false } : current)
+    setPhotoRevision((value) => value + 1)
   }, [])
 
   const requestPasswordReset = useCallback(async (email) => {
@@ -124,8 +160,8 @@ export function AuthProvider({ children }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, booting, login, loginWithGoogle, requestPasswordReset, updateProfile, logout }),
-    [user, booting, login, loginWithGoogle, requestPasswordReset, updateProfile, logout],
+    () => ({ user, booting, profilePhotoUrl, login, loginWithGoogle, requestPasswordReset, updateProfile, uploadProfilePhoto, removeProfilePhoto, logout }),
+    [user, booting, profilePhotoUrl, login, loginWithGoogle, requestPasswordReset, updateProfile, uploadProfilePhoto, removeProfilePhoto, logout],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

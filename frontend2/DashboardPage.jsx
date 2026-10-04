@@ -140,7 +140,7 @@ export default function DashboardPage() {
   const statItems = [
     { id: 'events', label: 'Published events', value: String(counts.events).padStart(2, '0') },
     { id: 'resources', label: 'Academic resources', value: String(counts.resources).padStart(2, '0') },
-    { id: 'students', label: 'Students registered', value: String(counts.students).padStart(2, '0') },
+    { id: 'students', label: 'Directory records', value: String(counts.students).padStart(2, '0') },
     { id: 'announcements', label: 'Active notices', value: String(counts.announcements).padStart(2, '0') },
   ]
 

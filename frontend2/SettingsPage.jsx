@@ -1,95 +1,35 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { Bell, ShieldCheck, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function SettingsPage() {
-  const [emailNotifications, setEmailNotifications] = useState(true)
-  const [eventReminders, setEventReminders] = useState(true)
-  const [publicDirectory, setPublicDirectory] = useState(false)
-  const [savedNotice, setSavedNotice] = useState(false)
-
-  const handleChange = (setter, val) => {
-    setter(val)
-    setSavedNotice(true)
-    setTimeout(() => setSavedNotice(false), 3000)
-  }
-
   return (
-    <div className="space-y-6 max-w-3xl">
-      {/* Page Head */}
-      <div>
-        <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">PREFERENCES</span>
-        <h1 className="text-2xl font-bold text-foreground mt-1">Settings</h1>
-        <p className="text-xs text-muted-foreground mt-1">Preview notification and directory preferences for this session.</p>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <header>
+        <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Account settings</span>
+        <h1 className="mt-1 text-2xl font-bold text-foreground">Settings</h1>
+        <p className="mt-1 text-xs text-muted-foreground">Manage the account and privacy controls currently supported by Chemistry Hub.</p>
+      </header>
+
+      <section className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+        <Link to="/profile" className="flex items-start gap-3 p-5 transition-colors hover:bg-surface-secondary">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--primary-soft)] text-primary"><UserRound size={17} /></span>
+          <span><strong className="block text-xs font-bold text-foreground">Profile and photo</strong><small className="mt-1 block text-[11px] leading-4 text-muted-foreground">Update your name, student details, and private profile photo.</small></span>
+        </Link>
+        <div className="flex items-start gap-3 p-5">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--primary-soft)] text-primary"><Bell size={17} /></span>
+          <span><strong className="block text-xs font-bold text-foreground">Portal notifications</strong><small className="mt-1 block text-[11px] leading-4 text-muted-foreground">Announcements, published events, and new academic resources appear in the notification menu. Email delivery is not enabled.</small></span>
+        </div>
+        <div className="flex items-start gap-3 p-5">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--success-soft)] text-success"><ShieldCheck size={17} /></span>
+          <span><strong className="block text-xs font-bold text-foreground">Privacy and account data</strong><small className="mt-1 block text-[11px] leading-4 text-muted-foreground">Account correction or deletion requests require identity verification by department administration.</small></span>
+        </div>
+      </section>
+
+      <div className="flex flex-wrap gap-4 border-t border-border pt-4 text-xs font-bold text-primary">
+        <Link to="/privacy" className="hover:underline">Privacy Notice</Link>
+        <Link to="/terms" className="hover:underline">Terms of Use</Link>
       </div>
-
-      {savedNotice && (
-        <div className="p-3 rounded-xl bg-[var(--success-soft)] border border-[var(--success-border)] text-success text-xs font-semibold">
-          Preference changed for this session. Server persistence is not yet available.
-        </div>
-      )}
-
-      {/* Settings Panel */}
-      <section className="bg-surface border border-border rounded-2xl divide-y divide-border shadow-sm overflow-hidden">
-        {/* Email notifications */}
-        <label className="flex items-center justify-between gap-4 p-5 hover:bg-surface-secondary cursor-pointer transition-colors">
-          <div>
-            <strong className="block text-xs font-bold text-foreground">Email notifications</strong>
-            <small className="block text-[11px] text-muted-foreground mt-0.5">
-              Receive event announcements and departmental updates directly in your inbox.
-            </small>
-          </div>
-          <input
-            type="checkbox"
-            checked={emailNotifications}
-            onChange={(e) => handleChange(setEmailNotifications, e.target.checked)}
-            className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
-          />
-        </label>
-
-        {/* Event reminders */}
-        <label className="flex items-center justify-between gap-4 p-5 hover:bg-surface-secondary cursor-pointer transition-colors">
-          <div>
-            <strong className="block text-xs font-bold text-foreground">Event reminders</strong>
-            <small className="block text-[11px] text-muted-foreground mt-0.5">
-              Get reminders 24 hours before registered seminars and workshops.
-            </small>
-          </div>
-          <input
-            type="checkbox"
-            checked={eventReminders}
-            onChange={(e) => handleChange(setEventReminders, e.target.checked)}
-            className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
-          />
-        </label>
-
-        {/* Public directory profile */}
-        <label className="flex items-center justify-between gap-4 p-5 hover:bg-surface-secondary cursor-pointer transition-colors">
-          <div>
-            <strong className="block text-xs font-bold text-foreground">Public directory profile</strong>
-            <small className="block text-[11px] text-muted-foreground mt-0.5">
-              Allow your basic student name and class level to appear in the department student directory.
-            </small>
-          </div>
-          <input
-            type="checkbox"
-            checked={publicDirectory}
-            onChange={(e) => handleChange(setPublicDirectory, e.target.checked)}
-            className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
-          />
-        </label>
-      </section>
-
-      <section className="border-t border-border pt-5">
-        <h2 className="text-sm font-bold text-foreground">Privacy and account data</h2>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Review how portal data is handled or contact department administration to request access,
-          correction, or deletion after identity verification.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-4 text-xs font-bold text-primary">
-          <Link to="/privacy" className="hover:underline">Privacy Notice</Link>
-          <Link to="/terms" className="hover:underline">Terms of Use</Link>
-        </div>
-      </section>
     </div>
   )
 }

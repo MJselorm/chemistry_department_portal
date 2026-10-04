@@ -30,9 +30,9 @@ import {
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useAuth } from './AuthContext'
-import { MOCK_ADMIN_USERS, MOCK_ADMIN_ACTIVITY } from './mocks'
 import ResourcePreviewModal from './academic/ResourcePreviewModal'
 import { downloadResourceFile } from './academic/resourceFiles'
+import useDialogAccessibility from './useDialogAccessibility'
 
 const CATEGORIES = [
   'All',
@@ -97,6 +97,7 @@ export default function AdminPage() {
   const [loadingAdminResources, setLoadingAdminResources] = useState(false)
   const [adminResourcesError, setAdminResourcesError] = useState('')
   const [resourceSearch, setResourceSearch] = useState('')
+  const [resourceSearchInput, setResourceSearchInput] = useState('')
   const [resourceCategoryFilter, setResourceCategoryFilter] = useState('All')
   const [resourceLevelFilter, setResourceLevelFilter] = useState('All')
   const [resourcePage, setResourcePage] = useState(1)
@@ -123,6 +124,11 @@ export default function AdminPage() {
     is_active: true,
   })
   const [savingEditResource, setSavingEditResource] = useState(false)
+  const editResourceDialogRef = useDialogAccessibility(
+    () => setEditingResource(null),
+    Boolean(editingResource),
+    savingEditResource,
+  )
 
   // Announcements state
   const [announcementForm, setAnnouncementForm] = useState({
@@ -143,6 +149,10 @@ export default function AdminPage() {
   const [announcementCategoryFilter, setAnnouncementCategoryFilter] = useState('All')
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [adminUsers, setAdminUsers] = useState([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [usersError, setUsersError] = useState('')
+  const [userSearch, setUserSearch] = useState('')
 
   const showFeedback = (msg) => {
     setFeedback(msg)
@@ -161,6 +171,20 @@ export default function AdminPage() {
       setLoadingAnnouncements(false)
     }
   }
+
+  const fetchAdminUsers = useCallback(async () => {
+    setLoadingUsers(true)
+    setUsersError('')
+    try {
+      const users = await api.get(`${ENDPOINTS.adminManageUsers}?limit=200`)
+      setAdminUsers(Array.isArray(users) ? users : [])
+    } catch (error) {
+      console.error('Admin users could not be loaded.', error)
+      setUsersError('User accounts are unavailable right now. Please try again.')
+    } finally {
+      setLoadingUsers(false)
+    }
+  }, [])
 
   const fetchAdminResources = useCallback(async () => {
     setLoadingAdminResources(true)
@@ -198,6 +222,18 @@ export default function AdminPage() {
       fetchAdminResources()
     }
   }, [activeTab, fetchAdminResources])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setResourceSearch(resourceSearchInput.trim())
+      setResourcePage(1)
+    }, 350)
+    return () => window.clearTimeout(timer)
+  }, [resourceSearchInput])
+
+  useEffect(() => {
+    if (activeTab === 'users') fetchAdminUsers()
+  }, [activeTab, fetchAdminUsers])
 
   const handleAdminTest = async () => {
     setTestingRole(true)
@@ -478,6 +514,12 @@ export default function AdminPage() {
       item.audience?.toLowerCase().includes(announcementSearch.toLowerCase())
     return matchesCategory && matchesSearch
   })
+  const filteredAdminUsers = adminUsers.filter((account) => {
+    const query = userSearch.trim().toLowerCase()
+    if (!query) return true
+    return [account.full_name, account.email, account.student_id, account.level, account.role]
+      .some((value) => String(value || '').toLowerCase().includes(query))
+  })
 
   return (
     <div className="space-y-6">
@@ -666,24 +708,13 @@ export default function AdminPage() {
               </div>
             </section>
 
-            {/* Recent Activity */}
             <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">ACTIVITY</span>
-              <h2 className="text-base font-bold text-foreground mt-0.5 mb-3">Recent activity</h2>
-              <div className="divide-y divide-[#eef2f3]">
-                {MOCK_ADMIN_ACTIVITY.map((act) => (
-                  <div key={act.id} className="py-3 flex items-start gap-2.5">
-                    <span
-                      className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                      style={{ backgroundColor: act.dotColor }}
-                    />
-                    <div className="flex-1">
-                      <strong className="block text-xs font-bold text-foreground">{act.text}</strong>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{act.desc}</p>
-                    </div>
-                    <time className="text-[10px] text-[#a1adb0]">{act.time}</time>
-                  </div>
-                ))}
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">LIVE STATUS</span>
+              <h2 className="text-base font-bold text-foreground mt-0.5 mb-3">Repository overview</h2>
+              <div className="divide-y divide-border">
+                <div className="flex items-center justify-between py-3 text-xs"><span className="text-muted-foreground">Academic resources</span><strong className="text-foreground">{resourceData.total || adminResources.length}</strong></div>
+                <div className="flex items-center justify-between py-3 text-xs"><span className="text-muted-foreground">Published announcements</span><strong className="text-foreground">{announcements.length}</strong></div>
+                <div className="flex items-center justify-between py-3 text-xs"><span className="text-muted-foreground">Authorization</span><strong className="text-success">Admin verified</strong></div>
               </div>
             </section>
           </div>
@@ -965,10 +996,9 @@ export default function AdminPage() {
                   <input
                     type="text"
                     placeholder="Search resources..."
-                    value={resourceSearch}
+                    value={resourceSearchInput}
                     onChange={(e) => {
-                      setResourceSearch(e.target.value)
-                      setResourcePage(1)
+                      setResourceSearchInput(e.target.value)
                     }}
                     className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary shadow-xs"
                   />
@@ -1191,16 +1221,18 @@ export default function AdminPage() {
           {/* Edit Resource Modal */}
           {editingResource && (
             <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-              <div className="bg-surface border border-border rounded-2xl p-6 shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto space-y-4">
+              <div ref={editResourceDialogRef} role="dialog" aria-modal="true" aria-labelledby="edit-resource-title" tabIndex={-1} className="bg-surface border border-border rounded-2xl p-6 shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto space-y-4">
                 <div className="flex items-center justify-between border-b border-border pb-3">
                   <div className="flex items-center gap-2">
                     <Edit2 size={16} className="text-primary" />
-                    <h3 className="text-base font-bold text-foreground">Edit Resource Metadata</h3>
+                    <h3 id="edit-resource-title" className="text-base font-bold text-foreground">Edit Resource Metadata</h3>
                   </div>
                   <button
                     type="button"
                     onClick={() => setEditingResource(null)}
+                    disabled={savingEditResource}
                     className="text-muted-foreground hover:text-foreground"
+                    aria-label="Close resource editor"
                   >
                     <X size={16} />
                   </button>
@@ -1800,16 +1832,28 @@ export default function AdminPage() {
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
                 USER MANAGEMENT
               </span>
-              <h2 className="text-xl font-bold text-foreground">Student accounts</h2>
+              <h2 className="text-xl font-bold text-foreground">Portal accounts</h2>
             </div>
             <input
               type="text"
-              placeholder="Search students"
+              value={userSearch}
+              onChange={(event) => setUserSearch(event.target.value)}
+              placeholder="Search accounts"
+              aria-label="Search portal accounts"
               className="px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
             />
           </div>
 
-          <div className="overflow-x-auto">
+          {loadingUsers && adminUsers.length === 0 && (
+            <div className="py-12 text-center" role="status"><RefreshCw size={22} className="mx-auto animate-spin text-primary" /><p className="mt-2 text-xs text-muted-foreground">Loading accounts...</p></div>
+          )}
+          {usersError && (
+            <div role="alert" className="mb-4 flex items-center justify-between rounded-lg border border-[var(--destructive-border)] bg-[var(--destructive-soft)] p-3 text-xs text-destructive"><span>{usersError}</span><button type="button" onClick={fetchAdminUsers} className="font-bold underline">Retry</button></div>
+          )}
+          {!loadingUsers && !usersError && filteredAdminUsers.length === 0 && (
+            <div className="py-12 text-center"><Users size={26} className="mx-auto text-muted-foreground" /><h3 className="mt-2 text-sm font-bold text-foreground">No accounts found</h3><p className="mt-1 text-xs text-muted-foreground">Try a different search.</p></div>
+          )}
+          {filteredAdminUsers.length > 0 && <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#eef2f3] text-[9px] uppercase tracking-wider text-[#94a1a5]">
@@ -1817,44 +1861,40 @@ export default function AdminPage() {
                   <th className="py-2.5">Student ID</th>
                   <th className="py-2.5">Level</th>
                   <th className="py-2.5">Role</th>
-                  <th className="py-2.5 text-right">Action</th>
+                  <th className="py-2.5 text-right">Joined</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#edf1f2]">
-                {MOCK_ADMIN_USERS.map((usr) => (
-                  <tr key={usr.id} className="py-3">
+                {filteredAdminUsers.map((account) => (
+                  <tr key={account.id} className="py-3">
                     <td className="py-3">
-                      <strong className="block text-xs font-bold text-foreground">{usr.name}</strong>
-                      <small className="text-[10px] text-[#98a5a8]">{usr.status}</small>
+                      <strong className="block text-xs font-bold text-foreground">{account.full_name || 'Name not set'}</strong>
+                      <small className="text-[10px] text-[#98a5a8]">{account.email}</small>
                     </td>
-                    <td className="py-3 text-muted-foreground">{usr.studentId}</td>
-                    <td className="py-3 text-muted-foreground">{usr.level}</td>
+                    <td className="py-3 text-muted-foreground">{account.student_id || 'Not set'}</td>
+                    <td className="py-3 text-muted-foreground">{account.level || 'Not set'}</td>
                     <td className="py-3">
                       <span
                         className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                          usr.badgeColor === 'blue'
+                          account.role === 'student'
                             ? 'bg-[#e7f5f7] text-primary'
-                            : usr.badgeColor === 'green'
+                            : account.role === 'admin'
                             ? 'bg-[var(--success-soft)] text-success'
                             : 'bg-[var(--primary-soft)] text-primary'
                         }`}
                       >
-                        {usr.role}
+                        {account.role}
                       </span>
                     </td>
                     <td className="py-3 text-right">
-                      <button
-                        onClick={() => showFeedback(`Selected user: ${usr.name}`)}
-                        className="text-xs font-bold text-primary hover:underline"
-                      >
-                        Edit
-                      </button>
+                      <span className="text-[10px] text-muted-foreground">{new Date(account.created_at).toLocaleDateString()}</span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </div>}
+          <p className="mt-4 border-t border-border pt-3 text-[10px] text-muted-foreground">Roles are read-only here. Promote administrators only through the controlled database process.</p>
         </section>
       )}
 

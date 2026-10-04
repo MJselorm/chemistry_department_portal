@@ -20,6 +20,7 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
 - A Firebase project with Email/Password sign-in enabled
 - A Supabase PostgreSQL project
 - A private Supabase Storage bucket for Academic Resources
+- A separate private Supabase Storage bucket for profile photos
 - A Google Cloud service account with the Drive API enabled only while migration/sync support is required
 
 ## Configure local environment
@@ -42,6 +43,8 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
    `GOOGLE_DRIVE_ROOT_FOLDER_ID` and a Drive service-account credential, then
    share the root folder with that service account's `client_email` as Viewer.
    Keep all Storage and Drive service credentials on the backend only.
+   Configure `SUPABASE_PROFILE_STORAGE_BUCKET` as a separate private bucket;
+   profile photos are streamed only through authenticated API routes.
 
 3. In `frontend2/.env`, set the `VITE_FIREBASE_*` values from the Firebase web app, set `VITE_API_BASE_URL` if the API is not at `http://127.0.0.1:8000`, and set `VITE_SUPPORT_EMAIL` to a verified institutional support address before production. Firebase web configuration is client-visible, but local environment files remain untracked to keep environments separate.
 
@@ -88,7 +91,8 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
 - `GET /health` verifies that the API is running.
 - `POST /auth/sync` creates or updates the Firebase-linked profile idempotently.
 - `GET /users/me` reads the authenticated profile.
-- `PATCH /users/me` updates the profile's `full_name`.
+- `PATCH /users/me` updates allowlisted profile fields; `/users/me/photo` securely streams, uploads, or removes the current user's photo.
+- `GET /notifications` aggregates authorized announcements, events, and resources; users can persist read state for their own account.
 - `GET /admin/test` verifies the database-backed admin role check.
 - `/api/resources/*` provides authenticated metadata browsing plus ID-based
   preview/download streams from private Storage; upload, sync, indexing,
@@ -104,14 +108,14 @@ The browser authenticates with Firebase and sends a short-lived Firebase ID toke
 
 FastAPI verifies every ID token with Firebase Admin, including revocation checks, and looks up the corresponding application profile by verified Firebase UID. The database role is the authorization source of truth:
 
-- `student`: may read authenticated portal content and update only their own allowlisted `full_name` field.
-- `admin`: may perform directory and announcement administration.
+- `student`: may read authorized portal content, preview/download visible resources, and update only their own allowlisted profile fields and notification state.
+- `admin`: may perform server-authorized resource, directory, event, announcement, and account-list administration.
 
 React route guards are user-interface controls only. Admin API routes independently enforce `require_admin`. Roles are not accepted from profile or directory request bodies. Promote administrators only through a controlled database administration process with an audit trail.
 
 Authentication uses bearer headers rather than cookies, so the API is not currently dependent on cookie-based CSRF protection. CORS is an additional browser control, not an authorization boundary. Production `CORS_ORIGINS` must contain exact origins and must never use arbitrary shared-hosting wildcards.
 
-The backend connects directly to PostgreSQL and uses parameterized SQLAlchemy queries. Supabase service-role credentials are server-only and are used for directory image storage; they must never be exposed as `VITE_*` variables. Directory image objects are returned through a public bucket URL, so administrators must not upload confidential images.
+The backend connects directly to PostgreSQL and uses parameterized SQLAlchemy queries. RLS is enabled and direct `anon`/`authenticated` table privileges are revoked; browser access goes through FastAPI. Supabase service-role credentials are server-only and must never be exposed as `VITE_*` variables. Directory images use the public directory bucket, while academic files and profile photos require separate private buckets.
 
 ## Production checklist
 
@@ -123,7 +127,7 @@ Before launch:
 4. Apply Alembic migrations using a restricted deployment identity. Use a least-privilege runtime database role where practical and confirm backups and restoration procedures.
 5. Confirm the `directory-media` bucket's public-read requirement and retention policy. Do not upload sensitive documents through the image endpoint.
 6. Configure platform/WAF rate limits for authentication, password reset, directory search, and uploads. The application does not include a distributed rate limiter.
-7. Confirm the private Academic Resources bucket, metadata index, authenticated preview/download streams, upload size/type policy, and admin authorization against production Storage. Optional notification and settings integrations must be implemented or disabled before launch.
+7. Confirm both private buckets, the academic metadata index, authenticated resource/profile streams, upload policies, notification read state, and admin authorization against production Storage and PostgreSQL.
 8. Review the Privacy Notice and Terms of Use with the responsible university/society representative. Confirm the public contact, retention schedule, age/audience policy, and asset/logo permissions.
 9. Test sign-in, reset, logout, student/admin authorization, CRUD, uploads, CSP, and error handling against the actual production Firebase, database, storage, and domains.
 
@@ -137,7 +141,7 @@ Vercel supplies CSP, clickjacking, referrer, permissions, MIME-sniffing, and HST
 - No cookie-consent banner is included because no analytics, advertising, or other non-essential trackers were found. Reassess before adding such services.
 - `robots.txt` and page metadata prevent this authenticated portal from being indexed; no sitemap is generated because there are no intended indexable routes.
 
-The application processes account identifiers, email addresses, names, roles, directory contact/academic information, and administrator-provided profile images. The repository does not define a final retention schedule or automated account deletion. Requests must be identity-verified and handled by the responsible institution.
+The application processes account identifiers, email addresses, names, roles, student details, notification read state, directory contact/academic information, and user/admin-provided images. The repository does not define a final retention schedule or automated account deletion. Requests must be identity-verified and handled by the responsible institution.
 
 See [`SECURITY.md`](SECURITY.md) for vulnerability reporting and secrets guidance.
 
@@ -155,7 +159,7 @@ Do not use `Base.metadata.create_all()` in the application.
 
 ## Development notes
 
-`VITE_USE_MOCKS=true` lets the React dashboard display sample data if optional dashboard endpoints are unavailable. Set it to `false` when those API routes are implemented. See [`frontend2/README.md`](frontend2/README.md) for the expected response shapes and frontend architecture.
+See [`frontend2/README.md`](frontend2/README.md) for the API contracts and frontend architecture.
 
 ## Verification
 

@@ -43,7 +43,7 @@ export class ApiError extends Error {
     super(message)
     this.name = 'ApiError'
     this.status = status
-    this.payload = payload
+    this.payload = import.meta.env.DEV ? payload : null
   }
 }
 
@@ -57,18 +57,31 @@ async function parseBody(res) {
   }
 }
 
-/**
- * FastAPI returns errors as {detail: "..."} or, for 422, as
- * {detail: [{loc, msg, type}, ...]}. Flatten both into one readable string.
- */
-function messageFromDetail(payload, fallback) {
-  const detail = payload?.detail
-  if (!detail) return fallback
-  if (typeof detail === 'string') return detail
-  if (Array.isArray(detail)) {
-    return detail.map((d) => d.msg).filter(Boolean).join(', ') || fallback
+function publicErrorMessage(status) {
+  if (status === 401) return 'Your session has expired. Please sign in again.'
+  if (status === 403) return 'You do not have permission to perform this action.'
+  if (status === 404) return 'The requested item could not be found.'
+  if (status === 409) return 'This change conflicts with an existing record.'
+  if (status === 400 || status === 413 || status === 422) return 'Please check the information provided and try again.'
+  return 'Something went wrong. Please try again.'
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
+  const controller = new AbortController()
+  const externalSignal = options.signal
+  const abortFromExternal = () => controller.abort()
+  externalSignal?.addEventListener('abort', abortFromExternal, { once: true })
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } catch (error) {
+    if (externalSignal?.aborted) throw error
+    if (error?.name === 'AbortError') throw new ApiError('Something went wrong. Please try again.', 0, null)
+    throw error
+  } finally {
+    window.clearTimeout(timer)
+    externalSignal?.removeEventListener('abort', abortFromExternal)
   }
-  return fallback
 }
 
 function filenameFromDisposition(value) {
@@ -106,19 +119,15 @@ async function request(path, { method = 'GET', body, form, auth = true, signal, 
   const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
   let res
   try {
-    res = await fetch(targetUrl, { method, headers, body: payload, signal, credentials: 'omit' })
+    res = await fetchWithTimeout(targetUrl, { method, headers, body: payload, signal, credentials: 'omit' })
   } catch (err) {
+    if (err instanceof ApiError) throw err
     if (retryCount > 0 && (err.name === 'TypeError' || err.message?.includes('fetch'))) {
-      // Server may be spinning up from cold sleep (e.g. Render free tier). Wait 2s and retry once.
       await new Promise((r) => setTimeout(r, 2000))
       return request(path, { method, body, form, auth, signal, retryCount: retryCount - 1 })
     }
     if (err.name === 'TypeError' || err.message?.includes('fetch')) {
-      throw new ApiError(
-        'Unable to connect to the backend server. If the server is on a free tier (Render), it may be waking up from standby (~30 seconds). Please try again in a moment.',
-        0,
-        null
-      )
+      throw new ApiError('Something went wrong. Please try again.', 0, null)
     }
     throw err
   }
@@ -127,7 +136,7 @@ async function request(path, { method = 'GET', body, form, auth = true, signal, 
 
   if (res.status === 401 && auth) tokenStore.clear()
   if (!res.ok) {
-    throw new ApiError(messageFromDetail(data, `Request failed (${res.status})`), res.status, data)
+    throw new ApiError(publicErrorMessage(res.status), res.status, data)
   }
   return data
 }
@@ -144,15 +153,16 @@ export const api = {
     const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
     let response
     try {
-      response = await fetch(targetUrl, { headers, signal: opts.signal, credentials: 'omit' })
+      response = await fetchWithTimeout(targetUrl, { headers, signal: opts.signal, credentials: 'omit' }, 60000)
     } catch (error) {
       if (error?.name === 'AbortError') throw error
-      throw new ApiError('Unable to reach the file server. Please try again.', 0, null)
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Something went wrong. Please try again.', 0, null)
     }
     if (!response.ok) {
       const data = await parseBody(response)
       if (response.status === 401 && opts.auth !== false) tokenStore.clear()
-      throw new ApiError(messageFromDetail(data, `Request failed (${response.status})`), response.status, data)
+      throw new ApiError(publicErrorMessage(response.status), response.status, data)
     }
     return {
       blob: await response.blob(),
@@ -174,27 +184,24 @@ export const api = {
     const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
     let res
     try {
-      res = await fetch(targetUrl, {
+      res = await fetchWithTimeout(targetUrl, {
         method: 'POST',
         headers,
         body: formData,
         signal: opts.signal,
         credentials: 'omit',
-      })
+      }, 120000)
     } catch (err) {
+      if (err instanceof ApiError) throw err
       if (err.name === 'TypeError' || err.message?.includes('fetch')) {
-        throw new ApiError(
-          'Unable to reach the file upload server. The server may be waking up or offline. Please retry in a moment.',
-          0,
-          null
-        )
+        throw new ApiError('Something went wrong. Please try again.', 0, null)
       }
       throw err
     }
     const data = await parseBody(res)
     if (res.status === 401 && opts.auth !== false) tokenStore.clear()
     if (!res.ok) {
-      throw new ApiError(messageFromDetail(data, `Upload failed (${res.status})`), res.status, data)
+      throw new ApiError(publicErrorMessage(res.status), res.status, data)
     }
     return data
   },
