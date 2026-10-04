@@ -71,6 +71,21 @@ function messageFromDetail(payload, fallback) {
   return fallback
 }
 
+function filenameFromDisposition(value) {
+  if (!value) return null
+
+  const encoded = value.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded.replace(/^"|"$/g, ''))
+    } catch {
+      return encoded.replace(/^"|"$/g, '')
+    }
+  }
+
+  return value.match(/filename="?([^";]+)"?/i)?.[1]?.trim() || null
+}
+
 async function request(path, { method = 'GET', body, form, auth = true, signal, retryCount = 1 } = {}) {
   const headers = {}
   if (auth) {
@@ -130,14 +145,20 @@ export const api = {
     let response
     try {
       response = await fetch(targetUrl, { headers, signal: opts.signal, credentials: 'omit' })
-    } catch {
+    } catch (error) {
+      if (error?.name === 'AbortError') throw error
       throw new ApiError('Unable to reach the file server. Please try again.', 0, null)
     }
     if (!response.ok) {
       const data = await parseBody(response)
+      if (response.status === 401 && opts.auth !== false) tokenStore.clear()
       throw new ApiError(messageFromDetail(data, `Request failed (${response.status})`), response.status, data)
     }
-    return { blob: await response.blob(), contentType: response.headers.get('content-type') || 'application/octet-stream' }
+    return {
+      blob: await response.blob(),
+      contentType: response.headers.get('content-type') || 'application/octet-stream',
+      filename: filenameFromDisposition(response.headers.get('content-disposition')),
+    }
   },
   upload: async (path, file, opts = {}) => {
     const headers = {}

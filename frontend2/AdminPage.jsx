@@ -11,7 +11,6 @@ import {
   ChevronUp,
   Download,
   Edit2,
-  ExternalLink,
   Eye,
   FileText,
   FileUp,
@@ -32,14 +31,19 @@ import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useAuth } from './AuthContext'
 import { MOCK_ADMIN_USERS, MOCK_ADMIN_ACTIVITY } from './mocks'
+import ResourcePreviewModal from './academic/ResourcePreviewModal'
+import { downloadResourceFile } from './academic/resourceFiles'
 
 const CATEGORIES = [
   'All',
   'Past Questions',
   'Lecture Notes',
+  'Lecture Slides',
+  'Tutorials',
   'Textbooks',
   'Lab Manuals',
   'Course Outlines',
+  'Other',
 ]
 
 const LEVELS = ['All', 'Level 100', 'Level 200', 'Level 300', 'Level 400', 'Postgraduate']
@@ -102,6 +106,7 @@ export default function AdminPage() {
   const [syncingDrive, setSyncingDrive] = useState(false)
   const [indexingStorage, setIndexingStorage] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState(null)
+  const [previewResource, setPreviewResource] = useState(null)
 
   // Resource Edit Modal state
   const [editingResource, setEditingResource] = useState(null)
@@ -177,7 +182,8 @@ export default function AdminPage() {
       setAdminResources(res.items || [])
       setResourceData(res)
     } catch (err) {
-      setAdminResourcesError(err.message || 'Failed to load resources.')
+      console.error('Admin resources could not be loaded.', err)
+      setAdminResourcesError('Resources are unavailable right now. Please try again.')
     } finally {
       setLoadingAdminResources(false)
     }
@@ -266,7 +272,7 @@ export default function AdminPage() {
     if (!resourceFile) return showFeedback('Please select a file to upload.')
     setUploadingResource(true)
     try {
-      const created = await api.upload(ENDPOINTS.adminUploadResource, resourceFile, {
+      let created = await api.upload(ENDPOINTS.adminUploadResource, resourceFile, {
         fields: {
           name: resourceForm.title || resourceFile.name,
           category: resourceForm.category,
@@ -275,7 +281,23 @@ export default function AdminPage() {
           folder_path: `admin-uploads/${resourceForm.year.replace('/', '-')}`,
         },
       })
-      showFeedback(`“${created.name || created.title}” uploaded successfully and is available to students.`)
+      let metadataUpdated = true
+      if (resourceForm.description || resourceForm.year) {
+        try {
+          created = await api.patch(ENDPOINTS.adminUpdateResource(created.id), {
+            description: resourceForm.description || null,
+            academic_year: resourceForm.year || null,
+          })
+        } catch (metadataError) {
+          metadataUpdated = false
+          console.error('The resource uploaded, but its optional metadata could not be saved.', metadataError)
+        }
+      }
+      showFeedback(
+        metadataUpdated
+          ? `“${created.name || created.title}” uploaded successfully and is available to students.`
+          : `“${created.name || created.title}” uploaded, but its description or academic year must be added from Edit.`
+      )
       setResourceFile(null)
       setResourceForm({
         title: '',
@@ -288,7 +310,8 @@ export default function AdminPage() {
       setShowUploadResource(false)
       fetchAdminResources()
     } catch (err) {
-      showFeedback(err.message || 'Unable to upload academic resource.')
+      console.error('Academic resource upload failed.', err)
+      showFeedback('The resource could not be uploaded. Check the file and try again.')
     } finally {
       setUploadingResource(false)
     }
@@ -359,40 +382,15 @@ export default function AdminPage() {
     }
   }
 
-  // View File
-  const handleViewResource = async (resource) => {
-    setActionLoadingId(`view-${resource.id}`)
-    try {
-      const { blob } = await api.blob(ENDPOINTS.academicView(resource.id))
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank', 'noopener,noreferrer')
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
-    } catch (err) {
-      if (resource.web_view_link) {
-        window.open(resource.web_view_link, '_blank', 'noopener,noreferrer')
-      } else {
-        showFeedback(err.message || 'Unable to open file preview.')
-      }
-    } finally {
-      setActionLoadingId(null)
-    }
-  }
-
   // Download File
   const handleDownloadResource = async (resource) => {
+    if (actionLoadingId) return
     setActionLoadingId(`download-${resource.id}`)
     try {
-      const { blob } = await api.blob(ENDPOINTS.academicDownload(resource.id))
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = resource.file_name || resource.name || 'document'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      await downloadResourceFile(resource)
     } catch (err) {
-      showFeedback(err.message || 'Unable to download file.')
+      console.error('Admin resource download failed.', err)
+      showFeedback('The file could not be downloaded. Please try again.')
     } finally {
       setActionLoadingId(null)
     }
@@ -797,11 +795,9 @@ export default function AdminPage() {
                       onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
                       className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
                     >
-                      <option value="Past Questions">Past Questions</option>
-                      <option value="Lecture Notes">Lecture Notes</option>
-                      <option value="Textbooks">Textbooks</option>
-                      <option value="Lab Manuals">Lab Manuals</option>
-                      <option value="Course Outlines">Course Outlines</option>
+                      {CATEGORIES.filter((category) => category !== 'All').map((category) => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -1031,7 +1027,6 @@ export default function AdminPage() {
                     {adminResources.map((item) => {
                       const isDeleting = actionLoadingId === `delete-${item.id}`
                       const isRestoring = actionLoadingId === `restore-${item.id}`
-                      const isViewing = actionLoadingId === `view-${item.id}`
                       const isDownloading = actionLoadingId === `download-${item.id}`
 
                       return (
@@ -1103,12 +1098,12 @@ export default function AdminPage() {
                               {/* View */}
                               <button
                                 type="button"
-                                onClick={() => handleViewResource(item)}
-                                disabled={isViewing}
+                                onClick={() => setPreviewResource(item)}
                                 className="p-1.5 rounded-lg border border-border bg-surface hover:bg-gray-50 text-foreground transition-colors"
                                 title="View preview"
+                                aria-label={`Preview ${item.title || item.name}`}
                               >
-                                {isViewing ? <RefreshCw size={13} className="animate-spin" /> : <Eye size={13} />}
+                                <Eye size={13} />
                               </button>
 
                               {/* Download */}
@@ -1118,6 +1113,7 @@ export default function AdminPage() {
                                 disabled={isDownloading}
                                 className="p-1.5 rounded-lg border border-border bg-surface hover:bg-gray-50 text-foreground transition-colors"
                                 title="Download file"
+                                aria-label={`Download ${item.title || item.name}`}
                               >
                                 {isDownloading ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
                               </button>
@@ -1257,11 +1253,9 @@ export default function AdminPage() {
                         onChange={(e) => setEditResourceForm({ ...editResourceForm, category: e.target.value })}
                         className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
                       >
-                        <option value="Past Questions">Past Questions</option>
-                        <option value="Lecture Notes">Lecture Notes</option>
-                        <option value="Textbooks">Textbooks</option>
-                        <option value="Lab Manuals">Lab Manuals</option>
-                        <option value="Course Outlines">Course Outlines</option>
+                        {CATEGORIES.filter((category) => category !== 'All').map((category) => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -1863,6 +1857,13 @@ export default function AdminPage() {
           </div>
         </section>
       )}
+
+      <ResourcePreviewModal
+        resource={previewResource}
+        onClose={() => setPreviewResource(null)}
+        onDownload={handleDownloadResource}
+        downloading={actionLoadingId === `download-${previewResource?.id}`}
+      />
     </div>
   )
 }

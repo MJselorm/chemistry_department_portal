@@ -20,6 +20,7 @@ Configure every `VITE_FIREBASE_*` value. Point `VITE_API_BASE_URL` at FastAPI, n
 | `AuthContext.jsx` | Firebase persistence, sign-in, token refresh, logout, password reset, and profile sync |
 | `client.js` | Authenticated Fetch wrapper and safe API error normalization |
 | `endpoints.js` | Central API route definitions |
+| `academic/` | Resource cards, secure preview modal, and download helpers |
 | `directory/` | Student directory views and admin CRUD interfaces |
 | `LegalPage.jsx` | Privacy Notice and Terms of Use |
 | `vercel.json` | Render API rewrites and production security headers |
@@ -44,15 +45,23 @@ All application routes except `/health` require `Authorization: Bearer <firebase
 - `GET /announcements`: authenticated announcements
 - `POST/DELETE /admin/announcements`: admin-only announcement management
 - `/api/directory/*`: authenticated reads and admin-only writes/uploads
+- `GET /api/resources`: paginated resource metadata with search and filters
+- `GET /api/resources/{id}/view`: authenticated inline file stream used only when preview is requested
+- `GET /api/resources/{id}/download`: authenticated attachment stream with the backend filename
+- `POST/PATCH/DELETE /api/resources/*`: admin-only upload, metadata updates, and archival
 - `GET /admin/test`: verify the database-backed admin role
 
-Several event, academic-resource, notification, and settings endpoints in `endpoints.js` remain placeholders. Do not present those workflows as production-complete until matching backend routes exist.
+The Academic Hub never receives Supabase service credentials, bucket paths, or public file URLs. It lists metadata first, then requests file bytes by resource ID for preview or download. Office formats such as DOCX and PPTX use a download fallback rather than an unreliable browser preview.
+
+When the frontend calls FastAPI directly from a different origin during development, CORS must expose the `Content-Disposition` response header so downloads can preserve the server-provided filename. The production `/api` rewrite is same-origin.
+
+Some optional notification and settings endpoints in `endpoints.js` remain placeholders. Do not present those workflows as production-complete until matching backend routes exist.
 
 ## Production deployment
 
 Vercel rewrites `/api/*` to the Render service. Keep `VITE_API_BASE_URL=/api` in production and review the fixed backend destination in `vercel.json` whenever the service changes.
 
-`vercel.json` configures CSP, anti-framing, HSTS, MIME-sniffing, referrer, and permissions headers. When adding an external API, font, image provider, or authentication domain, update CSP narrowly and test sign-in before deployment. Do not replace the policy with broad wildcards or `unsafe-eval`.
+`vercel.json` configures CSP, anti-framing, HSTS, MIME-sniffing, referrer, and permissions headers. Its narrowly scoped `blob:` allowances support authenticated PDF/image/media previews created in browser memory. When adding an external API, font, image provider, or authentication domain, update CSP narrowly and test sign-in before deployment. Do not replace the policy with broad wildcards or `unsafe-eval`.
 
 The application is intentionally marked `noindex, nofollow`, and `public/robots.txt` disallows crawling because it is an authenticated portal. There is no sitemap.
 

@@ -28,7 +28,7 @@ export const ENDPOINTS = {
   publishEvent: (id) => `/api/events/${id}/publish`,
   cancelEvent: (id) => `/api/events/${id}/cancel`,
 
-  // Google Drive Academic Resource API
+  // Private academic-resource repository (Supabase Storage with migration support)
   academicCategories: '/academic/categories',
   academicResources: '/api/resources',
   academicFolders: '/api/resources/folders',

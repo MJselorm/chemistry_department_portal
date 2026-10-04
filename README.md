@@ -19,7 +19,8 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
 - Python 3.10 or later
 - A Firebase project with Email/Password sign-in enabled
 - A Supabase PostgreSQL project
-- A Google Cloud service account with the Drive API enabled (for Academic Resources)
+- A private Supabase Storage bucket for Academic Resources
+- A Google Cloud service account with the Drive API enabled only while migration/sync support is required
 
 ## Configure local environment
 
@@ -36,10 +37,11 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
 
    Use the `postgresql+psycopg://` URL scheme and URL-encode special characters in the database password. Keep all credentials out of version control.
 
-   To enable Academic Resources, configure `GOOGLE_DRIVE_ROOT_FOLDER_ID` and a
-   Drive service-account credential. Share the Drive root folder with that
-   service account's `client_email` as Viewer. Use the path setting locally and
-   the JSON setting only in the production secret store.
+   To enable Academic Resources, configure `SUPABASE_ACADEMIC_STORAGE_BUCKET`
+   for a private bucket. During the Drive migration period, also configure
+   `GOOGLE_DRIVE_ROOT_FOLDER_ID` and a Drive service-account credential, then
+   share the root folder with that service account's `client_email` as Viewer.
+   Keep all Storage and Drive service credentials on the backend only.
 
 3. In `frontend2/.env`, set the `VITE_FIREBASE_*` values from the Firebase web app, set `VITE_API_BASE_URL` if the API is not at `http://127.0.0.1:8000`, and set `VITE_SUPPORT_EMAIL` to a verified institutional support address before production. Firebase web configuration is client-visible, but local environment files remain untracked to keep environments separate.
 
@@ -88,8 +90,9 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
 - `GET /users/me` reads the authenticated profile.
 - `PATCH /users/me` updates the profile's `full_name`.
 - `GET /admin/test` verifies the database-backed admin role check.
-- `/api/resources/*` provides authenticated academic-resource browsing; sync
-  and metadata updates require an admin.
+- `/api/resources/*` provides authenticated metadata browsing plus ID-based
+  preview/download streams from private Storage; upload, sync, indexing,
+  archival, and metadata updates require an admin.
 - `/api/events/*` provides published-event viewing; event administration
   requires an admin.
 - `/api/directory/*` reads require an authenticated profile; writes require the database-backed `admin` role.
@@ -120,7 +123,7 @@ Before launch:
 4. Apply Alembic migrations using a restricted deployment identity. Use a least-privilege runtime database role where practical and confirm backups and restoration procedures.
 5. Confirm the `directory-media` bucket's public-read requirement and retention policy. Do not upload sensitive documents through the image endpoint.
 6. Configure platform/WAF rate limits for authentication, password reset, directory search, and uploads. The application does not include a distributed rate limiter.
-7. Replace all mock/placeholder event, academic-resource, notification, and settings integrations or disable those controls before launch.
+7. Confirm the private Academic Resources bucket, metadata index, authenticated preview/download streams, upload size/type policy, and admin authorization against production Storage. Optional notification and settings integrations must be implemented or disabled before launch.
 8. Review the Privacy Notice and Terms of Use with the responsible university/society representative. Confirm the public contact, retention schedule, age/audience policy, and asset/logo permissions.
 9. Test sign-in, reset, logout, student/admin authorization, CRUD, uploads, CSP, and error handling against the actual production Firebase, database, storage, and domains.
 
