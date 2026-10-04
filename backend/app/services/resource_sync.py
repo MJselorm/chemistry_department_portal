@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..models import Resource, ResourceFolder
 from .google_drive import FOLDER_MIME, GoogleDriveService
+from .resource_names import display_name
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +39,8 @@ def sync_resources(session: Session, root_folder_id: str) -> dict:
                 scan(item["id"], folder_id, child_path); continue
             seen_files.add(item["id"]); summary["files_scanned"] += 1
             record = session.query(Resource).filter_by(google_drive_file_id=item["id"]).one_or_none()
-            values = dict(name=item["name"], title=item["name"], file_name=item["name"], folder_path=path, google_drive_parent_id=folder_id, mime_type=item.get("mimeType"), file_size=int(item["size"]) if item.get("size") else None, web_view_link=item.get("webViewLink"), web_content_link=item.get("webContentLink"), last_modified_drive=_drive_time(item.get("modifiedTime")), last_synced_at=now, is_active=True, is_missing=False)
+            visible_name = display_name(item["name"], path)
+            values = dict(name=visible_name, title=visible_name, file_name=visible_name, folder_path=path, google_drive_parent_id=folder_id, mime_type=item.get("mimeType"), file_size=int(item["size"]) if item.get("size") else None, web_view_link=item.get("webViewLink"), web_content_link=item.get("webContentLink"), last_modified_drive=_drive_time(item.get("modifiedTime")), last_synced_at=now, is_active=True, is_missing=False)
             if record is None:
                 session.add(Resource(google_drive_file_id=item["id"], resource_type=(item.get("mimeType") or "other").split("/")[-1], **values)); summary["new_resources"] += 1
             else:

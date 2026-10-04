@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..models import Resource
+from .resource_names import display_name
 
 
 def academic_metadata_from_path(object_path: str) -> tuple[str | None, str | None]:
@@ -95,8 +96,8 @@ class StorageResourceIndexer:
             ).one_or_none()
             level, semester = academic_metadata_from_path(object_path)
             label = academic_label(level, semester)
-            filename = object_path.rsplit("/", 1)[-1]
             folder_path = object_path.rsplit("/", 1)[0] if "/" in object_path else ""
+            filename = display_name(object_path.rsplit("/", 1)[-1], folder_path)
             if record is None:
                 stable_id = hashlib.sha256(object_path.encode()).hexdigest()
                 record = Resource(
