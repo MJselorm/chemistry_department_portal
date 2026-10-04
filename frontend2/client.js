@@ -7,6 +7,13 @@
 
 function resolveBaseUrl() {
   const envUrl = import.meta.env.VITE_API_BASE_URL
+  // A localhost API URL works during Vite development but can never work from
+  // a visitor's browser after deployment. Guard against a mistakenly copied
+  // production environment variable and use Vercel's same-origin rewrite.
+  if (import.meta.env.PROD && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(envUrl || '')) {
+    console.warn('Ignoring a localhost VITE_API_BASE_URL in the production build.')
+    return '/api'
+  }
   if (envUrl) {
     return envUrl.replace(/\/+$/, '')
   }
