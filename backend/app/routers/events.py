@@ -30,8 +30,10 @@ def upcoming(session: DB, _: UserAuth, limit: int = Query(10, ge=1, le=100)):
 
 
 @router.get("", response_model=EventPage)
-def list_events(session: DB, _: UserAuth, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100), search: str | None = Query(None, max_length=200), event_type: str | None = None, department: str | None = None, organizer: str | None = None, location: str | None = None, status_filter: str | None = Query(None, alias="status"), date_from: date | None = None, date_to: date | None = None):
-    query = session.query(Event).filter(Event.is_published.is_(True), Event.status != "cancelled")
+def list_events(session: DB, user: UserAuth, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100), search: str | None = Query(None, max_length=200), event_type: str | None = None, department: str | None = None, organizer: str | None = None, location: str | None = None, status_filter: str | None = Query(None, alias="status"), include_all: bool = Query(False), date_from: date | None = None, date_to: date | None = None):
+    query = session.query(Event)
+    if not (user.role == "admin" and include_all):
+        query = query.filter(Event.is_published.is_(True), Event.status != "cancelled")
     if search:
         term = f"%{search}%"; query = query.filter(or_(Event.title.ilike(term), Event.description.ilike(term)))
     for column, value in ((Event.event_type, event_type), (Event.department, department), (Event.organizer, organizer), (Event.location, location), (Event.status, status_filter)):
@@ -48,9 +50,9 @@ def create_event(payload: EventCreate, session: DB, admin: Admin):
 
 
 @router.get("/{event_id}", response_model=EventOut)
-def event_detail(event_id: UUID, session: DB, _: UserAuth):
+def event_detail(event_id: UUID, session: DB, user: UserAuth):
     event = require_event(session, event_id)
-    if not event.is_published: raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found.")
+    if not event.is_published and user.role != "admin": raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found.")
     return event
 
 

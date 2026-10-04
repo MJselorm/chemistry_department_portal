@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     supabase_url: str | None = None
     supabase_service_role_key: str | None = None
     supabase_storage_bucket: str = "directory-media"
+    # Intentionally unset by default.  Test Drive transfers must name a separate,
+    # pre-existing bucket rather than ever falling back to the production bucket.
+    supabase_test_storage_bucket: str | None = None
+    supabase_academic_storage_bucket: str = "academic-resources"
     firebase_service_account_path: str | None = None
     firebase_service_account_json: str | None = None
     # Google Drive credentials are deliberately separate from Firebase credentials.

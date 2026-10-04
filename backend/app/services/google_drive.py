@@ -53,6 +53,27 @@ class GoogleDriveService:
             if exc.resp.status == 404: raise HTTPException(status.HTTP_404_NOT_FOUND, "Resource is no longer available in Google Drive.") from exc
             raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Could not read Google Drive resource.") from exc
 
+    def folder_path(self, file_metadata: dict, root_folder_id: str | None) -> list[str]:
+        """Return known ancestor names below the configured root, without guessing metadata."""
+        names: list[str] = []
+        parents = file_metadata.get("parents") or []
+        visited = {file_metadata["id"]}
+        while parents:
+            parent_id = parents[0]
+            if parent_id in visited:
+                raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Google Drive folder hierarchy is cyclic.")
+            if root_folder_id and parent_id == root_folder_id:
+                return list(reversed(names))
+            visited.add(parent_id)
+            parent = self.get_metadata(parent_id)
+            if parent.get("mimeType") != FOLDER_MIME:
+                raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Google Drive parent is not a folder.")
+            names.append(parent["name"])
+            parents = parent.get("parents") or []
+        # A file outside the configured root is still transferable, but only its
+        # actual visible ancestors are used; no academic classification is inferred.
+        return list(reversed(names))
+
     def file_chunks(self, file_id: str, mime_type: str | None) -> tuple[Iterator[bytes], str]:
         try:
             if mime_type in WORKSPACE_EXPORTS:

@@ -60,6 +60,8 @@ class Resource(Base):
     # the existing API display field used by the portal.
     title: Mapped[str | None] = mapped_column(String(500), nullable=True)
     file_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Human-readable classification derived from a migrated bucket path.
+    label: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     resource_type: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     course_code: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
@@ -73,6 +75,9 @@ class Resource(Base):
     file_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     web_view_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     web_content_link: Mapped[str | None] = mapped_column(Text, nullable=True)
+    supabase_bucket: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    supabase_storage_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    storage_migrated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     academic_year: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     semester: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     lecturer: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
