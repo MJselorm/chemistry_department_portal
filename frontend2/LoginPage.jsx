@@ -34,12 +34,17 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    if (!email.trim() || !password) {
+      setError('Enter both your university email and password.')
+      return
+    }
     setSubmitting(true)
     try {
       await login(email.trim(), password, keepSignedIn)
       navigate(from, { replace: true })
-    } catch {
-      setError('We could not sign you in with those credentials. Please try again.')
+    } catch (err) {
+      console.error('Email sign-in error:', err)
+      setError(err?.message || 'We could not sign you in with those credentials. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -55,8 +60,22 @@ export default function LoginPage() {
         await login('chemist.scholar@gmail.com', 'google-auth')
       }
       navigate(from, { replace: true })
-    } catch {
-      setError('Google sign-in could not be completed. Please try again.')
+    } catch (err) {
+      console.error('Google sign-in error:', err)
+      const code = err?.code || ''
+      if (code === 'auth/popup-closed-by-user') {
+        setError('Sign-in window was closed before completing. Please try again.')
+      } else if (code === 'auth/popup-blocked') {
+        setError('Google sign-in pop-up was blocked by your browser. Please allow pop-ups for this site and retry.')
+      } else if (code === 'auth/unauthorized-domain') {
+        setError('Domain not authorized in Firebase Console. Go to Firebase Console > Authentication > Settings > Authorized domains and add "localhost".')
+      } else if (code === 'auth/cancelled-popup-request') {
+        setError('Sign-in request was cancelled. Please try again.')
+      } else if (err?.message?.includes('backend') || err?.message?.includes('fetch') || err?.status === 0) {
+        setError('Connected to Google, but could not reach local backend server (http://127.0.0.1:8000). Ensure the FastAPI backend is running.')
+      } else {
+        setError(err?.message || 'Google sign-in could not be completed. Please try again.')
+      }
     } finally {
       setGoogleSubmitting(false)
     }
@@ -138,6 +157,7 @@ export default function LoginPage() {
               onChange={setEmail}
               placeholder="student@knust.edu.gh"
               autoComplete="username"
+              required
             />
 
             <Field
@@ -149,6 +169,7 @@ export default function LoginPage() {
               onChange={setPassword}
               placeholder="••••••••"
               autoComplete="current-password"
+              required
               trailing={
                 <button
                   type="button"

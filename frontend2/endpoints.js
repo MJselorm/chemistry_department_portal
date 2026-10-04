@@ -7,8 +7,6 @@
  * - PATCH /users/me
  * - GET  /admin/test
  * - GET  /health
- * 
- * Future routes to be implemented in backend/ are marked with [PLACEHOLDER].
  */
 
 export const ENDPOINTS = {
@@ -18,20 +16,36 @@ export const ENDPOINTS = {
   adminTest: '/admin/test',        // GET: Check admin role requirement
   health: '/health',               // GET: Health check
 
-  // [PLACEHOLDER] Routes to be implemented next in backend
+  // Event Management API
   dashboardSummary: '/dashboard/summary',
-  events: '/events/upcoming',
-  eventDetails: (id) => `/events/${id}`,
-  eventRegister: (id) => `/events/${id}/register`,
-  eventCheckIn: '/events/checkin',
+  events: '/api/events',
+  upcomingEvents: '/api/events/upcoming',
+  eventDetails: (id) => `/api/events/${id}`,
+  eventsHealth: '/api/events/health',
+  adminCreateEvent: '/api/events',
+  adminUpdateEvent: (id) => `/api/events/${id}`,
+  adminDeleteEvent: (id) => `/api/events/${id}`,
+  publishEvent: (id) => `/api/events/${id}/publish`,
+  cancelEvent: (id) => `/api/events/${id}/cancel`,
+
+  // Google Drive Academic Resource API
   academicCategories: '/academic/categories',
-  academicResources: '/academic/resources',
-  academicDownload: (id) => `/academic/resources/${id}/download`,
+  academicResources: '/api/resources',
+  academicFolders: '/api/resources/folders',
+  academicSearch: '/api/resources/search',
+  academicHealth: '/api/resources/health',
+  academicDownload: (id) => `/api/resources/${id}/download`,
+  academicView: (id) => `/api/resources/${id}/view`,
+  adminSyncResources: '/api/resources/sync',
+  adminIndexMigratedResources: '/api/resources/storage-index',
+  adminUpdateResource: (id) => `/api/resources/${id}`,
+  adminUploadResource: '/api/resources/upload',
+  adminRemoveResource: (id) => `/api/resources/${id}`,
+
+  // Announcements & Directory
   directory: '/directory/people',
   announcements: '/announcements',
   userSettings: '/users/settings',
-  adminCreateEvent: '/admin/events',
-  adminUploadResource: '/admin/resources',
   adminPostAnnouncement: '/admin/announcements',
   adminDeleteAnnouncement: (id) => `/admin/announcements/${id}`,
   adminManageUsers: '/admin/users',

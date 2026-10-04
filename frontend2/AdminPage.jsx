@@ -1,19 +1,29 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
+  Archive,
   Bell,
   BookOpen,
   CalendarDays,
+  CheckCircle,
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  Download,
+  Edit2,
+  ExternalLink,
+  Eye,
+  FileText,
   FileUp,
+  Filter,
   Megaphone,
+  Pin,
   Plus,
   RefreshCw,
   Search,
   Sparkles,
   Trash2,
+  Upload,
   Users,
   X,
   Zap,
@@ -22,6 +32,23 @@ import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useAuth } from './AuthContext'
 import { MOCK_ADMIN_USERS, MOCK_ADMIN_ACTIVITY } from './mocks'
+
+const CATEGORIES = [
+  'All',
+  'Past Questions',
+  'Lecture Notes',
+  'Textbooks',
+  'Lab Manuals',
+  'Course Outlines',
+]
+
+const LEVELS = ['All', 'Level 100', 'Level 200', 'Level 300', 'Level 400', 'Postgraduate']
+
+const formatBytes = (value) => {
+  if (!value || isNaN(value)) return 'Size unknown'
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`
+}
 
 export default function AdminPage() {
   const { user } = useAuth()
@@ -44,12 +71,55 @@ export default function AdminPage() {
     setActiveTab(tabId)
     setSearchParams({ tab: tabId })
   }
+
   const [adminTestResult, setAdminTestResult] = useState(null)
   const [testingRole, setTestingRole] = useState(false)
 
   // Form states
   const [eventForm, setEventForm] = useState({ title: '', type: 'Seminar', datetime: '', venue: '', description: '' })
-  const [resourceForm, setResourceForm] = useState({ title: '', category: 'Past Questions', course: '', year: '2026/2027' })
+  
+  // Resource states
+  const [resourceForm, setResourceForm] = useState({
+    title: '',
+    category: 'Past Questions',
+    course: '',
+    level: '100',
+    year: '2026/2027',
+    description: '',
+  })
+  const [resourceFile, setResourceFile] = useState(null)
+  const [uploadingResource, setUploadingResource] = useState(false)
+  const [adminResources, setAdminResources] = useState([])
+  const [loadingAdminResources, setLoadingAdminResources] = useState(false)
+  const [adminResourcesError, setAdminResourcesError] = useState('')
+  const [resourceSearch, setResourceSearch] = useState('')
+  const [resourceCategoryFilter, setResourceCategoryFilter] = useState('All')
+  const [resourceLevelFilter, setResourceLevelFilter] = useState('All')
+  const [resourcePage, setResourcePage] = useState(1)
+  const [resourceData, setResourceData] = useState({ total: 0, total_pages: 0 })
+  const [showUploadResource, setShowUploadResource] = useState(false)
+  const [includeInactive, setIncludeInactive] = useState(false)
+  const [syncingDrive, setSyncingDrive] = useState(false)
+  const [indexingStorage, setIndexingStorage] = useState(false)
+  const [actionLoadingId, setActionLoadingId] = useState(null)
+
+  // Resource Edit Modal state
+  const [editingResource, setEditingResource] = useState(null)
+  const [editResourceForm, setEditResourceForm] = useState({
+    name: '',
+    description: '',
+    course_code: '',
+    course_name: '',
+    level: '',
+    category: 'Past Questions',
+    semester: '',
+    academic_year: '',
+    lecturer: '',
+    is_active: true,
+  })
+  const [savingEditResource, setSavingEditResource] = useState(false)
+
+  // Announcements state
   const [announcementForm, setAnnouncementForm] = useState({
     headline: '',
     message: '',
@@ -61,7 +131,6 @@ export default function AdminPage() {
   const [publishingAnnouncement, setPublishingAnnouncement] = useState(false)
   const [feedback, setFeedback] = useState(null)
 
-  // Announcements list state
   const [announcements, setAnnouncements] = useState([])
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false)
   const [announcementsError, setAnnouncementsError] = useState('')
@@ -69,6 +138,11 @@ export default function AdminPage() {
   const [announcementCategoryFilter, setAnnouncementCategoryFilter] = useState('All')
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+
+  const showFeedback = (msg) => {
+    setFeedback(msg)
+    setTimeout(() => setFeedback(null), 5000)
+  }
 
   const fetchAnnouncements = async () => {
     setLoadingAnnouncements(true)
@@ -83,15 +157,46 @@ export default function AdminPage() {
     }
   }
 
+  const fetchAdminResources = useCallback(async () => {
+    setLoadingAdminResources(true)
+    setAdminResourcesError('')
+    try {
+      const params = new URLSearchParams({
+        page: String(resourcePage),
+        page_size: '12',
+        include_inactive: includeInactive ? 'true' : 'false',
+      })
+      if (resourceSearch.trim()) params.set('search', resourceSearch.trim())
+      if (resourceCategoryFilter !== 'All') params.set('category', resourceCategoryFilter)
+      if (resourceLevelFilter !== 'All') {
+        const lvl = resourceLevelFilter.replace('Level ', '')
+        params.set('level', lvl)
+      }
+
+      const res = await api.get(`${ENDPOINTS.academicResources}?${params}`)
+      setAdminResources(res.items || [])
+      setResourceData(res)
+    } catch (err) {
+      setAdminResourcesError(err.message || 'Failed to load resources.')
+    } finally {
+      setLoadingAdminResources(false)
+    }
+  }, [resourcePage, resourceSearch, resourceCategoryFilter, resourceLevelFilter, includeInactive])
+
   useEffect(() => {
     fetchAnnouncements()
   }, [])
+
+  useEffect(() => {
+    if (activeTab === 'resources' || activeTab === 'overview') {
+      fetchAdminResources()
+    }
+  }, [activeTab, fetchAdminResources])
 
   const handleAdminTest = async () => {
     setTestingRole(true)
     setAdminTestResult(null)
     try {
-      // Calls live backend GET /admin/test !
       const res = await api.get(ENDPOINTS.adminTest)
       setAdminTestResult({ success: true, message: res.message || 'Admin authorization confirmed by FastAPI!' })
     } catch (err) {
@@ -104,11 +209,196 @@ export default function AdminPage() {
     }
   }
 
-  const showFeedback = (msg) => {
-    setFeedback(msg)
-    setTimeout(() => setFeedback(null), 4000)
+  const createAndPublishEvent = async (event) => {
+    event.preventDefault()
+    try {
+      const start = new Date(eventForm.datetime)
+      const created = await api.post(ENDPOINTS.adminCreateEvent, {
+        title: eventForm.title,
+        event_type: eventForm.type,
+        location: eventForm.venue,
+        description: eventForm.description || null,
+        start_datetime: start.toISOString(),
+        end_datetime: new Date(start.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+      })
+      await api.post(ENDPOINTS.publishEvent(created.id), {})
+      showFeedback(`Event "${created.title}" is published and visible to students.`)
+      setEventForm({ title: '', type: 'Seminar', datetime: '', venue: '', description: '' })
+    } catch (err) {
+      showFeedback(err.message || 'Unable to publish event.')
+    }
   }
 
+  // Google Drive Sync
+  const handleSyncDrive = async () => {
+    setSyncingDrive(true)
+    try {
+      const result = await api.post(ENDPOINTS.adminSyncResources, {})
+      showFeedback(
+        `Google Drive sync complete: ${result.files_scanned || 0} scanned, ${result.new_resources || 0} new, ${result.updated_resources || 0} updated.`
+      )
+      fetchAdminResources()
+    } catch (err) {
+      showFeedback(err.message || 'Unable to synchronize Google Drive.')
+    } finally {
+      setSyncingDrive(false)
+    }
+  }
+
+  const handleIndexMigratedStorage = async () => {
+    setIndexingStorage(true)
+    try {
+      const result = await api.post(ENDPOINTS.adminIndexMigratedResources, {})
+      showFeedback(
+        `Migrated storage indexed: ${result.objects_indexed || 0} files scanned, ${result.new_resources || 0} new, ${result.updated_resources || 0} updated.`
+      )
+      fetchAdminResources()
+    } catch (err) {
+      showFeedback(err.message || 'Unable to index migrated Academic Storage files.')
+    } finally {
+      setIndexingStorage(false)
+    }
+  }
+
+  // Upload Resource
+  const uploadAcademicResource = async (event) => {
+    event.preventDefault()
+    if (!resourceFile) return showFeedback('Please select a file to upload.')
+    setUploadingResource(true)
+    try {
+      const created = await api.upload(ENDPOINTS.adminUploadResource, resourceFile, {
+        fields: {
+          name: resourceForm.title || resourceFile.name,
+          category: resourceForm.category,
+          course_code: resourceForm.course,
+          level: resourceForm.level,
+          folder_path: `admin-uploads/${resourceForm.year.replace('/', '-')}`,
+        },
+      })
+      showFeedback(`“${created.name || created.title}” uploaded successfully and is available to students.`)
+      setResourceFile(null)
+      setResourceForm({
+        title: '',
+        category: 'Past Questions',
+        course: '',
+        level: '100',
+        year: '2026/2027',
+        description: '',
+      })
+      setShowUploadResource(false)
+      fetchAdminResources()
+    } catch (err) {
+      showFeedback(err.message || 'Unable to upload academic resource.')
+    } finally {
+      setUploadingResource(false)
+    }
+  }
+
+  // Open Edit Resource Modal
+  const openEditModal = (resource) => {
+    setEditingResource(resource)
+    setEditResourceForm({
+      name: resource.name || resource.title || '',
+      description: resource.description || '',
+      course_code: resource.course_code || '',
+      course_name: resource.course_name || '',
+      level: resource.level || '',
+      category: resource.category || 'Past Questions',
+      semester: resource.semester || '',
+      academic_year: resource.academic_year || '',
+      lecturer: resource.lecturer || '',
+      is_active: resource.is_active ?? true,
+    })
+  }
+
+  // Save Resource Edits
+  const handleSaveResourceEdit = async (e) => {
+    e.preventDefault()
+    if (!editingResource) return
+    setSavingEditResource(true)
+    try {
+      const updated = await api.patch(ENDPOINTS.adminUpdateResource(editingResource.id), editResourceForm)
+      showFeedback(`Resource "${updated.title || updated.name}" updated successfully.`)
+      setEditingResource(null)
+      fetchAdminResources()
+    } catch (err) {
+      showFeedback(err.message || 'Failed to update resource metadata.')
+    } finally {
+      setSavingEditResource(false)
+    }
+  }
+
+  // Delete / Archive Resource
+  const handleDeleteResource = async (id, title) => {
+    if (!window.confirm(`Are you sure you want to archive/remove "${title}"?`)) {
+      return
+    }
+    setActionLoadingId(`delete-${id}`)
+    try {
+      await api.del(ENDPOINTS.adminRemoveResource(id))
+      showFeedback(`Resource "${title}" archived. It is now hidden from students.`)
+      fetchAdminResources()
+    } catch (err) {
+      showFeedback(err.message || 'Failed to remove resource.')
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  // Restore Resource
+  const handleRestoreResource = async (id, title) => {
+    setActionLoadingId(`restore-${id}`)
+    try {
+      await api.patch(ENDPOINTS.adminUpdateResource(id), { is_active: true })
+      showFeedback(`Resource "${title}" has been reactivated.`)
+      fetchAdminResources()
+    } catch (err) {
+      showFeedback(err.message || 'Failed to restore resource.')
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  // View File
+  const handleViewResource = async (resource) => {
+    setActionLoadingId(`view-${resource.id}`)
+    try {
+      const { blob } = await api.blob(ENDPOINTS.academicView(resource.id))
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank', 'noopener,noreferrer')
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch (err) {
+      if (resource.web_view_link) {
+        window.open(resource.web_view_link, '_blank', 'noopener,noreferrer')
+      } else {
+        showFeedback(err.message || 'Unable to open file preview.')
+      }
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  // Download File
+  const handleDownloadResource = async (resource) => {
+    setActionLoadingId(`download-${resource.id}`)
+    try {
+      const { blob } = await api.blob(ENDPOINTS.academicDownload(resource.id))
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = resource.file_name || resource.name || 'document'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      showFeedback(err.message || 'Unable to download file.')
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  // Announcements
   const publishAnnouncement = async (event) => {
     event.preventDefault()
     setPublishingAnnouncement(true)
@@ -121,7 +411,7 @@ export default function AdminPage() {
         issuer: announcementForm.issuer,
         is_pinned: announcementForm.pin,
       })
-      showFeedback('Announcement published! It is now visible in the tab and to all portal users.')
+      showFeedback('Announcement published! It is now visible to all portal users.')
       setAnnouncementForm({
         headline: '',
         message: '',
@@ -204,20 +494,20 @@ export default function AdminPage() {
             Manage portal content, events, academic resources, and user accounts.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={handleAdminTest}
             disabled={testingRole}
-            className="px-3.5 py-2 rounded-xl bg-[#eee7fa] hover:bg-[#e4d8f8] text-primary text-xs font-bold border border-[#d6c3f3] transition-colors inline-flex items-center gap-2"
+            className="px-3.5 py-2 rounded-xl bg-[#eee7fa] hover:bg-[#e4d8f8] text-primary text-xs font-bold border border-[#d6c3f3] transition-colors inline-flex items-center gap-2 shadow-xs"
           >
             <Zap size={13} aria-hidden="true" />
             {testingRole ? 'Verifying...' : 'Test Live Admin Endpoint'}
           </button>
           <button
-            onClick={() => handleTabChange('events')}
-            className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
+            onClick={() => handleTabChange('resources')}
+            className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors shadow-xs"
           >
-            Create event
+            Manage Resources
           </button>
         </div>
       </div>
@@ -242,7 +532,7 @@ export default function AdminPage() {
 
       {/* Global Action Feedback */}
       {feedback && (
-        <div className="p-3.5 rounded-xl bg-[var(--success-soft)] border border-[var(--success-border)] text-success text-xs font-semibold">
+        <div className="p-3.5 rounded-xl bg-[var(--success-soft)] border border-[var(--success-border)] text-success text-xs font-semibold shadow-xs">
           {feedback}
         </div>
       )}
@@ -251,17 +541,17 @@ export default function AdminPage() {
       <div className="flex flex-wrap gap-2 border-b border-border pb-3">
         {[
           { id: 'overview', label: 'Overview' },
-          { id: 'events', label: 'Create Event' },
-          { id: 'resources', label: 'Upload Resource' },
-          { id: 'users', label: 'Students & Users' },
+          { id: 'resources', label: `Resources (${resourceData.total || adminResources.length})` },
+          { id: 'events', label: 'Events' },
           { id: 'announcements', label: `Announcements (${announcements.length})` },
+          { id: 'users', label: 'Students & Users' },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
               activeTab === tab.id
-                ? 'bg-primary text-white'
+                ? 'bg-primary text-white shadow-xs'
                 : 'bg-surface border border-border text-muted-foreground hover:border-[var(--primary-border)]'
             }`}
           >
@@ -275,26 +565,27 @@ export default function AdminPage() {
         <div className="space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-            <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
-              <span className="w-8 h-8 rounded-lg bg-[#f1ebfb] text-primary text-sm grid place-items-center mb-3 font-bold">
-                <CalendarDays size={17} aria-hidden="true" />
-              </span>
-              <strong className="block text-2xl font-black text-foreground">08</strong>
-              <span className="block text-xs text-muted-foreground mt-1">Published events</span>
-            </div>
-            <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
+            <div
+              onClick={() => handleTabChange('resources')}
+              className="bg-surface border border-border rounded-2xl p-4 shadow-sm cursor-pointer hover:border-primary transition-colors group"
+            >
               <span className="w-8 h-8 rounded-lg bg-[#eaf4fb] text-[#2776a5] text-sm grid place-items-center mb-3 font-bold">
                 <BookOpen size={17} aria-hidden="true" />
               </span>
-              <strong className="block text-2xl font-black text-foreground">126</strong>
-              <span className="block text-xs text-muted-foreground mt-1">Resources</span>
+              <strong className="block text-2xl font-black text-foreground group-hover:text-primary transition-colors">
+                {resourceData.total || adminResources.length}
+              </strong>
+              <span className="block text-xs text-muted-foreground mt-1">Academic Resources</span>
             </div>
-            <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
-              <span className="w-8 h-8 rounded-lg bg-[#eaf7f0] text-success text-sm grid place-items-center mb-3 font-bold">
-                <Users size={17} aria-hidden="true" />
+            <div
+              onClick={() => handleTabChange('events')}
+              className="bg-surface border border-border rounded-2xl p-4 shadow-sm cursor-pointer hover:border-primary transition-colors group"
+            >
+              <span className="w-8 h-8 rounded-lg bg-[#f1ebfb] text-primary text-sm grid place-items-center mb-3 font-bold">
+                <CalendarDays size={17} aria-hidden="true" />
               </span>
-              <strong className="block text-2xl font-black text-foreground">342</strong>
-              <span className="block text-xs text-muted-foreground mt-1">Students</span>
+              <strong className="block text-2xl font-black text-foreground group-hover:text-primary transition-colors">08</strong>
+              <span className="block text-xs text-muted-foreground mt-1">Published events</span>
             </div>
             <div
               onClick={() => handleTabChange('announcements')}
@@ -308,6 +599,16 @@ export default function AdminPage() {
               </strong>
               <span className="block text-xs text-muted-foreground mt-1">Announcements</span>
             </div>
+            <div
+              onClick={() => handleTabChange('users')}
+              className="bg-surface border border-border rounded-2xl p-4 shadow-sm cursor-pointer hover:border-primary transition-colors group"
+            >
+              <span className="w-8 h-8 rounded-lg bg-[#eaf7f0] text-success text-sm grid place-items-center mb-3 font-bold">
+                <Users size={17} aria-hidden="true" />
+              </span>
+              <strong className="block text-2xl font-black text-foreground group-hover:text-primary transition-colors">342</strong>
+              <span className="block text-xs text-muted-foreground mt-1">Students</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -317,6 +618,18 @@ export default function AdminPage() {
               <h2 className="text-base font-bold text-foreground mt-0.5 mb-3">Quick management</h2>
               <div className="space-y-2">
                 <button
+                  onClick={() => handleTabChange('resources')}
+                  className="w-full text-left p-3 rounded-xl border border-border hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
+                >
+                  <div>
+                    <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
+                      Manage academic resources
+                    </strong>
+                    <small className="block text-[10px] text-muted-foreground">Add, update, delete, sync Drive, and inspect files</small>
+                  </div>
+                  <ChevronRight className="text-primary" size={15} aria-hidden="true" />
+                </button>
+                <button
                   onClick={() => handleTabChange('events')}
                   className="w-full text-left p-3 rounded-xl border border-border hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
                 >
@@ -324,19 +637,7 @@ export default function AdminPage() {
                     <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
                       Manage events
                     </strong>
-                    <small className="block text-[10px] text-muted-foreground">Create, edit and publish seminars</small>
-                  </div>
-                  <ChevronRight className="text-primary" size={15} aria-hidden="true" />
-                </button>
-                <button
-                  onClick={() => handleTabChange('resources')}
-                  className="w-full text-left p-3 rounded-xl border border-border hover:border-[#c4dde0] flex items-center justify-between transition-colors group"
-                >
-                  <div>
-                    <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
-                      Upload resources
-                    </strong>
-                    <small className="block text-[10px] text-muted-foreground">Add notes, manuals and past questions</small>
+                    <small className="block text-[10px] text-muted-foreground">Create, edit and publish seminars and workshops</small>
                   </div>
                   <ChevronRight className="text-primary" size={15} aria-hidden="true" />
                 </button>
@@ -391,6 +692,659 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* ── Tab: ACADEMIC RESOURCES (Full Admin Management) ──────── */}
+      {activeTab === 'resources' && (
+        <div className="space-y-6">
+          {/* Header Card with Sync and Upload Actions */}
+          <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">
+                ACADEMIC REPOSITORY
+              </span>
+              <h2 className="text-xl font-bold text-foreground mt-0.5">Resource Management</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Index migrated Storage files, upload materials, edit metadata, and archive records.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSyncDrive}
+                disabled={syncingDrive}
+                className="px-3.5 py-2.5 rounded-xl border border-border bg-surface hover:bg-gray-50 text-foreground text-xs font-bold inline-flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50"
+                title="Sync files from connected Google Drive root folder"
+              >
+                <RefreshCw size={13} className={syncingDrive ? 'animate-spin text-primary' : ''} />
+                <span>{syncingDrive ? 'Syncing Drive…' : 'Sync Google Drive'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleIndexMigratedStorage}
+                disabled={indexingStorage || syncingDrive}
+                className="px-3.5 py-2.5 rounded-xl border border-border bg-surface hover:bg-gray-50 text-foreground text-xs font-bold inline-flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50"
+                title="Index files already migrated to Academic Storage"
+              >
+                <RefreshCw size={13} className={indexingStorage ? 'animate-spin text-primary' : ''} />
+                <span>{indexingStorage ? 'Indexing Storage…' : 'Index Migrated Storage'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowUploadResource(!showUploadResource)}
+                className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors inline-flex items-center gap-2 shadow-xs"
+              >
+                {showUploadResource ? (
+                  <>
+                    <ChevronUp size={14} />
+                    <span>Hide upload form</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus size={14} />
+                    <span>+ Upload Resource</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Upload Resource Form Drawer */}
+          {showUploadResource && (
+            <section className="bg-surface border-2 border-[var(--primary-border)] rounded-2xl p-6 shadow-card animate-in fade-in slide-in-from-top-3 duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#eaf4fb] text-primary grid place-items-center font-bold text-xs">
+                    <Upload size={16} aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Upload Academic Resource</h3>
+                    <p className="text-[11px] text-muted-foreground">Files are stored securely and made immediately available to students.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowUploadResource(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground font-bold p-1"
+                  aria-label="Close upload form"
+                >
+                  <X size={15} aria-hidden="true" />
+                </button>
+              </div>
+
+              <form onSubmit={uploadAcademicResource} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      Resource Title / Name <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      aria-label="Resource title"
+                      required
+                      placeholder="e.g. CHEM 151 Lecture 1 — Introduction to Chemical Principles"
+                      value={resourceForm.title}
+                      onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary shadow-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Category</label>
+                    <select
+                      aria-label="Resource category"
+                      value={resourceForm.category}
+                      onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                    >
+                      <option value="Past Questions">Past Questions</option>
+                      <option value="Lecture Notes">Lecture Notes</option>
+                      <option value="Textbooks">Textbooks</option>
+                      <option value="Lab Manuals">Lab Manuals</option>
+                      <option value="Course Outlines">Course Outlines</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Level</label>
+                    <select
+                      aria-label="Resource level"
+                      value={resourceForm.level}
+                      onChange={(e) => setResourceForm({ ...resourceForm, level: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                    >
+                      <option value="100">Level 100</option>
+                      <option value="200">Level 200</option>
+                      <option value="300">Level 300</option>
+                      <option value="400">Level 400</option>
+                      <option value="Postgraduate">Postgraduate</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Course Code</label>
+                    <input
+                      type="text"
+                      aria-label="Course code"
+                      placeholder="e.g. CHEM 151"
+                      value={resourceForm.course}
+                      onChange={(e) => setResourceForm({ ...resourceForm, course: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary shadow-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Academic Year</label>
+                    <input
+                      type="text"
+                      aria-label="Academic year"
+                      placeholder="2026/2027"
+                      value={resourceForm.year}
+                      onChange={(e) => setResourceForm({ ...resourceForm, year: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary shadow-xs"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-foreground mb-1">Description (Optional)</label>
+                    <input
+                      type="text"
+                      aria-label="Description"
+                      placeholder="Summary or lecture notes overview..."
+                      value={resourceForm.description}
+                      onChange={(e) => setResourceForm({ ...resourceForm, description: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary shadow-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    File Attachment <span className="text-destructive">*</span>
+                  </label>
+                  <label className="border-2 border-dashed border-[#dce6e8] rounded-xl p-6 bg-[#f9fbfb] text-center flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors">
+                    <FileUp className="text-primary mb-1.5" size={28} aria-hidden="true" />
+                    <strong className="text-xs text-foreground">{resourceFile ? resourceFile.name : 'Click or drag to choose an academic file (PDF, DOCX, PPTX, etc.)'}</strong>
+                    <small className="text-[10px] text-muted-foreground mt-0.5">Maximum size: 50 MB</small>
+                    <input
+                      type="file"
+                      required
+                      className="sr-only"
+                      onChange={(e) => setResourceFile(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2 pt-3 border-t border-border">
+                  <button
+                    type="submit"
+                    disabled={uploadingResource || !resourceFile}
+                    className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors inline-flex items-center gap-2 shadow-xs disabled:opacity-50"
+                  >
+                    {uploadingResource ? (
+                      <>
+                        <RefreshCw size={13} className="animate-spin" />
+                        <span>Uploading…</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={13} />
+                        <span>Upload & Publish</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadResource(false)}
+                    className="px-4 py-2.5 rounded-xl border border-border text-muted-foreground text-xs font-bold hover:bg-gray-50 shadow-xs"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </section>
+          )}
+
+          {/* Search, Filter, and Controls Bar */}
+          <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm space-y-3">
+            {/* Category Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    setResourceCategoryFilter(cat)
+                    setResourcePage(1)
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                    resourceCategoryFilter === cat
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'bg-surface-secondary border border-border text-muted-foreground hover:border-[var(--primary-border)]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Filter size={13} className="text-primary" />
+                  <span className="font-semibold">Level:</span>
+                </div>
+                <select
+                  value={resourceLevelFilter}
+                  onChange={(e) => {
+                    setResourceLevelFilter(e.target.value)
+                    setResourcePage(1)
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl border border-border bg-surface text-xs font-medium focus:outline-none focus:border-primary shadow-xs"
+                >
+                  {LEVELS.map((lvl) => (
+                    <option key={lvl} value={lvl}>
+                      {lvl}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer ml-2">
+                  <input
+                    type="checkbox"
+                    checked={includeInactive}
+                    onChange={(e) => {
+                      setIncludeInactive(e.target.checked)
+                      setResourcePage(1)
+                    }}
+                    className="w-3.5 h-3.5 rounded text-primary focus:ring-primary"
+                  />
+                  <span>Show Archived</span>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative w-56 sm:w-72">
+                  <Search size={14} className="absolute left-3 top-2.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search resources..."
+                    value={resourceSearch}
+                    onChange={(e) => {
+                      setResourceSearch(e.target.value)
+                      setResourcePage(1)
+                    }}
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary shadow-xs"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchAdminResources}
+                  disabled={loadingAdminResources}
+                  className="p-2 rounded-xl border border-border bg-surface hover:bg-gray-50 text-muted-foreground transition-colors disabled:opacity-50 shadow-xs"
+                  title="Refresh resources list"
+                >
+                  <RefreshCw size={13} className={loadingAdminResources ? 'animate-spin text-primary' : ''} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Resources Table */}
+          <section className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+            {loadingAdminResources && adminResources.length === 0 ? (
+              <div className="py-16 text-center space-y-3">
+                <RefreshCw size={24} className="animate-spin text-primary mx-auto" />
+                <p className="text-xs text-muted-foreground">Loading resource repository…</p>
+              </div>
+            ) : adminResourcesError ? (
+              <div className="p-5 text-center text-xs text-destructive">
+                <p>{adminResourcesError}</p>
+                <button onClick={fetchAdminResources} className="font-bold underline mt-2 inline-block">
+                  Retry
+                </button>
+              </div>
+            ) : adminResources.length === 0 ? (
+              <div className="py-14 text-center space-y-2">
+                <FileText size={32} className="text-muted-foreground mx-auto opacity-50" />
+                <h3 className="text-sm font-bold text-foreground">No resources found</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  {resourceSearch || resourceCategoryFilter !== 'All' || resourceLevelFilter !== 'All'
+                    ? 'No materials matched your search or filters. Try adjusting your query.'
+                    : 'Click "+ Upload Resource" or "Sync Google Drive" to add materials.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-[#fbfcfc] text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                      <th className="py-3 px-4">Title & Details</th>
+                      <th className="py-3 px-3">Course / Level</th>
+                      <th className="py-3 px-3">Category</th>
+                      <th className="py-3 px-3">Size & Type</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {adminResources.map((item) => {
+                      const isDeleting = actionLoadingId === `delete-${item.id}`
+                      const isRestoring = actionLoadingId === `restore-${item.id}`
+                      const isViewing = actionLoadingId === `view-${item.id}`
+                      const isDownloading = actionLoadingId === `download-${item.id}`
+
+                      return (
+                        <tr
+                          key={item.id}
+                          className={`hover:bg-[var(--surface-secondary)] transition-colors ${
+                            !item.is_active ? 'opacity-60 bg-gray-50/50' : ''
+                          }`}
+                        >
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-start gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-[var(--primary-soft)] text-primary grid place-items-center shrink-0 mt-0.5">
+                                <FileText size={16} />
+                              </div>
+                              <div className="min-w-0">
+                                <strong className="block text-xs font-bold text-foreground truncate max-w-xs sm:max-w-sm">
+                                  {item.title || item.name}
+                                </strong>
+                                {item.description && (
+                                  <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                    {item.description}
+                                  </p>
+                                )}
+                                <small className="text-[10px] text-muted-foreground">
+                                  Path: {item.folder_path || 'root'}
+                                </small>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-3">
+                            <span className="font-bold text-primary block">
+                              {item.course_code || '—'}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {item.level ? `Level ${item.level}` : 'All Levels'}
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-3">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#e7f5f7] text-primary border border-[#b8dfe1]">
+                              {item.category || 'General'}
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-3">
+                            <span className="block font-medium text-foreground">
+                              {formatBytes(item.file_size)}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground uppercase">
+                              {item.resource_type || (item.mime_type?.split('/')?.[1] ?? 'file')}
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-3">
+                            {item.is_active ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[var(--success-soft)] text-success border border-[var(--success-border)]">
+                                Active
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                                Archived
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              {/* View */}
+                              <button
+                                type="button"
+                                onClick={() => handleViewResource(item)}
+                                disabled={isViewing}
+                                className="p-1.5 rounded-lg border border-border bg-surface hover:bg-gray-50 text-foreground transition-colors"
+                                title="View preview"
+                              >
+                                {isViewing ? <RefreshCw size={13} className="animate-spin" /> : <Eye size={13} />}
+                              </button>
+
+                              {/* Download */}
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadResource(item)}
+                                disabled={isDownloading}
+                                className="p-1.5 rounded-lg border border-border bg-surface hover:bg-gray-50 text-foreground transition-colors"
+                                title="Download file"
+                              >
+                                {isDownloading ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
+                              </button>
+
+                              {/* Edit */}
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(item)}
+                                className="p-1.5 rounded-lg border border-border bg-surface hover:bg-gray-50 text-primary transition-colors"
+                                title="Edit resource metadata"
+                              >
+                                <Edit2 size={13} />
+                              </button>
+
+                              {/* Delete / Archive or Restore */}
+                              {item.is_active ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteResource(item.id, item.title || item.name)}
+                                  disabled={isDeleting}
+                                  className="p-1.5 rounded-lg border border-[var(--destructive-border)] bg-[var(--destructive-soft)] text-destructive hover:bg-red-100 transition-colors"
+                                  title="Archive / Remove resource"
+                                >
+                                  {isDeleting ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRestoreResource(item.id, item.title || item.name)}
+                                  disabled={isRestoring}
+                                  className="p-1.5 rounded-lg border border-[var(--success-border)] bg-[var(--success-soft)] text-success hover:bg-green-100 transition-colors"
+                                  title="Reactivate resource"
+                                >
+                                  {isRestoring ? <RefreshCw size={13} className="animate-spin" /> : <Archive size={13} />}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {resourceData.total_pages > 1 && (
+              <div className="flex items-center justify-between p-4 border-t border-border bg-[#fbfcfc]">
+                <span className="text-xs text-muted-foreground font-medium">
+                  Page {resourceData.page || resourcePage} of {resourceData.total_pages} ({resourceData.total} total items)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={resourcePage <= 1 || loadingAdminResources}
+                    onClick={() => setResourcePage((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 text-xs font-bold border border-border rounded-xl bg-surface hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-xs"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    disabled={resourcePage >= resourceData.total_pages || loadingAdminResources}
+                    onClick={() => setResourcePage((p) => p + 1)}
+                    className="px-3 py-1.5 text-xs font-bold border border-border rounded-xl bg-surface hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-xs"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Edit Resource Modal */}
+          {editingResource && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+              <div className="bg-surface border border-border rounded-2xl p-6 shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto space-y-4">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="flex items-center gap-2">
+                    <Edit2 size={16} className="text-primary" />
+                    <h3 className="text-base font-bold text-foreground">Edit Resource Metadata</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingResource(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveResourceEdit} className="space-y-3.5">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Title / Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editResourceForm.name}
+                      onChange={(e) => setEditResourceForm({ ...editResourceForm, name: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-foreground mb-1">Course Code</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. CHEM 251"
+                        value={editResourceForm.course_code}
+                        onChange={(e) => setEditResourceForm({ ...editResourceForm, course_code: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-foreground mb-1">Level</label>
+                      <select
+                        value={editResourceForm.level}
+                        onChange={(e) => setEditResourceForm({ ...editResourceForm, level: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
+                      >
+                        <option value="">None / Unassigned</option>
+                        <option value="100">Level 100</option>
+                        <option value="200">Level 200</option>
+                        <option value="300">Level 300</option>
+                        <option value="400">Level 400</option>
+                        <option value="Postgraduate">Postgraduate</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-foreground mb-1">Category</label>
+                      <select
+                        value={editResourceForm.category}
+                        onChange={(e) => setEditResourceForm({ ...editResourceForm, category: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
+                      >
+                        <option value="Past Questions">Past Questions</option>
+                        <option value="Lecture Notes">Lecture Notes</option>
+                        <option value="Textbooks">Textbooks</option>
+                        <option value="Lab Manuals">Lab Manuals</option>
+                        <option value="Course Outlines">Course Outlines</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-foreground mb-1">Academic Year</label>
+                      <input
+                        type="text"
+                        placeholder="2026/2027"
+                        value={editResourceForm.academic_year}
+                        onChange={(e) => setEditResourceForm({ ...editResourceForm, academic_year: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-foreground mb-1">Semester</label>
+                      <input
+                        type="text"
+                        placeholder="Semester 1 or 2"
+                        value={editResourceForm.semester}
+                        onChange={(e) => setEditResourceForm({ ...editResourceForm, semester: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-foreground mb-1">Lecturer</label>
+                      <input
+                        type="text"
+                        placeholder="Dr. Lecturer Name"
+                        value={editResourceForm.lecturer}
+                        onChange={(e) => setEditResourceForm({ ...editResourceForm, lecturer: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Description</label>
+                    <textarea
+                      rows="3"
+                      placeholder="Resource description..."
+                      value={editResourceForm.description}
+                      onChange={(e) => setEditResourceForm({ ...editResourceForm, description: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="pt-2 border-t border-border flex items-center justify-between">
+                    <label className="inline-flex items-center gap-2 text-xs font-bold cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editResourceForm.is_active}
+                        onChange={(e) => setEditResourceForm({ ...editResourceForm, is_active: e.target.checked })}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary"
+                      />
+                      <span>Active & visible to students</span>
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingResource(null)}
+                        className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={savingEditResource}
+                        className="px-5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors disabled:opacity-50"
+                      >
+                        {savingEditResource ? 'Saving…' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Tab: CREATE EVENT ───────────────────────────────────── */}
       {activeTab === 'events' && (
         <section className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-3xl">
@@ -398,14 +1352,7 @@ export default function AdminPage() {
             EVENT MANAGEMENT
           </span>
           <h2 className="text-xl font-bold text-foreground mt-0.5 mb-4">Create an event</h2>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              showFeedback(`Event "${eventForm.title}" was captured for this session. Publishing is not available yet.`)
-              setEventForm({ title: '', type: 'Seminar', datetime: '', venue: '', description: '' })
-            }}
-            className="space-y-4"
-          >
+          <form onSubmit={createAndPublishEvent} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Event title</label>
@@ -484,158 +1431,6 @@ export default function AdminPage() {
               </button>
             </div>
           </form>
-        </section>
-      )}
-
-      {/* ── Tab: UPLOAD RESOURCES ────────────────────────────────── */}
-      {activeTab === 'resources' && (
-        <section className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-3xl">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-            RESOURCE MANAGEMENT
-          </span>
-          <h2 className="text-xl font-bold text-foreground mt-0.5 mb-4">Academic resources</h2>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              showFeedback(`Resource "${resourceForm.title}" was captured for this session. Upload publishing is not available yet.`)
-              setResourceForm({ title: '', category: 'Past Questions', course: '', year: '2026/2027' })
-            }}
-            className="space-y-4"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1">Resource title</label>
-                <input
-                  type="text"
-                  aria-label="Resource title"
-                  required
-                  placeholder="e.g. CHEM301 Lecture Notes"
-                  value={resourceForm.title}
-                  onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1">Category</label>
-                <select
-                  aria-label="Resource category"
-                  value={resourceForm.category}
-                  onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
-                >
-                  <option value="Past Questions">Past Questions</option>
-                  <option value="Lecture Notes">Lecture Notes</option>
-                  <option value="Textbooks">Textbooks</option>
-                  <option value="Lab Manuals">Lab Manuals</option>
-                  <option value="Course Outlines">Course Outlines</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1">Course / Level</label>
-                <input
-                  type="text"
-                  aria-label="Resource course or level"
-                  placeholder="CHEM 301 · Level 300"
-                  value={resourceForm.course}
-                  onChange={(e) => setResourceForm({ ...resourceForm, course: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1">Academic year</label>
-                <input
-                  type="text"
-                  aria-label="Resource academic year"
-                  placeholder="2026/2027"
-                  value={resourceForm.year}
-                  onChange={(e) => setResourceForm({ ...resourceForm, year: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-foreground mb-1">File upload</label>
-                <div className="border-2 border-dashed border-[#dce6e8] rounded-xl p-8 bg-[#f9fbfb] text-center flex flex-col items-center justify-center">
-                  <FileUp className="text-[#91a0a4] mb-1" size={30} aria-hidden="true" />
-                  <strong className="text-xs text-[#5b6f74]">Drop a file here or browse</strong>
-                  <small className="text-[10px] text-[#91a0a4] mt-1">PDF, DOCX up to 25MB (Placeholder upload)</small>
-                </div>
-              </div>
-            </div>
-            <div className="pt-3 border-t border-[#f4f7f8]">
-              <button
-                type="submit"
-                className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
-              >
-                Upload resource
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
-
-      {/* ── Tab: STUDENTS & USERS ───────────────────────────────── */}
-      {activeTab === 'users' && (
-        <section className="bg-surface border border-border rounded-2xl p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                USER MANAGEMENT
-              </span>
-              <h2 className="text-xl font-bold text-foreground">Student accounts</h2>
-            </div>
-            <input
-              type="text"
-              placeholder="Search students"
-              className="px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
-            />
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#eef2f3] text-[9px] uppercase tracking-wider text-[#94a1a5]">
-                  <th className="py-2.5">Name</th>
-                  <th className="py-2.5">Student ID</th>
-                  <th className="py-2.5">Level</th>
-                  <th className="py-2.5">Role</th>
-                  <th className="py-2.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#edf1f2]">
-                {MOCK_ADMIN_USERS.map((usr) => (
-                  <tr key={usr.id} className="py-3">
-                    <td className="py-3">
-                      <strong className="block text-xs font-bold text-foreground">{usr.name}</strong>
-                      <small className="text-[10px] text-[#98a5a8]">{usr.status}</small>
-                    </td>
-                    <td className="py-3 text-muted-foreground">{usr.studentId}</td>
-                    <td className="py-3 text-muted-foreground">{usr.level}</td>
-                    <td className="py-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                          usr.badgeColor === 'blue'
-                            ? 'bg-[#e7f5f7] text-primary'
-                            : usr.badgeColor === 'green'
-                            ? 'bg-[var(--success-soft)] text-success'
-                            : 'bg-[var(--primary-soft)] text-primary'
-                        }`}
-                      >
-                        {usr.role}
-                      </span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <button
-                        onClick={() => showFeedback(`Selected user: ${usr.name}`)}
-                        className="text-xs font-bold text-primary hover:underline"
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </section>
       )}
 
@@ -936,7 +1731,6 @@ export default function AdminPage() {
                       : 'border-border hover:border-[var(--primary-border)]'
                   }`}
                 >
-                  {/* Card Header */}
                   <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
@@ -977,13 +1771,11 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Title & Body */}
                   <h3 className="text-base font-bold text-foreground mb-1.5">{item.title}</h3>
                   <p className="text-xs text-[#52656a] leading-relaxed mb-3 whitespace-pre-line">
                     {item.body}
                   </p>
 
-                  {/* Card Footer */}
                   <div className="flex items-center justify-between text-[11px] text-muted-foreground border-t border-[#f4f7f8] pt-2.5">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-[#667a7f]">Issued by:</span>
@@ -1004,6 +1796,72 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Tab: STUDENTS & USERS ───────────────────────────────── */}
+      {activeTab === 'users' && (
+        <section className="bg-surface border border-border rounded-2xl p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                USER MANAGEMENT
+              </span>
+              <h2 className="text-xl font-bold text-foreground">Student accounts</h2>
+            </div>
+            <input
+              type="text"
+              placeholder="Search students"
+              className="px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
+            />
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-[#eef2f3] text-[9px] uppercase tracking-wider text-[#94a1a5]">
+                  <th className="py-2.5">Name</th>
+                  <th className="py-2.5">Student ID</th>
+                  <th className="py-2.5">Level</th>
+                  <th className="py-2.5">Role</th>
+                  <th className="py-2.5 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#edf1f2]">
+                {MOCK_ADMIN_USERS.map((usr) => (
+                  <tr key={usr.id} className="py-3">
+                    <td className="py-3">
+                      <strong className="block text-xs font-bold text-foreground">{usr.name}</strong>
+                      <small className="text-[10px] text-[#98a5a8]">{usr.status}</small>
+                    </td>
+                    <td className="py-3 text-muted-foreground">{usr.studentId}</td>
+                    <td className="py-3 text-muted-foreground">{usr.level}</td>
+                    <td className="py-3">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
+                          usr.badgeColor === 'blue'
+                            ? 'bg-[#e7f5f7] text-primary'
+                            : usr.badgeColor === 'green'
+                            ? 'bg-[var(--success-soft)] text-success'
+                            : 'bg-[var(--primary-soft)] text-primary'
+                        }`}
+                      >
+                        {usr.role}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <button
+                        onClick={() => showFeedback(`Selected user: ${usr.name}`)}
+                        className="text-xs font-bold text-primary hover:underline"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
     </div>
   )

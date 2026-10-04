@@ -14,11 +14,11 @@ import {
   Plus,
   ShieldCheck,
   Users,
+  RefreshCw,
 } from 'lucide-react'
 import { useAuth } from './AuthContext'
-import { MOCK_DASHBOARD_STATS } from './mocks'
 import { api } from './client'
-import { ENDPOINTS } from './endpoints'
+import { ENDPOINTS, DIRECTORY_ENDPOINTS } from './endpoints'
 
 const STAT_ICONS = {
   events: CalendarDays,
@@ -34,6 +34,20 @@ const STAT_TONES = {
   announcements: 'bg-[var(--surface-secondary)] text-[var(--muted-foreground)]',
 }
 
+const formatEventDateBadge = (isoStr) => {
+  if (!isoStr) return { month: 'TBD', day: '--' }
+  const d = new Date(isoStr)
+  return {
+    month: d.toLocaleString([], { month: 'short' }).toUpperCase(),
+    day: d.getDate(),
+  }
+}
+
+const formatEventTime = (isoStr) => {
+  if (!isoStr) return ''
+  return new Date(isoStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 export default function DashboardPage() {
   const { user } = useAuth()
   const isActualAdmin = user?.role === 'admin'
@@ -41,13 +55,29 @@ export default function DashboardPage() {
   // Allow admins to preview student dashboard if desired
   const [previewAsStudent, setPreviewAsStudent] = useState(false)
   const isDisplayingAdmin = isActualAdmin && !previewAsStudent
+
   const [announcements, setAnnouncements] = useState([])
   const [announcementsError, setAnnouncementsError] = useState(false)
+
+  const [upcomingEvent, setUpcomingEvent] = useState(null)
+  const [loadingUpcoming, setLoadingUpcoming] = useState(true)
+
+  const [counts, setCounts] = useState({
+    events: 0,
+    resources: 0,
+    students: 0,
+    announcements: 0,
+  })
+  const [loadingCounts, setLoadingCounts] = useState(true)
 
   const loadAnnouncements = () => {
     setAnnouncementsError(false)
     api.get(ENDPOINTS.announcements)
-      .then((items) => setAnnouncements(items.slice(0, 4)))
+      .then((items) => {
+        const list = Array.isArray(items) ? items : []
+        setAnnouncements(list.slice(0, 4))
+        setCounts((prev) => ({ ...prev, announcements: list.length }))
+      })
       .catch((error) => {
         console.error('Failed to load dashboard announcements:', error)
         setAnnouncements([])
@@ -55,9 +85,64 @@ export default function DashboardPage() {
       })
   }
 
+  const loadUpcomingEvent = () => {
+    setLoadingUpcoming(true)
+    api.get(`${ENDPOINTS.upcomingEvents}?limit=1`)
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          setUpcomingEvent(items[0])
+        } else {
+          // Fallback to general published events
+          return api.get(`${ENDPOINTS.events}?limit=1`)
+            .then((res) => {
+              if (res?.items?.length > 0) {
+                setUpcomingEvent(res.items[0])
+              } else {
+                setUpcomingEvent(null)
+              }
+            })
+        }
+      })
+      .catch(() => setUpcomingEvent(null))
+      .finally(() => setLoadingUpcoming(false))
+  }
+
+  const loadLiveStats = async () => {
+    setLoadingCounts(true)
+    try {
+      const [eventsRes, resourcesRes, dirRes] = await Promise.allSettled([
+        api.get(`${ENDPOINTS.events}?limit=1`),
+        api.get(`${ENDPOINTS.academicResources}?page_size=1`),
+        api.get(DIRECTORY_ENDPOINTS.summary),
+      ])
+
+      setCounts((prev) => ({
+        ...prev,
+        events: eventsRes.status === 'fulfilled' ? eventsRes.value?.total || 0 : prev.events,
+        resources: resourcesRes.status === 'fulfilled' ? resourcesRes.value?.total || 0 : prev.resources,
+        students: dirRes.status === 'fulfilled'
+          ? dirRes.value?.total_records || dirRes.value?.total || Object.values(dirRes.value || {}).reduce((sum, value) => sum + (Number(value) || 0), 0)
+          : prev.students,
+      }))
+    } catch (err) {
+      console.error('Stats loading error:', err)
+    } finally {
+      setLoadingCounts(false)
+    }
+  }
+
   useEffect(() => {
     loadAnnouncements()
+    loadUpcomingEvent()
+    loadLiveStats()
   }, [])
+
+  const statItems = [
+    { id: 'events', label: 'Published events', value: String(counts.events).padStart(2, '0') },
+    { id: 'resources', label: 'Academic resources', value: String(counts.resources).padStart(2, '0') },
+    { id: 'students', label: 'Students registered', value: String(counts.students).padStart(2, '0') },
+    { id: 'announcements', label: 'Active notices', value: String(counts.announcements).padStart(2, '0') },
+  ]
 
   return (
     <div className="space-y-6">
@@ -207,27 +292,21 @@ export default function DashboardPage() {
 
       {/* ── STAT CARDS ──────────────────────────────────────────── */}
       <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {MOCK_DASHBOARD_STATS.map((stat) => {
+        {statItems.map((stat) => {
           const Icon = STAT_ICONS[stat.id] || FolderOpen
           return (
-          <div
-            key={stat.id}
-            className="bg-surface border border-border rounded-2xl p-4 shadow-sm transition-[border-color,box-shadow] hover:border-[var(--primary-border)] hover:shadow-md"
-          >
             <div
-              className={`w-9 h-9 rounded-lg text-sm grid place-items-center mb-3 ${STAT_TONES[stat.id]}`}
+              key={stat.id}
+              className="bg-surface border border-border rounded-2xl p-4 shadow-sm transition-[border-color,box-shadow] hover:border-[var(--primary-border)] hover:shadow-md"
             >
-              <Icon size={17} aria-hidden="true" />
+              <div
+                className={`w-9 h-9 rounded-lg text-sm grid place-items-center mb-3 ${STAT_TONES[stat.id]}`}
+              >
+                <Icon size={17} aria-hidden="true" />
+              </div>
+              <strong className="block text-2xl font-bold text-foreground">{stat.value}</strong>
+              <span className="block text-xs text-muted-foreground mt-1">{stat.label}</span>
             </div>
-            <strong className="block text-2xl font-bold text-foreground">{stat.value}</strong>
-            <span className="block text-xs text-muted-foreground mt-1">
-              {isDisplayingAdmin && stat.id === 'events'
-                ? 'Published events'
-                : isDisplayingAdmin && stat.id === 'students'
-                ? 'Students registered'
-                : stat.label}
-            </span>
-          </div>
           )
         })}
       </div>
@@ -240,30 +319,53 @@ export default function DashboardPage() {
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">UP NEXT</span>
-                <h3 className="text-base font-bold text-foreground mt-0.5">Annual Chemistry Symposium</h3>
+                <h3 className="text-base font-bold text-foreground mt-0.5">
+                  {loadingUpcoming
+                    ? 'Loading next event…'
+                    : upcomingEvent
+                    ? upcomingEvent.title
+                    : 'No upcoming events'}
+                </h3>
               </div>
-              <span className="px-2 py-1 rounded-full text-[10px] font-extrabold bg-[#e7f5f7] text-primary">
-                Oct 12
-              </span>
+              {upcomingEvent && (
+                <span className="px-2 py-1 rounded-full text-[10px] font-extrabold bg-[#e7f5f7] text-primary">
+                  {formatEventDateBadge(upcomingEvent.start_datetime).month} {formatEventDateBadge(upcomingEvent.start_datetime).day}
+                </span>
+              )}
             </div>
+
             <p className="text-xs text-muted-foreground leading-relaxed">
-              A departmental seminar bringing students and researchers together around current developments in chemistry.
+              {loadingUpcoming
+                ? 'Retrieving latest calendar schedule…'
+                : upcomingEvent
+                ? upcomingEvent.description || 'Join us for this departmental event.'
+                : 'There are no upcoming seminars or meetings scheduled right now. Check back soon!'}
             </p>
-            <div className="flex gap-4 text-xs text-[#74878b] font-medium my-4">
-              <span className="inline-flex items-center gap-1.5"><CalendarClock size={13} aria-hidden="true" />10:00 AM</span>
-              <span className="inline-flex items-center gap-1.5"><MapPin size={13} aria-hidden="true" />Main Auditorium</span>
-            </div>
+
+            {upcomingEvent && (
+              <div className="flex flex-wrap gap-4 text-xs text-[#74878b] font-medium my-4">
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarClock size={13} aria-hidden="true" />
+                  {formatEventTime(upcomingEvent.start_datetime)}
+                </span>
+                {upcomingEvent.location && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin size={13} aria-hidden="true" />
+                    {upcomingEvent.location}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-          <Link
-            to={isDisplayingAdmin ? '/admin' : '/events'}
-            className={`w-full py-2.5 rounded-xl text-white text-xs font-bold text-center block transition-colors ${
-              isDisplayingAdmin
-                ? 'bg-primary hover:bg-primary-hover'
-                : 'bg-primary hover:bg-primary-hover'
-            }`}
-          >
-            {isDisplayingAdmin ? 'Manage event details' : 'View event details'}
-          </Link>
+
+          <div className="mt-4">
+            <Link
+              to={isDisplayingAdmin ? '/admin?tab=events' : '/events'}
+              className="w-full py-2.5 rounded-xl text-white text-xs font-bold text-center block transition-colors bg-primary hover:bg-primary-hover shadow-xs"
+            >
+              {isDisplayingAdmin ? 'Manage calendar events' : 'View all calendar events'}
+            </Link>
+          </div>
         </section>
 
         {/* Right Panel: Latest Announcements */}
@@ -303,10 +405,10 @@ export default function DashboardPage() {
                   <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
                     {item.title}
                   </strong>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{item.body}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{item.body}</p>
                 </div>
                 <time className="text-[10px] text-[#a1adb0] ml-2 flex-shrink-0">
-                  {new Date(item.published_at).toLocaleDateString()}
+                  {item.published_at ? new Date(item.published_at).toLocaleDateString() : ''}
                 </time>
               </Link>
             ))}
@@ -391,8 +493,8 @@ export default function DashboardPage() {
               className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"
             >
               <ClipboardCheck className="block text-primary mb-2" size={22} aria-hidden="true" />
-              <strong className="block text-xs font-bold text-foreground">Event Check-in</strong>
-              <small className="block text-[10px] text-muted-foreground mt-1">Scan or enter attendance code</small>
+              <strong className="block text-xs font-bold text-foreground">Department Events</strong>
+              <small className="block text-[10px] text-muted-foreground mt-1">Calendar & seminar schedules</small>
             </Link>
             <Link
               to="/directory"

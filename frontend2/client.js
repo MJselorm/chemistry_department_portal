@@ -116,6 +116,22 @@ export const api = {
   postForm: (path, form, opts) => request(path, { ...opts, method: 'POST', form }),
   patch: (path, body, opts) => request(path, { ...opts, method: 'PATCH', body }),
   del: (path, opts) => request(path, { ...opts, method: 'DELETE' }),
+  blob: async (path, opts = {}) => {
+    const headers = {}
+    if (opts.auth !== false && tokenStore.get()) headers.Authorization = `Bearer ${tokenStore.get()}`
+    const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
+    let response
+    try {
+      response = await fetch(targetUrl, { headers, signal: opts.signal, credentials: 'omit' })
+    } catch {
+      throw new ApiError('Unable to reach the file server. Please try again.', 0, null)
+    }
+    if (!response.ok) {
+      const data = await parseBody(response)
+      throw new ApiError(messageFromDetail(data, `Request failed (${response.status})`), response.status, data)
+    }
+    return { blob: await response.blob(), contentType: response.headers.get('content-type') || 'application/octet-stream' }
+  },
   upload: async (path, file, opts = {}) => {
     const headers = {}
     if (opts.auth !== false) {
@@ -124,6 +140,9 @@ export const api = {
     }
     const formData = new FormData()
     formData.append('file', file)
+    Object.entries(opts.fields || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') formData.append(key, value)
+    })
     const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
     let res
     try {
