@@ -85,6 +85,7 @@ async def upload_resource(file: Annotated[UploadFile, File(...)], _: Admin, sess
 
 
 @router.get("", response_model=ResourcePage, summary="Browse active academic resources")
+@router.get("/", response_model=ResourcePage, include_in_schema=False)
 def list_resources(session: DB, user: Authenticated, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100), course: str | None = None, course_code: str | None = None, level: str | None = None, category: str | None = None, resource_type: str | None = None, folder: str | None = None, semester: str | None = None, academic_year: str | None = None, department: str | None = None, sort_by: str = Query("name", pattern="^(name|created_at|last_modified_drive)$"), sort_order: str = Query("asc", pattern="^(asc|desc)$"), search: str | None = Query(None, max_length=200), include_inactive: bool = Query(False)):
     query = session.query(Resource)
     if not (user.role == "admin" and include_inactive):
