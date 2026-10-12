@@ -1,4 +1,5 @@
 import math
+import mimetypes
 import re
 import uuid
 from typing import Annotated
@@ -77,7 +78,9 @@ async def upload_resource(file: Annotated[UploadFile, File(...)], _: Admin, sess
     if len(contents) > MAX_ACADEMIC_FILE_BYTES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Academic files must be 50 MB or smaller.")
     object_path = f"{safe_folder}/admin-file-{uuid.uuid4()}/{filename}"
-    mime_type = file.content_type or "application/octet-stream"
+    mime_type = file.content_type
+    if not mime_type or mime_type == "application/octet-stream":
+        mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
     upload_academic_object(object_path, contents, mime_type)
     record = Resource(name=name or filename, title=name or filename, file_name=filename, folder_path=safe_folder, google_drive_file_id=f"manual-{uuid.uuid4()}", mime_type=mime_type, file_size=len(contents), resource_type=mime_type.split("/")[-1], category=category, course_code=course_code, level=level, supabase_bucket=get_settings().supabase_academic_storage_bucket, supabase_storage_path=object_path)
     session.add(record); session.commit(); session.refresh(record)
@@ -137,7 +140,10 @@ def download_resource(resource_id: int, session: DB, _: Authenticated):
 
 def _storage_response(resource: Resource, disposition: str) -> StreamingResponse:
     filename = re.sub(r"[\\/:*?\"<>|\r\n]+", "_", resource.name).strip(". ") or "resource"
-    return StreamingResponse(academic_file_chunks(resource.supabase_bucket, resource.supabase_storage_path), media_type=resource.mime_type or "application/octet-stream", headers={"Content-Disposition": f"{disposition}; filename*=UTF-8''{filename}"})
+    mime_type = resource.mime_type
+    if not mime_type or mime_type == "application/octet-stream":
+        mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return StreamingResponse(academic_file_chunks(resource.supabase_bucket, resource.supabase_storage_path), media_type=mime_type, headers={"Content-Disposition": f"{disposition}; filename*=UTF-8''{filename}"})
 
 
 @router.patch("/{resource_id}", response_model=ResourceOut, summary="Admin-only resource metadata update")

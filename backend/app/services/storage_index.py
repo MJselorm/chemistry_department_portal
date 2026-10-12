@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 import hashlib
 import json
+import mimetypes
 import re
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -28,6 +29,43 @@ def academic_metadata_from_path(object_path: str) -> tuple[str | None, str | Non
             if match:
                 semester = match.group(1)
     return level, semester
+
+
+def academic_course_code_from_path(object_path: str) -> str | None:
+    """Extract a course code such as ``CHEM 151`` from a Storage path."""
+    for part in (part for part in object_path.split("/") if part):
+        match = re.search(r"\b([A-Za-z]{2,10})[\s_-]*(\d{3,4}[A-Za-z]?)\b", part)
+        if not match:
+            continue
+        subject, number = match.groups()
+        # ``CHEM 100`` through ``CHEM 400`` name level folders, not courses.
+        if subject.casefold() == "chem" and number in {"100", "200", "300", "400"}:
+            continue
+        return f"{subject.upper()} {number.upper()}"
+    return None
+
+
+def academic_category_from_path(object_path: str) -> str | None:
+    """Infer the portal category from clear folder or filename signals.
+
+    The bucket keeps the academic structure (level / semester / course) rather
+    than separate category folders, so filenames such as ``LECTURE 7.pdf`` and
+    ``INORGANIC QUESTIONS.pdf`` provide the reliable classification signal.
+    Files with no such signal remain uncategorized for an administrator to
+    label instead of being guessed incorrectly.
+    """
+    text = re.sub(r"[^a-z0-9]+", " ", object_path.casefold())
+    if re.search(r"\b(?:past\s+)?(?:questions?|papers?|exams?|examinations?|quiz(?:zes)?|tests?|mcqs?)\b", text):
+        return "Past Questions"
+    if re.search(r"\b(?:text\s*books?|books?|reference\s+books?)\b", text):
+        return "Textbooks"
+    if re.search(r"\b(?:lab|laboratory)\s*(?:manuals?|guides?)?\b", text):
+        return "Lab Manuals"
+    if re.search(r"\b(?:course\s+outlines?|outlines?|syllab(?:us|i))\b", text):
+        return "Course Outlines"
+    if re.search(r"\b(?:lectur\w*|notes?|slides?|handouts?|powerpoint|pptx?|ppsx?)\b", text):
+        return "Lecture Notes"
+    return None
 
 
 def academic_label(level: str | None, semester: str | None) -> str | None:
@@ -94,9 +132,12 @@ class StorageResourceIndexer:
                 supabase_bucket=self.bucket, supabase_storage_path=object_path
             ).one_or_none()
             level, semester = academic_metadata_from_path(object_path)
+            course_code = academic_course_code_from_path(object_path)
+            category = academic_category_from_path(object_path)
             label = academic_label(level, semester)
             filename = object_path.rsplit("/", 1)[-1]
             folder_path = object_path.rsplit("/", 1)[0] if "/" in object_path else ""
+            mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
             if record is None:
                 stable_id = hashlib.sha256(object_path.encode()).hexdigest()
                 record = Resource(
@@ -106,7 +147,8 @@ class StorageResourceIndexer:
                     folder_path=folder_path,
                     google_drive_file_id=f"storage-{stable_id}",
                     resource_type=filename.rsplit(".", 1)[-1].lower() if "." in filename else "other",
-                    level=level, semester=semester, label=label,
+                    mime_type=mime_type,
+                    level=level, semester=semester, course_code=course_code, category=category, label=label,
                     supabase_bucket=self.bucket,
                     supabase_storage_path=object_path,
                     storage_migrated_at=now,
@@ -116,6 +158,11 @@ class StorageResourceIndexer:
             else:
                 record.name = record.title = record.file_name = filename
                 record.folder_path, record.level, record.semester, record.label = folder_path, level, semester, label
+                record.mime_type = mime_type
+                if course_code:
+                    record.course_code = course_code
+                if category:
+                    record.category = category
                 record.is_active, record.is_missing = True, False
                 record.storage_migrated_at = record.storage_migrated_at or now
                 updated += 1

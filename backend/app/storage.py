@@ -2,6 +2,7 @@
 import mimetypes
 import uuid
 from pathlib import Path
+from urllib.parse import quote
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from collections.abc import Iterator
@@ -13,13 +14,27 @@ MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_ACADEMIC_FILE_BYTES = 50 * 1024 * 1024
 
 
+def academic_object_url(bucket: str, object_path: str) -> str:
+    """Build a Storage object URL without treating characters in a file path as URL syntax.
+
+    Folder and file names commonly contain spaces, ``#``, or non-ASCII characters.
+    Preserve the Storage path separators while encoding every other URL-sensitive
+    character, otherwise urllib rejects paths such as ``SEM 1/lecture notes.pdf``.
+    """
+    settings = get_settings()
+    return (
+        f"{settings.supabase_url.rstrip('/')}/storage/v1/object/"
+        f"{quote(bucket, safe='')}/{quote(object_path, safe='/')}"
+    )
+
+
 def upload_academic_object(object_path: str, contents: bytes, content_type: str) -> None:
     settings = get_settings()
     if not settings.supabase_url or not settings.supabase_service_role_key:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Academic Storage is not configured.")
     if not contents or len(contents) > MAX_ACADEMIC_FILE_BYTES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Academic files must be between 1 byte and 50 MB.")
-    url = f"{settings.supabase_url.rstrip('/')}/storage/v1/object/{settings.supabase_academic_storage_bucket}/{object_path}"
+    url = academic_object_url(settings.supabase_academic_storage_bucket, object_path)
     request = Request(url, data=contents, method="POST", headers={"Authorization": f"Bearer {settings.supabase_service_role_key}", "apikey": settings.supabase_service_role_key, "Content-Type": content_type or "application/octet-stream", "x-upsert": "false"})
     try:
         urlopen(request, timeout=90).read()
@@ -36,7 +51,7 @@ def academic_file_chunks(bucket: str, object_path: str) -> Iterator[bytes]:
     settings = get_settings()
     if not settings.supabase_url or not settings.supabase_service_role_key:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Academic Storage is not configured.")
-    url = f"{settings.supabase_url.rstrip('/')}/storage/v1/object/{bucket}/{object_path}"
+    url = academic_object_url(bucket, object_path)
     request = Request(url, headers={"Authorization": f"Bearer {settings.supabase_service_role_key}", "apikey": settings.supabase_service_role_key})
     try:
         response = urlopen(request, timeout=60)
