@@ -4,6 +4,7 @@ import { Pin, Trash2, Plus, RefreshCw, Megaphone, ChevronUp, Search, CheckCircle
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useAuth } from './AuthContext'
+import AdminNotificationsPanel from './AdminNotificationsPanel'
 
 const badgeClass = (category) => {
   const value = (category || '').toLowerCase()
@@ -25,6 +26,7 @@ export default function AnnouncementsPage() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const isAdmin = user?.role === 'admin'
+  const targetAnnouncementId = searchParams.get('announcement')
 
   const [announcements, setAnnouncements] = useState([])
   const [loading, setLoading] = useState(true)
@@ -42,6 +44,7 @@ export default function AnnouncementsPage() {
     audience: 'All students',
     issuer: user?.full_name || 'Chemistry Board of Studies',
     is_pinned: false,
+    publication_key: crypto.randomUUID(),
   })
 
   // Filter state
@@ -86,6 +89,7 @@ export default function AnnouncementsPage() {
         audience: form.audience,
         issuer: form.issuer,
         is_pinned: form.is_pinned,
+        publication_key: form.publication_key,
       })
       showToast('success', 'Announcement published and now live in this tab!')
       setForm({
@@ -95,6 +99,7 @@ export default function AnnouncementsPage() {
         audience: 'All students',
         issuer: user?.full_name || 'Chemistry Board of Studies',
         is_pinned: false,
+        publication_key: crypto.randomUUID(),
       })
       setShowCreateForm(false)
       if (created?.id) {
@@ -129,6 +134,7 @@ export default function AnnouncementsPage() {
   }
 
   const filteredAnnouncements = announcements.filter((item) => {
+    if (targetAnnouncementId) return String(item.id) === targetAnnouncementId
     const matchesCategory =
       categoryFilter === 'All' ||
       item.category?.toLowerCase() === categoryFilter.toLowerCase()
@@ -188,6 +194,8 @@ export default function AnnouncementsPage() {
           )}
         </div>
       </div>
+
+      {isAdmin && <AdminNotificationsPanel />}
 
       {/* Global Toast Feedback */}
       {feedback && (
@@ -288,10 +296,6 @@ export default function AnnouncementsPage() {
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
                 >
                   <option value="All students">All students</option>
-                  <option value="Level 100">Level 100</option>
-                  <option value="Level 200">Level 200</option>
-                  <option value="Level 300">Level 300</option>
-                  <option value="Level 400">Level 400</option>
                 </select>
               </div>
 
@@ -457,6 +461,7 @@ export default function AnnouncementsPage() {
         {filteredAnnouncements.map((item) => (
           <article
             key={item.id}
+            id={`announcement-${item.id}`}
             className={`bg-surface border rounded-2xl p-6 shadow-sm transition-all ${
               item.is_pinned
                 ? 'border-[#f2d89f] bg-gradient-to-r from-[#fffdfa] to-white ring-1 ring-[#f2d89f]/40'

@@ -49,6 +49,18 @@ export const ENDPOINTS = {
   userSettings: '/users/settings',
   adminPostAnnouncement: '/admin/announcements',
   adminDeleteAnnouncement: (id) => `/admin/announcements/${id}`,
+  notifications: '/api/notifications',
+  notificationUnreadCount: '/api/notifications/unread-count',
+  notificationRead: (id) => `/api/notifications/${id}/read`,
+  notificationDismiss: (id) => `/api/notifications/${id}/dismiss`,
+  notificationReadAll: '/api/notifications/read-all',
+  pushPublicKey: '/api/notifications/push/public-key',
+  pushSubscriptions: '/api/notifications/push/subscriptions',
+  pushUnsubscribe: '/api/notifications/push/subscriptions/unsubscribe',
+  adminNotifications: '/api/notifications/admin',
+  adminNotificationCancel: (id) => `/api/notifications/admin/${id}/cancel`,
+  adminNotificationArchive: (id) => `/api/notifications/admin/${id}/archive`,
+  adminNotificationResend: (id) => `/api/notifications/admin/${id}/resend`,
   adminManageUsers: '/admin/users',
 }
 

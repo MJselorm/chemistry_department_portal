@@ -97,6 +97,9 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
   requires an admin.
 - `/api/directory/*` reads require an authenticated profile; writes require the database-backed `admin` role.
 - `GET /announcements` requires an authenticated profile; announcement creation and deletion require `admin`.
+- `/api/notifications/*` provides user-scoped notification history, read state,
+  unread counts, and push subscriptions. `/api/notifications/admin/*` requires
+  the database-backed `admin` role.
 
 ## Security model
 
@@ -123,9 +126,12 @@ Before launch:
 4. Apply Alembic migrations using a restricted deployment identity. Use a least-privilege runtime database role where practical and confirm backups and restoration procedures.
 5. Confirm the `directory-media` bucket's public-read requirement and retention policy. Keep `academic-resources` private and allow the service-role key to read and write it; do not upload sensitive documents through the image endpoint.
 6. Configure platform/WAF rate limits for authentication, password reset, directory search, and uploads. The application does not include a distributed rate limiter.
-7. Replace all remaining mock/placeholder event, notification, and settings integrations or disable those controls before launch.
+7. Replace all remaining mock/placeholder event and session-only settings integrations or disable those controls before launch.
 8. Review the Privacy Notice and Terms of Use with the responsible university/society representative. Confirm the public contact, retention schedule, age/audience policy, and asset/logo permissions.
 9. Test sign-in, reset, logout, student/admin authorization, CRUD, uploads, CSP, and error handling against the actual production Firebase, database, storage, and domains.
+10. Apply migration `20261015_13`, generate one VAPID key pair, and configure
+    `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` in Render. The
+    private key must never be added to Vercel or any `VITE_*` variable.
 
 Vercel supplies CSP, clickjacking, referrer, permissions, MIME-sniffing, and HSTS headers from `frontend2/vercel.json`. Academic preview streams and signed-link responses use `Cache-Control: private, no-store`.
 
@@ -138,6 +144,33 @@ Vercel supplies CSP, clickjacking, referrer, permissions, MIME-sniffing, and HST
 - `robots.txt` and page metadata prevent this authenticated portal from being indexed; no sitemap is generated because there are no intended indexable routes.
 
 The application processes account identifiers, email addresses, names, roles, directory contact/academic information, and administrator-provided profile images. The repository does not define a final retention schedule or automated account deletion. Requests must be identity-verified and handled by the responsible institution.
+
+## Notifications and Web Push
+
+Published announcements transactionally create one idempotent in-app
+notification. Administrators can also publish or schedule standalone notices for
+all students or one existing student email. Users can read, dismiss, or mark all
+notices read; each browser subscription is bound to its authenticated owner.
+
+Push permission is requested only from the explicit Settings action. The service
+worker displays a minimal lock-screen message and opens a validated local portal
+path. Push-service acceptance is recorded separately from in-app reads. Failed or
+expired push subscriptions never remove the persistent in-app notification.
+Subscription endpoints are limited to the supported Chrome/Edge, Firefox, and
+Safari browser push services to prevent arbitrary server-side delivery targets.
+
+The current Render service has no dedicated scheduler. Due scheduled notices are
+published when a notification API request runs; configure an authenticated cron
+trigger or worker before relying on exact-time delivery. Browser push requires
+HTTPS (localhost is permitted for development), browser/OS permission, and
+platform support. Legacy or restricted iOS environments may require the portal
+to be installed to the Home Screen. In-app notifications remain the fallback.
+
+After deployment, test with a student and admin account: publish an announcement,
+verify one bell item and unread count, mark it read, enable push in Settings,
+publish a standalone notice, and confirm the notification click opens its local
+destination. Use an intentionally expired test subscription to verify it is
+deactivated without affecting the in-app record.
 
 See [`SECURITY.md`](SECURITY.md) for vulnerability reporting and secrets guidance.
 

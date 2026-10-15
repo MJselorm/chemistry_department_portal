@@ -25,13 +25,20 @@ class AnnouncementCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1, max_length=10000)
     category: str = Field(default="Department", min_length=1, max_length=50)
-    audience: str = Field(default="All students", max_length=50)
+    audience: Literal["All students"] = "All students"
     issuer: str = Field(default="Chemistry Board of Studies", min_length=1, max_length=200)
     is_pinned: bool = False
+    publication_key: str | None = Field(default=None, min_length=8, max_length=100)
 
 
-class AnnouncementOut(AnnouncementCreate):
+class AnnouncementOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    title: str
+    body: str
+    category: str
+    audience: str
+    issuer: str
+    is_pinned: bool
     published_at: datetime

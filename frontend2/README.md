@@ -46,7 +46,12 @@ All application routes except `/health` require `Authorization: Bearer <firebase
 - `/api/directory/*`: authenticated reads and admin-only writes/uploads
 - `GET /admin/test`: verify the database-backed admin role
 
-Several event, notification, and settings endpoints in `endpoints.js` remain placeholders. Academic Resources uses the authenticated FastAPI resource API, private Supabase Storage, PDF.js rendering, lazy short-lived thumbnail links, locally rendered PDF/PPTX thumbnails, and short-lived signed download links. Legacy `.ppt` files are download-only unless a production Office conversion service is added.
+Several event and settings endpoints in `endpoints.js` remain placeholders. Academic Resources uses the authenticated FastAPI resource API, private Supabase Storage, PDF.js rendering, lazy short-lived thumbnail links, locally rendered PDF/PPTX thumbnails, and short-lived signed download links. Legacy `.ppt` files are download-only unless a production Office conversion service is added.
+
+Notifications use the authenticated `/api/notifications` API. The top-bar bell
+polls the unread count and exposes persistent read/dismiss actions. Device push is
+opt-in from Settings and uses `public/sw.js`; the VAPID public key is returned by
+the authenticated backend rather than embedded in the frontend environment.
 
 ## Production deployment
 

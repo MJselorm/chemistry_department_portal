@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     supabase_service_role_key: str | None = None
     supabase_storage_bucket: str = "directory-media"
     supabase_academic_storage_bucket: str = "academic-resources"
+    vapid_public_key: str | None = None
+    vapid_private_key: str | None = None
+    vapid_subject: str = "mailto:admin@example.invalid"
     firebase_service_account_path: str | None = None
     firebase_service_account_json: str | None = None
     # The React portal is served by Vite in development. Keep the static

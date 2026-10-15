@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routers import admin, announcements, auth, users, directory, resources, events
+from .routers import admin, announcements, auth, users, directory, resources, events, notifications
 
 settings = get_settings()
 app = FastAPI(title="Firebase + Supabase Auth API", version="1.0.0")
@@ -21,6 +21,7 @@ app.include_router(announcements.router)
 app.include_router(directory.router)
 app.include_router(resources.router)
 app.include_router(events.router)
+app.include_router(notifications.router)
 
 
 @app.get("/health", tags=["system"])

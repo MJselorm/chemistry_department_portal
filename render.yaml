@@ -32,3 +32,9 @@ services:
         value: directory-media
       - key: SUPABASE_ACADEMIC_STORAGE_BUCKET
         value: academic-resources
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false

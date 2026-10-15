@@ -1,7 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, Menu, Moon, Sun } from 'lucide-react'
+import { Menu, Moon, Sun } from 'lucide-react'
 import { useAuth } from './AuthContext'
+import NotificationCenter from './NotificationCenter'
 
 export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onToggleTheme }) {
   const { user } = useAuth()
@@ -67,14 +68,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
           {isDarkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
         </button>
 
-        <button
-          onClick={() => alert('Portal notifications are not available yet.')}
-          className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)] transition-colors"
-          aria-label="Open notifications"
-          title="Notifications"
-        >
-          <Bell size={16} aria-hidden="true" />
-        </button>
+        <NotificationCenter />
 
         {/* User profile chip */}
         <Link
