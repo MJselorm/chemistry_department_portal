@@ -33,7 +33,7 @@
   "rewrites": [
     {
       "source": "/api/:match*",
-      "destination": "https://chemistry-department-portal.onrender.com/:match*"
+      "destination": "https://chemistry-department-portal.onrender.com/api/:match*"
     },
     {
       "source": "/(.*)",
