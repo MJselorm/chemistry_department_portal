@@ -50,7 +50,7 @@ Several event, academic-resource, notification, and settings endpoints in `endpo
 
 ## Production deployment
 
-Vercel rewrites `/api/*` to the Render service. Keep `VITE_API_BASE_URL=/api` in production and review the fixed backend destination in `vercel.json` whenever the service changes.
+The production client calls the Render API directly. Set `VITE_API_BASE_URL=https://chemistry-department-portal.onrender.com` in Vercel, or leave it unset to use that production default. If the backend URL changes, update `client.js`, `vercel.json` CSP, and the Vercel environment variable together.
 
 `vercel.json` configures CSP, anti-framing, HSTS, MIME-sniffing, referrer, and permissions headers. When adding an external API, font, image provider, or authentication domain, update CSP narrowly and test sign-in before deployment. Do not replace the policy with broad wildcards or `unsafe-eval`.
 
