@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Lock, Mail, Check } from 'lucide-react'
 import { useAuth } from './AuthContext'
@@ -9,6 +9,16 @@ const STATS = [
   { value: 'Department', label: 'Contacts and notices', accent: true },
   { value: 'Community', label: 'Events and representation', accent: false },
 ]
+
+const signInMessage = (error) => {
+  const code = error?.code || ''
+  if (code === 'auth/popup-closed-by-user') return 'Sign-in was cancelled before it finished.'
+  if (code === 'auth/popup-blocked') return 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.'
+  if (code === 'auth/too-many-requests') return 'Too many attempts were made. Please wait before trying again.'
+  if (code === 'auth/network-request-failed' || error?.status === 0) return 'Unable to connect right now. Check your connection and try again.'
+  if (code === 'auth/unauthorized-domain') return 'Google sign-in is not available on this domain. Please contact the portal administrator.'
+  return 'We could not sign you in with those credentials. Please try again.'
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -31,6 +41,8 @@ export default function LoginPage() {
       ? requestedPath
       : '/dashboard'
 
+  useEffect(() => { document.title = 'Sign in | Chemistry Hub' }, [])
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
@@ -43,8 +55,7 @@ export default function LoginPage() {
       await login(email.trim(), password, keepSignedIn)
       navigate(from, { replace: true })
     } catch (err) {
-      console.error('Email sign-in error:', err)
-      setError(err?.message || 'We could not sign you in with those credentials. Please try again.')
+      setError(signInMessage(err))
     } finally {
       setSubmitting(false)
     }
@@ -61,21 +72,7 @@ export default function LoginPage() {
       }
       navigate(from, { replace: true })
     } catch (err) {
-      console.error('Google sign-in error:', err)
-      const code = err?.code || ''
-      if (code === 'auth/popup-closed-by-user') {
-        setError('Sign-in window was closed before completing. Please try again.')
-      } else if (code === 'auth/popup-blocked') {
-        setError('Google sign-in pop-up was blocked by your browser. Please allow pop-ups for this site and retry.')
-      } else if (code === 'auth/unauthorized-domain') {
-        setError('Domain not authorized in Firebase Console. Go to Firebase Console > Authentication > Settings > Authorized domains and add "localhost".')
-      } else if (code === 'auth/cancelled-popup-request') {
-        setError('Sign-in request was cancelled. Please try again.')
-      } else if (err?.message?.includes('backend') || err?.message?.includes('fetch') || err?.status === 0) {
-        setError('Connected to Google, but could not reach local backend server (http://127.0.0.1:8000). Ensure the FastAPI backend is running.')
-      } else {
-        setError(err?.message || 'Google sign-in could not be completed. Please try again.')
-      }
+      setError(signInMessage(err))
     } finally {
       setGoogleSubmitting(false)
     }

@@ -4,8 +4,6 @@ import { useAuth } from './AuthContext'
 export default function ProfilePage() {
   const { user, updateProfile } = useAuth()
   const [fullName, setFullName] = useState(user?.full_name || '')
-  const [studentId, setStudentId] = useState('CHM/2026/001')
-  const [level, setLevel] = useState('Level 300')
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState(null)
 
@@ -29,15 +27,9 @@ export default function ProfilePage() {
     setIsSaving(true)
     setMessage(null)
     try {
-      // Connects live to backend PATCH /users/me !
-      if (updateProfile) {
-        await updateProfile(fullName)
-        setMessage({ type: 'success', text: 'Profile updated successfully on the backend!' })
-      } else {
-        setMessage({ type: 'success', text: 'Profile changes saved locally!' })
-      }
+      await updateProfile(fullName.trim())
+      setMessage({ type: 'success', text: 'Profile updated successfully.' })
     } catch (err) {
-      console.error('Failed to update profile:', err)
       setMessage({ type: 'error', text: 'Your profile could not be updated. Please try again.' })
     } finally {
       setIsSaving(false)
@@ -50,7 +42,7 @@ export default function ProfilePage() {
       <div>
         <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">ACCOUNT</span>
         <h1 className="text-2xl font-bold text-foreground mt-1">My profile</h1>
-        <p className="text-xs text-muted-foreground mt-1">Manage your department identity and student details.</p>
+        <p className="text-xs text-muted-foreground mt-1">Manage the name associated with your portal account.</p>
       </div>
 
       <section className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
@@ -62,7 +54,7 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">{displayName}</h2>
             <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-              {user?.role === 'admin' ? 'Administrator' : 'Student'} · Chemistry · {level}
+              {user?.role === 'admin' ? 'Administrator' : 'Student'} · Chemistry Hub
             </p>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[var(--success-soft)] text-success">
@@ -94,14 +86,15 @@ export default function ProfilePage() {
         {/* Edit Form */}
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Full Name (Backed by PATCH /users/me) */}
             <div>
               <label htmlFor="profile-full-name" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Full name <span className="text-primary normal-case">(Live API Synced)</span>
+                Full name
               </label>
               <input
                 id="profile-full-name"
                 type="text"
+                minLength="2"
+                maxLength="200"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -110,52 +103,17 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Student ID */}
-            <div>
-              <label htmlFor="profile-student-id" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Student ID
-              </label>
-              <input
-                id="profile-student-id"
-                type="text"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
-                placeholder="e.g. CHM/2026/001"
-              />
-            </div>
-
-            {/* Email Address */}
             <div>
               <label htmlFor="profile-email" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Email address <span className="text-muted-foreground normal-case">(Firebase UID linked)</span>
+                Email address
               </label>
               <input
                 id="profile-email"
                 type="email"
-                value={user?.email || 'student@example.com'}
+                value={user?.email || ''}
                 disabled
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs bg-gray-50 text-muted-foreground cursor-not-allowed"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs bg-surface-secondary text-muted-foreground cursor-not-allowed"
               />
-            </div>
-
-            {/* Level */}
-            <div>
-              <label htmlFor="profile-level" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Academic Level
-              </label>
-              <select
-                id="profile-level"
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
-              >
-                <option value="Level 100">Level 100</option>
-                <option value="Level 200">Level 200</option>
-                <option value="Level 300">Level 300</option>
-                <option value="Level 400">Level 400</option>
-                <option value="Postgraduate">Postgraduate</option>
-              </select>
             </div>
           </div>
 
@@ -168,7 +126,7 @@ export default function ProfilePage() {
               {isSaving ? 'Saving changes...' : 'Save changes'}
             </button>
             <span className="text-[10px] text-muted-foreground">
-              Profile is stored in Supabase PostgreSQL
+              Email and role changes require administrator action.
             </span>
           </div>
         </form>

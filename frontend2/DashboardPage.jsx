@@ -79,7 +79,7 @@ export default function DashboardPage() {
         setCounts((prev) => ({ ...prev, announcements: list.length }))
       })
       .catch((error) => {
-        console.error('Failed to load dashboard announcements:', error)
+        if (import.meta.env.DEV) console.error('Failed to load dashboard announcements:', error)
         setAnnouncements([])
         setAnnouncementsError(true)
       })
@@ -125,7 +125,7 @@ export default function DashboardPage() {
           : prev.students,
       }))
     } catch (err) {
-      console.error('Stats loading error:', err)
+      if (import.meta.env.DEV) console.error('Stats loading error:', err)
     } finally {
       setLoadingCounts(false)
     }

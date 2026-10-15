@@ -49,6 +49,12 @@ def create_event(payload: EventCreate, session: DB, admin: Admin):
     session.add(event); session.commit(); session.refresh(event); return event
 
 
+@router.post("/published", response_model=EventOut, status_code=status.HTTP_201_CREATED)
+def create_published_event(payload: EventCreate, session: DB, admin: Admin):
+    event = Event(**payload.model_dump(), created_by=admin.id, status="published", is_published=True)
+    session.add(event); session.commit(); session.refresh(event); return event
+
+
 @router.get("/{event_id}", response_model=EventOut)
 def event_detail(event_id: UUID, session: DB, user: UserAuth):
     event = require_event(session, event_id)

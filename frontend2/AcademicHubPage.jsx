@@ -117,6 +117,7 @@ export default function AcademicHubPage() {
         <form onSubmit={handleSearchSubmit} className="w-full sm:w-72 relative">
           <Search className="absolute left-3 top-2.5 text-muted-foreground" size={14} aria-hidden="true" />
           <input
+            aria-label="Search academic materials"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title, course code or tag…"

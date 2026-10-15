@@ -23,6 +23,7 @@ export const ENDPOINTS = {
   eventDetails: (id) => `/api/events/${id}`,
   eventsHealth: '/api/events/health',
   adminCreateEvent: '/api/events',
+  adminCreatePublishedEvent: '/api/events/published',
   adminUpdateEvent: (id) => `/api/events/${id}`,
   adminDeleteEvent: (id) => `/api/events/${id}`,
   publishEvent: (id) => `/api/events/${id}/publish`,

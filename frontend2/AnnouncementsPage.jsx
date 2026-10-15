@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Pin, Trash2, Plus, RefreshCw, Megaphone, ChevronUp, Search, CheckCircle2, AlertCircle, Sparkles, Users, X } from 'lucide-react'
+import { Pin, Trash2, Plus, RefreshCw, Megaphone, ChevronUp, Search, Sparkles, Users, X } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useAuth } from './AuthContext'
 import AdminNotificationsPanel from './AdminNotificationsPanel'
+import DeleteConfirmModal from './directory/DeleteConfirmModal'
+import { useToast } from './directory/Toast'
 
 const badgeClass = (category) => {
   const value = (category || '').toLowerCase()
@@ -24,6 +26,7 @@ const timeAgo = (date) => {
 
 export default function AnnouncementsPage() {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [searchParams] = useSearchParams()
   const isAdmin = user?.role === 'admin'
   const targetAnnouncementId = searchParams.get('announcement')
@@ -32,7 +35,7 @@ export default function AnnouncementsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [deletingId, setDeletingId] = useState(null)
-  const [feedback, setFeedback] = useState(null)
+  const [pendingDelete, setPendingDelete] = useState(null)
 
   // Creation form state
   const [showCreateForm, setShowCreateForm] = useState(searchParams.get('create') === 'true')
@@ -57,7 +60,7 @@ export default function AnnouncementsPage() {
     api.get(ENDPOINTS.announcements)
       .then((data) => setAnnouncements(Array.isArray(data) ? data : []))
       .catch((err) => {
-        console.error('Unable to load announcements:', err)
+        if (import.meta.env.DEV) console.error('Unable to load announcements:', err)
         setError('Unable to load announcements right now. Please try again.')
       })
       .finally(() => setLoading(false))
@@ -73,11 +76,6 @@ export default function AnnouncementsPage() {
     }
   }, [searchParams])
 
-  const showToast = (type, message) => {
-    setFeedback({ type, message })
-    setTimeout(() => setFeedback(null), 4000)
-  }
-
   const handlePublish = async (e) => {
     e.preventDefault()
     setPublishing(true)
@@ -91,7 +89,7 @@ export default function AnnouncementsPage() {
         is_pinned: form.is_pinned,
         publication_key: form.publication_key,
       })
-      showToast('success', 'Announcement published and now live in this tab!')
+      showToast('Announcement published successfully.')
       setForm({
         title: '',
         body: '',
@@ -111,23 +109,23 @@ export default function AnnouncementsPage() {
         loadAnnouncements()
       }
     } catch (err) {
-      console.error('Failed to publish announcement:', err)
-      showToast('error', 'The announcement could not be published. Please try again.')
+      if (import.meta.env.DEV) console.error('Failed to publish announcement:', err)
+      showToast('The announcement could not be published. Please try again.', 'error')
     } finally {
       setPublishing(false)
     }
   }
 
   const handleDelete = async (id, title) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) return
     setDeletingId(id)
     try {
       await api.del(ENDPOINTS.adminDeleteAnnouncement(id))
       setAnnouncements((prev) => prev.filter((a) => a.id !== id))
-      showToast('success', 'Announcement deleted successfully.')
+      showToast('Announcement deleted successfully.')
+      setPendingDelete(null)
     } catch (err) {
-      console.error('Failed to delete announcement:', err)
-      showToast('error', 'The announcement could not be deleted. Please try again.')
+      if (import.meta.env.DEV) console.error('Failed to delete announcement:', err)
+      showToast('The announcement could not be deleted. Please try again.', 'error')
     } finally {
       setDeletingId(null)
     }
@@ -196,25 +194,6 @@ export default function AnnouncementsPage() {
       </div>
 
       {isAdmin && <AdminNotificationsPanel />}
-
-      {/* Global Toast Feedback */}
-      {feedback && (
-        <div
-          className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between border ${
-            feedback.type === 'success'
-              ? 'bg-[var(--success-soft)] border-[var(--success-border)] text-success'
-              : 'bg-[var(--destructive-soft)] border-[var(--destructive-border)] text-destructive'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {feedback.type === 'success' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
-            <span>{feedback.message}</span>
-          </div>
-          <button onClick={() => setFeedback(null)} className="font-bold text-xs p-1" aria-label="Dismiss message">
-            <X size={14} aria-hidden="true" />
-          </button>
-        </div>
-      )}
 
       {/* Admin Inline Creation Form */}
       {isAdmin && showCreateForm && (
@@ -496,7 +475,7 @@ export default function AnnouncementsPage() {
                 {isAdmin && (
                   <button
                     type="button"
-                    onClick={() => handleDelete(item.id, item.title)}
+                    onClick={() => setPendingDelete({ id: item.id, title: item.title })}
                     disabled={deletingId === item.id}
                     className="text-[#b64a4a] hover:text-[#8e2929] hover:bg-[var(--destructive-soft)] p-1.5 rounded-lg transition-colors text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
                     title="Delete announcement"
@@ -530,6 +509,15 @@ export default function AnnouncementsPage() {
           </article>
         ))}
       </div>
+      <DeleteConfirmModal
+        isOpen={Boolean(pendingDelete)}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => handleDelete(pendingDelete.id, pendingDelete.title)}
+        title="Delete announcement"
+        itemName={pendingDelete?.title}
+        message="This removes the announcement and its linked notification for all students. This action cannot be undone."
+        isDeleting={Boolean(deletingId)}
+      />
     </div>
   )
 }

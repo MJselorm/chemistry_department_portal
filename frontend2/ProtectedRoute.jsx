@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthContext'
+import StatusPage from './StatusPage'
 
 export default function ProtectedRoute({ children, adminOnly = false }) {
   const { user, booting } = useAuth()
@@ -17,7 +18,7 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
   }
   if (!user) return <Navigate to="/" replace state={{ from: location }} />
   if (adminOnly && user.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />
+    return <StatusPage status={403} />
   }
   return children
 }

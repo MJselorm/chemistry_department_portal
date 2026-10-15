@@ -10,6 +10,8 @@ export default function DeleteConfirmModal({
   message = 'Are you sure you want to delete this item? This action will deactivate the record from directory listings.',
   itemName,
   isDeleting = false,
+  confirmLabel = 'Delete',
+  busyLabel = 'Deleting…',
 }) {
   const dialogRef = useDialogAccessibility(onClose, isOpen, isDeleting)
   if (!isOpen) return null
@@ -64,7 +66,7 @@ export default function DeleteConfirmModal({
             className="px-4 py-2 rounded-xl bg-destructive hover:opacity-90 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
           >
             {isDeleting && <Loader2 size={13} className="animate-spin" />}
-            {isDeleting ? 'Deleting…' : 'Delete'}
+            {isDeleting ? busyLabel : confirmLabel}
           </button>
         </div>
       </div>

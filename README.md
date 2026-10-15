@@ -75,7 +75,7 @@ Deploy `frontend2/` as a static Vite application and `backend/` as a Python/Fast
 | Service         | Required production configuration                                                                                                                                                     |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Render backend  | Copy the keys in [`backend/.env.production.example`](backend/.env.production.example). Keep `APP_ENV=production` and set `CORS_ORIGINS` to exact trusted frontend origins only.         |
-| Vercel frontend | Copy the keys in [`frontend2/.env.production.example`](frontend2/.env.production.example). Keep `VITE_API_BASE_URL=/api` and configure a verified `VITE_SUPPORT_EMAIL`.                  |
+| Vercel frontend | Copy the keys in [`frontend2/.env.production.example`](frontend2/.env.production.example). Set `VITE_API_BASE_URL` to the HTTPS Render API origin and configure a verified `VITE_SUPPORT_EMAIL`. |
 
 For the backend, create a Firebase service-account key in Firebase Console under **Project settings → Service accounts**, then store the complete JSON document as `FIREBASE_SERVICE_ACCOUNT_JSON`. `FIREBASE_SERVICE_ACCOUNT_PATH` is for local development only because a path on your computer is unavailable to the hosted service.
 
@@ -90,6 +90,7 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
 - `GET /users/me` reads the authenticated profile.
 - `PATCH /users/me` updates the profile's `full_name`.
 - `GET /admin/test` verifies the database-backed admin role check.
+- `GET /admin/users` lists portal accounts for administrators only.
 - `/api/resources/*` provides authenticated academic-resource browsing,
   preview, short-lived thumbnail links, and download links; indexing, uploads,
   metadata updates, and removal require an admin.
@@ -126,7 +127,7 @@ Before launch:
 4. Apply Alembic migrations using a restricted deployment identity. Use a least-privilege runtime database role where practical and confirm backups and restoration procedures.
 5. Confirm the `directory-media` bucket's public-read requirement and retention policy. Keep `academic-resources` private and allow the service-role key to read and write it; do not upload sensitive documents through the image endpoint.
 6. Configure platform/WAF rate limits for authentication, password reset, directory search, and uploads. The application does not include a distributed rate limiter.
-7. Replace all remaining mock/placeholder event and session-only settings integrations or disable those controls before launch.
+7. Confirm that every enabled event, profile, notification, and settings control is backed by the deployed API; unsupported controls remain removed.
 8. Review the Privacy Notice and Terms of Use with the responsible university/society representative. Confirm the public contact, retention schedule, age/audience policy, and asset/logo permissions.
 9. Test sign-in, reset, logout, student/admin authorization, CRUD, uploads, CSP, and error handling against the actual production Firebase, database, storage, and domains.
 10. Apply migration `20261015_13`, generate one VAPID key pair, and configure
@@ -188,7 +189,7 @@ Do not use `Base.metadata.create_all()` in the application.
 
 ## Development notes
 
-`VITE_USE_MOCKS=true` lets the React dashboard display sample data if optional dashboard endpoints are unavailable. Set it to `false` when those API routes are implemented. See [`frontend2/README.md`](frontend2/README.md) for the expected response shapes and frontend architecture.
+See [`frontend2/README.md`](frontend2/README.md) for the expected response shapes and frontend architecture.
 
 ## Verification
 
@@ -210,7 +211,7 @@ npm run build
 npm audit --omit=dev
 ```
 
-The repository currently has no frontend lint, typecheck, or automated browser-test scripts. Add those before expanding the frontend's production surface.
+The repository currently has no frontend lint, typecheck, or automated browser-test scripts. Add those before expanding the frontend's production surface. Frontend unit checks run with `npm test`.
 
 Academic Resource preview unit checks are available through `npm run test:preview`.
 

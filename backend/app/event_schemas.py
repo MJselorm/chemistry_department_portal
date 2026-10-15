@@ -1,10 +1,19 @@
 from datetime import datetime
 from typing import Literal
+from urllib.parse import urlparse
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 EventStatus = Literal["draft", "published", "ongoing", "completed", "cancelled"]
+
+
+def safe_public_url(value: str | None):
+    if value is None or value == "": return None
+    parsed = urlparse(value)
+    if parsed.scheme not in {"https", "http"} or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError("URL must be a public HTTP or HTTPS address.")
+    return value
 
 
 class EventFields(BaseModel):
@@ -22,6 +31,8 @@ class EventFields(BaseModel):
     contact_phone: str | None = Field(default=None, max_length=50)
     department: str | None = Field(default=None, max_length=255)
     target_audience: str | None = Field(default=None, max_length=255)
+
+    _public_urls = field_validator("registration_url", "image_url")(safe_public_url)
 
     @model_validator(mode="after")
     def dates_are_ordered(self):
@@ -47,6 +58,8 @@ class EventUpdate(BaseModel):
     capacity: int | None = Field(default=None, ge=1); contact_email: EmailStr | None = None
     contact_phone: str | None = Field(default=None, max_length=50); department: str | None = Field(default=None, max_length=255)
     target_audience: str | None = Field(default=None, max_length=255); status: EventStatus | None = None; is_published: bool | None = None
+
+    _public_urls = field_validator("registration_url", "image_url")(safe_public_url)
 
 
 class EventOut(EventFields):

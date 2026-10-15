@@ -90,7 +90,7 @@ export default function DirectoryPage() {
       const items = Array.isArray(res) ? res : res?.items || []
       setCache((prev) => ({ ...prev, [catKey]: items }))
     } catch (err) {
-      console.error('Unable to load directory data:', err)
+      if (import.meta.env.DEV) console.error('Unable to load directory data:', err)
       setError('Unable to load directory data right now. Please try again.')
     } finally {
       setLoading(false)

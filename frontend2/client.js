@@ -1,20 +1,20 @@
 /**
  * Thin fetch wrapper around the FastAPI backend.
- * Everything the UI does goes through here, so swapping mocks for the real
- * server is a matter of flipping VITE_USE_MOCKS and making sure the routes
- * in endpoints.js match your FastAPI router prefixes.
+ * Everything the production UI does goes through this authenticated client.
  */
 
 const PRODUCTION_API_ORIGIN = 'https://chemistry-department-portal.onrender.com'
 
 function resolveBaseUrl() {
   const envUrl = import.meta.env.VITE_API_BASE_URL
-  // The public deployment has one verified API origin. Ignoring all build-time
-  // overrides here prevents a stale Vercel environment variable from pointing
-  // browsers at an old proxy or a localhost address.
   if (import.meta.env.PROD) {
-    if (envUrl && envUrl.replace(/\/+$/, '') !== PRODUCTION_API_ORIGIN) {
-      console.warn('Ignoring VITE_API_BASE_URL in the production build; using the configured production API origin.')
+    if (envUrl) {
+      try {
+        const configured = new URL(envUrl)
+        if (configured.protocol === 'https:') return configured.origin
+      } catch {
+        // Fall through to the known production API when build configuration is invalid.
+      }
     }
     return PRODUCTION_API_ORIGIN
   }
@@ -33,6 +33,8 @@ let accessToken = null
 const RETRY_DELAYS_MS = import.meta.env.PROD
   ? [2000, 4000, 8000, 16000]
   : [500]
+const REQUEST_TIMEOUT_MS = 30_000
+const UPLOAD_TIMEOUT_MS = 120_000
 
 export const tokenStore = {
   get: () => accessToken,
@@ -67,14 +69,38 @@ async function parseBody(res) {
  * FastAPI returns errors as {detail: "..."} or, for 422, as
  * {detail: [{loc, msg, type}, ...]}. Flatten both into one readable string.
  */
-function messageFromDetail(payload, fallback) {
+function messageFromDetail(payload, status) {
+  if (status === 401) return 'Your session has expired. Please sign in again.'
+  if (status === 403) return 'You do not have permission to perform this action.'
+  if (status >= 500) return 'Something went wrong. Please try again.'
   const detail = payload?.detail
-  if (!detail) return fallback
+  if (!detail) return status === 404 ? 'The requested item could not be found.' : 'Unable to complete this request. Please try again.'
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail)) {
-    return detail.map((d) => d.msg).filter(Boolean).join(', ') || fallback
+    return detail.map((d) => d.msg).filter(Boolean).join(', ') || 'Please check the information provided and try again.'
   }
-  return fallback
+  return 'Unable to complete this request. Please try again.'
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController()
+  let timedOut = false
+  const abort = () => controller.abort(options.signal?.reason)
+  if (options.signal?.aborted) abort()
+  else options.signal?.addEventListener('abort', abort, { once: true })
+  const timer = window.setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } catch (error) {
+    if (timedOut) throw new ApiError('The request took too long. Please try again.', 0, null)
+    throw error
+  } finally {
+    window.clearTimeout(timer)
+    options.signal?.removeEventListener('abort', abort)
+  }
 }
 
 async function request(path, { method = 'GET', body, form, auth = true, signal, retryCount = RETRY_DELAYS_MS.length } = {}) {
@@ -97,9 +123,10 @@ async function request(path, { method = 'GET', body, form, auth = true, signal, 
   const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
   let res
   try {
-    res = await fetch(targetUrl, { method, headers, body: payload, signal, credentials: 'omit' })
+    res = await fetchWithTimeout(targetUrl, { method, headers, body: payload, signal, credentials: 'omit' })
   } catch (err) {
-    if (retryCount > 0 && (err.name === 'TypeError' || err.message?.includes('fetch'))) {
+    const retryable = method === 'GET' && (err.name === 'TypeError' || err.message?.includes('fetch') || err instanceof ApiError)
+    if (retryCount > 0 && retryable && !signal?.aborted) {
       const retryIndex = RETRY_DELAYS_MS.length - retryCount
       const retryDelay = RETRY_DELAYS_MS[retryIndex] ?? RETRY_DELAYS_MS.at(-1)
       // Server may be spinning up from cold sleep (e.g. Render free tier).
@@ -108,7 +135,7 @@ async function request(path, { method = 'GET', body, form, auth = true, signal, 
     }
     if (err.name === 'TypeError' || err.message?.includes('fetch')) {
       throw new ApiError(
-        'Unable to connect to the backend server. If the server is on a free tier (Render), it may be waking up from standby (~30 seconds). Please try again in a moment.',
+        'Unable to connect right now. Please check your connection and try again.',
         0,
         null
       )
@@ -118,9 +145,12 @@ async function request(path, { method = 'GET', body, form, auth = true, signal, 
 
   const data = await parseBody(res)
 
-  if (res.status === 401 && auth) tokenStore.clear()
+  if (res.status === 401 && auth) {
+    tokenStore.clear()
+    window.dispatchEvent(new CustomEvent('chemhub:session-expired'))
+  }
   if (!res.ok) {
-    throw new ApiError(messageFromDetail(data, `Request failed (${res.status})`), res.status, data)
+    throw new ApiError(messageFromDetail(data, res.status), res.status, data)
   }
   return data
 }
@@ -137,13 +167,17 @@ export const api = {
     const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
     let response
     try {
-      response = await fetch(targetUrl, { headers, signal: opts.signal, credentials: 'omit' })
+      response = await fetchWithTimeout(targetUrl, { headers, signal: opts.signal, credentials: 'omit' })
     } catch {
       throw new ApiError('Unable to reach the file server. Please try again.', 0, null)
     }
     if (!response.ok) {
       const data = await parseBody(response)
-      throw new ApiError(messageFromDetail(data, `Request failed (${response.status})`), response.status, data)
+      if (response.status === 401 && opts.auth !== false) {
+        tokenStore.clear()
+        window.dispatchEvent(new CustomEvent('chemhub:session-expired'))
+      }
+      throw new ApiError(messageFromDetail(data, response.status), response.status, data)
     }
     return { blob: await response.blob(), contentType: response.headers.get('content-type') || 'application/octet-stream' }
   },
@@ -161,17 +195,17 @@ export const api = {
     const targetUrl = BASE_URL && path.startsWith(BASE_URL) ? path : `${BASE_URL}${path}`
     let res
     try {
-      res = await fetch(targetUrl, {
+      res = await fetchWithTimeout(targetUrl, {
         method: 'POST',
         headers,
         body: formData,
         signal: opts.signal,
         credentials: 'omit',
-      })
+      }, UPLOAD_TIMEOUT_MS)
     } catch (err) {
       if (err.name === 'TypeError' || err.message?.includes('fetch')) {
         throw new ApiError(
-          'Unable to reach the file upload server. The server may be waking up or offline. Please retry in a moment.',
+          'Unable to upload the file right now. Check your connection and try again.',
           0,
           null
         )
@@ -179,9 +213,12 @@ export const api = {
       throw err
     }
     const data = await parseBody(res)
-    if (res.status === 401 && opts.auth !== false) tokenStore.clear()
+    if (res.status === 401 && opts.auth !== false) {
+      tokenStore.clear()
+      window.dispatchEvent(new CustomEvent('chemhub:session-expired'))
+    }
     if (!res.ok) {
-      throw new ApiError(messageFromDetail(data, `Upload failed (${res.status})`), res.status, data)
+      throw new ApiError(messageFromDetail(data, res.status), res.status, data)
     }
     return data
   },

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from './AuthContext'
@@ -10,6 +10,8 @@ export default function ForgotPasswordPage() {
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => { document.title = 'Reset password | Chemistry Hub' }, [])
 
   const handleSubmit = async (event) => {
     event.preventDefault()

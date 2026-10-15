@@ -10,7 +10,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Configure every `VITE_FIREBASE_*` value. Point `VITE_API_BASE_URL` at FastAPI, normally `http://127.0.0.1:8000`. `VITE_USE_MOCKS=true` enables sample content for optional dashboard features that do not yet have backend routes. Set `VITE_SUPPORT_EMAIL` to a verified public institutional address before production.
+Configure every `VITE_FIREBASE_*` value. Point `VITE_API_BASE_URL` at FastAPI, normally `http://127.0.0.1:8000`. Set `VITE_SUPPORT_EMAIL` to a verified public institutional address before production.
 
 ## Architecture
 
@@ -45,8 +45,9 @@ All application routes except `/health` require `Authorization: Bearer <firebase
 - `POST/DELETE /admin/announcements`: admin-only announcement management
 - `/api/directory/*`: authenticated reads and admin-only writes/uploads
 - `GET /admin/test`: verify the database-backed admin role
+- `GET /admin/users`: admin-only portal account listing
 
-Several event and settings endpoints in `endpoints.js` remain placeholders. Academic Resources uses the authenticated FastAPI resource API, private Supabase Storage, PDF.js rendering, lazy short-lived thumbnail links, locally rendered PDF/PPTX thumbnails, and short-lived signed download links. Legacy `.ppt` files are download-only unless a production Office conversion service is added.
+Academic Resources uses the authenticated FastAPI resource API, private Supabase Storage, PDF.js rendering, lazy short-lived thumbnail links, locally rendered PDF/PPTX thumbnails, and short-lived signed download links. Legacy `.ppt` files are download-only unless a production Office conversion service is added.
 
 Notifications use the authenticated `/api/notifications` API. The top-bar bell
 polls the unread count and exposes persistent read/dismiss actions. Device push is
@@ -65,6 +66,7 @@ The application is intentionally marked `noindex, nofollow`, and `public/robots.
 
 ```bash
 npm ci
+npm test
 npm run build
 npm audit --omit=dev
 ```

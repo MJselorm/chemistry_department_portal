@@ -3,6 +3,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './AuthContext'
 import ProtectedRoute from './ProtectedRoute'
 import PortalLayout from './PortalLayout'
+import ErrorBoundary from './ErrorBoundary'
+import StatusPage from './StatusPage'
 
 import { ToastProvider } from './directory/Toast'
 
@@ -36,7 +38,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <Suspense fallback={<RouteLoading />}>
+          <ErrorBoundary><Suspense fallback={<RouteLoading />}>
           <Routes>
           {/* Landing / Sign In Page (Preserved) */}
           <Route path="/" element={<LoginPage />} />
@@ -238,10 +240,9 @@ export default function App() {
             }
           />
 
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<StatusPage status={404} />} />
         </Routes>
-          </Suspense>
+          </Suspense></ErrorBoundary>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

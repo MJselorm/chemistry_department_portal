@@ -4,6 +4,7 @@ import { directoryApi } from './directoryApi'
 import { useToast } from './Toast'
 import ImageUpload from './ImageUpload'
 import useDialogAccessibility from '../useDialogAccessibility'
+import DeleteConfirmModal from './DeleteConfirmModal'
 
 export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
   const { showToast } = useToast()
@@ -14,6 +15,7 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
   const dialogRef = useDialogAccessibility(onClose, isOpen, saving)
 
   const initialForm = {
@@ -90,11 +92,11 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Remove this member from the committee?')) return
     setDeletingId(id)
     try {
       await directoryApi.deleteCommitteeMember(id)
       showToast('Member removed from committee.')
+      setPendingDeleteId(null)
       loadMembers()
     } catch (err) {
       showToast(err?.message || 'Failed to remove member.', 'error')
@@ -334,7 +336,7 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
                     </button>
                     <button
                       disabled={deletingId === m.id}
-                      onClick={() => handleDelete(m.id)}
+                      onClick={() => setPendingDeleteId(m.id)}
                       className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-[var(--destructive-soft)] transition-colors disabled:opacity-50"
                       title="Remove member"
                       aria-label={`Remove ${m.name}`}
@@ -359,6 +361,16 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
           </button>
         </div>
       </div>
+      <DeleteConfirmModal
+        isOpen={Boolean(pendingDeleteId)}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={() => handleDelete(pendingDeleteId)}
+        title="Remove committee member"
+        message="This member will be removed from the committee roster."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        isDeleting={Boolean(deletingId)}
+      />
     </div>
   )
 }

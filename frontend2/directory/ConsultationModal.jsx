@@ -3,6 +3,7 @@ import { Calendar, Clock, MapPin, Plus, Trash2, Edit3, X, Loader2, AlertCircle, 
 import { directoryApi } from './directoryApi'
 import { useToast } from './Toast'
 import useDialogAccessibility from '../useDialogAccessibility'
+import DeleteConfirmModal from './DeleteConfirmModal'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MODES = ['In-Person', 'Online', 'Hybrid']
@@ -16,6 +17,7 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
   const dialogRef = useDialogAccessibility(onClose, isOpen, saving)
 
   const initialForm = {
@@ -107,11 +109,11 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this consultation period?')) return
     setDeletingId(id)
     try {
       await directoryApi.deleteConsultation(id)
       showToast('Consultation period removed.')
+      setPendingDeleteId(null)
       loadConsultations()
     } catch (err) {
       showToast(err?.message || 'Failed to remove consultation period.', 'error')
@@ -338,7 +340,7 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
                     </button>
                     <button
                       disabled={deletingId === c.id}
-                      onClick={() => handleDelete(c.id)}
+                      onClick={() => setPendingDeleteId(c.id)}
                       className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-[var(--destructive-soft)] transition-colors disabled:opacity-50"
                       title="Delete consultation period"
                       aria-label={`Delete ${c.day_of_week} consultation period`}
@@ -363,6 +365,14 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
           </button>
         </div>
       </div>
+      <DeleteConfirmModal
+        isOpen={Boolean(pendingDeleteId)}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={() => handleDelete(pendingDeleteId)}
+        title="Delete consultation period"
+        message="This consultation period will be removed from the lecturer's schedule."
+        isDeleting={Boolean(deletingId)}
+      />
     </div>
   )
 }

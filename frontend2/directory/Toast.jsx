@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react'
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Info, TriangleAlert, X } from 'lucide-react'
 
 const ToastContext = createContext(null)
 
@@ -28,6 +28,7 @@ export function ToastProvider({ children }) {
         {toasts.map((t) => {
           const isSuccess = t.type === 'success'
           const isError = t.type === 'error'
+          const isWarning = t.type === 'warning'
 
           return (
             <div
@@ -38,13 +39,16 @@ export function ToastProvider({ children }) {
                   ? 'bg-[var(--success-soft)] border-[var(--success-border)] text-success'
                   : isError
                   ? 'bg-[var(--destructive-soft)] border-[var(--destructive-border)] text-destructive'
+                  : isWarning
+                  ? 'bg-[var(--accent-soft)] border-[var(--warning-border)] text-warning'
                   : 'bg-[var(--primary-soft)] border-[var(--primary-border)] text-primary'
               }`}
             >
               <div className="mt-0.5 flex-shrink-0">
                 {isSuccess && <CheckCircle2 size={16} className="text-success" />}
                 {isError && <AlertCircle size={16} className="text-destructive" />}
-                {!isSuccess && !isError && <Info size={16} className="text-primary" />}
+                {isWarning && <TriangleAlert size={16} className="text-warning" />}
+                {!isSuccess && !isError && !isWarning && <Info size={16} className="text-primary" />}
               </div>
               <div className="flex-1 break-words leading-relaxed">{t.message}</div>
               <button
@@ -67,7 +71,7 @@ export function useToast() {
   if (!context) {
     // Fallback if rendered outside provider
     return {
-      showToast: (msg) => console.log('[Toast]', msg),
+      showToast: () => {},
     }
   }
   return context

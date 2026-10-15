@@ -24,3 +24,8 @@ def test_event_rejects_end_before_start():
 def test_event_rejects_naive_dates():
     with pytest.raises(ValidationError, match="timezone"):
         EventCreate(**payload(start_datetime="2026-10-08T09:00:00"))
+
+
+def test_event_rejects_unsafe_registration_url():
+    with pytest.raises(ValidationError, match="HTTP or HTTPS"):
+        EventCreate(**payload(registration_url="javascript:alert(1)"))

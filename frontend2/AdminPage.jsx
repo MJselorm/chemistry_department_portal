@@ -26,14 +26,14 @@ import {
   Upload,
   Users,
   X,
-  Zap,
 } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import AcademicResourceViewer from './AcademicResourceViewer'
 import { downloadAcademicResource } from './resourceDownload'
 import { useAuth } from './AuthContext'
-import { MOCK_ADMIN_USERS, MOCK_ADMIN_ACTIVITY } from './mocks'
+import DeleteConfirmModal from './directory/DeleteConfirmModal'
+import { useToast } from './directory/Toast'
 
 const CATEGORIES = [
   'All',
@@ -54,6 +54,7 @@ const formatBytes = (value) => {
 
 export default function AdminPage() {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromQuery = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(
@@ -74,11 +75,9 @@ export default function AdminPage() {
     setSearchParams({ tab: tabId })
   }
 
-  const [adminTestResult, setAdminTestResult] = useState(null)
-  const [testingRole, setTestingRole] = useState(false)
-
   // Form states
   const [eventForm, setEventForm] = useState({ title: '', type: 'Seminar', datetime: '', venue: '', description: '' })
+  const [publishingEvent, setPublishingEvent] = useState(false)
   
   // Resource states
   const [resourceForm, setResourceForm] = useState({
@@ -131,7 +130,7 @@ export default function AdminPage() {
     pin: false,
   })
   const [publishingAnnouncement, setPublishingAnnouncement] = useState(false)
-  const [feedback, setFeedback] = useState(null)
+  const [pendingDelete, setPendingDelete] = useState(null)
 
   const [announcements, setAnnouncements] = useState([])
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false)
@@ -140,11 +139,12 @@ export default function AdminPage() {
   const [announcementCategoryFilter, setAnnouncementCategoryFilter] = useState('All')
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [adminUsers, setAdminUsers] = useState([])
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [usersError, setUsersError] = useState('')
+  const [userSearch, setUserSearch] = useState('')
 
-  const showFeedback = (msg) => {
-    setFeedback(msg)
-    setTimeout(() => setFeedback(null), 5000)
-  }
+  const showFeedback = (message, type = 'success') => showToast(message, type)
 
   const fetchAnnouncements = async () => {
     setLoadingAnnouncements(true)
@@ -195,27 +195,30 @@ export default function AdminPage() {
     }
   }, [activeTab, fetchAdminResources])
 
-  const handleAdminTest = async () => {
-    setTestingRole(true)
-    setAdminTestResult(null)
+  const fetchAdminUsers = useCallback(async () => {
+    setUsersLoading(true)
+    setUsersError('')
     try {
-      const res = await api.get(ENDPOINTS.adminTest)
-      setAdminTestResult({ success: true, message: res.message || 'Admin authorization confirmed by FastAPI!' })
+      const result = await api.get(ENDPOINTS.adminManageUsers)
+      setAdminUsers(Array.isArray(result) ? result : [])
     } catch (err) {
-      setAdminTestResult({
-        success: false,
-        message: err.message || 'Failed: You do not have the admin role in the database.'
-      })
+      setUsersError(err.message || 'Unable to load portal accounts.')
     } finally {
-      setTestingRole(false)
+      setUsersLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'users' || activeTab === 'overview') fetchAdminUsers()
+  }, [activeTab, fetchAdminUsers])
 
   const createAndPublishEvent = async (event) => {
     event.preventDefault()
+    if (publishingEvent) return
+    setPublishingEvent(true)
     try {
       const start = new Date(eventForm.datetime)
-      const created = await api.post(ENDPOINTS.adminCreateEvent, {
+      const created = await api.post(ENDPOINTS.adminCreatePublishedEvent, {
         title: eventForm.title,
         event_type: eventForm.type,
         location: eventForm.venue,
@@ -223,11 +226,12 @@ export default function AdminPage() {
         start_datetime: start.toISOString(),
         end_datetime: new Date(start.getTime() + 2 * 60 * 60 * 1000).toISOString(),
       })
-      await api.post(ENDPOINTS.publishEvent(created.id), {})
       showFeedback(`Event "${created.title}" is published and visible to students.`)
       setEventForm({ title: '', type: 'Seminar', datetime: '', venue: '', description: '' })
     } catch (err) {
-      showFeedback(err.message || 'Unable to publish event.')
+      showFeedback(err.message || 'Unable to publish event.', 'error')
+    } finally {
+      setPublishingEvent(false)
     }
   }
 
@@ -240,7 +244,7 @@ export default function AdminPage() {
       )
       fetchAdminResources()
     } catch (err) {
-      showFeedback(err.message || 'Unable to index migrated Academic Storage files.')
+      showFeedback(err.message || 'Unable to index migrated Academic Storage files.', 'error')
     } finally {
       setIndexingStorage(false)
     }
@@ -249,7 +253,7 @@ export default function AdminPage() {
   // Upload Resource
   const uploadAcademicResource = async (event) => {
     event.preventDefault()
-    if (!resourceFile) return showFeedback('Please select a file to upload.')
+    if (!resourceFile) return showFeedback('Please select a file to upload.', 'warning')
     setUploadingResource(true)
     try {
       const created = await api.upload(ENDPOINTS.adminUploadResource, resourceFile, {
@@ -274,7 +278,7 @@ export default function AdminPage() {
       setShowUploadResource(false)
       fetchAdminResources()
     } catch (err) {
-      showFeedback(err.message || 'Unable to upload academic resource.')
+      showFeedback(err.message || 'Unable to upload academic resource.', 'error')
     } finally {
       setUploadingResource(false)
     }
@@ -308,7 +312,7 @@ export default function AdminPage() {
       setEditingResource(null)
       fetchAdminResources()
     } catch (err) {
-      showFeedback(err.message || 'Failed to update resource metadata.')
+      showFeedback(err.message || 'Failed to update resource metadata.', 'error')
     } finally {
       setSavingEditResource(false)
     }
@@ -316,16 +320,14 @@ export default function AdminPage() {
 
   // Delete / Archive Resource
   const handleDeleteResource = async (id, title) => {
-    if (!window.confirm(`Are you sure you want to archive/remove "${title}"?`)) {
-      return
-    }
     setActionLoadingId(`delete-${id}`)
     try {
       await api.del(ENDPOINTS.adminRemoveResource(id))
       showFeedback(`Resource "${title}" archived. It is now hidden from students.`)
+      setPendingDelete(null)
       fetchAdminResources()
     } catch (err) {
-      showFeedback(err.message || 'Failed to remove resource.')
+      showFeedback(err.message || 'Failed to remove resource.', 'error')
     } finally {
       setActionLoadingId(null)
     }
@@ -339,7 +341,7 @@ export default function AdminPage() {
       showFeedback(`Resource "${title}" has been reactivated.`)
       fetchAdminResources()
     } catch (err) {
-      showFeedback(err.message || 'Failed to restore resource.')
+      showFeedback(err.message || 'Failed to restore resource.', 'error')
     } finally {
       setActionLoadingId(null)
     }
@@ -354,7 +356,7 @@ export default function AdminPage() {
     try {
       await downloadAcademicResource(resource)
     } catch (err) {
-      showFeedback(err.message || 'Unable to download file.')
+      showFeedback(err.message || 'Unable to download file.', 'error')
     } finally {
       setActionLoadingId(null)
     }
@@ -392,23 +394,21 @@ export default function AdminPage() {
         fetchAnnouncements()
       }
     } catch (err) {
-      showFeedback(err.message || 'Unable to publish announcement.')
+      showFeedback(err.message || 'Unable to publish announcement.', 'error')
     } finally {
       setPublishingAnnouncement(false)
     }
   }
 
   const handleDeleteAnnouncement = async (id, title) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      return
-    }
     setDeletingId(id)
     try {
       await api.del(ENDPOINTS.adminDeleteAnnouncement(id))
       setAnnouncements((prev) => prev.filter((a) => a.id !== id))
       showFeedback('Announcement deleted successfully.')
+      setPendingDelete(null)
     } catch (err) {
-      showFeedback(err.message || 'Failed to delete announcement.')
+      showFeedback(err.message || 'Failed to delete announcement.', 'error')
     } finally {
       setDeletingId(null)
     }
@@ -442,6 +442,10 @@ export default function AdminPage() {
       item.audience?.toLowerCase().includes(announcementSearch.toLowerCase())
     return matchesCategory && matchesSearch
   })
+  const filteredUsers = adminUsers.filter((item) => {
+    const query = userSearch.trim().toLowerCase()
+    return !query || item.full_name?.toLowerCase().includes(query) || item.email?.toLowerCase().includes(query) || item.role?.includes(query)
+  })
 
   return (
     <div className="space-y-6">
@@ -458,14 +462,6 @@ export default function AdminPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={handleAdminTest}
-            disabled={testingRole}
-            className="px-3.5 py-2 rounded-xl bg-[#eee7fa] hover:bg-[#e4d8f8] text-primary text-xs font-bold border border-[#d6c3f3] transition-colors inline-flex items-center gap-2 shadow-xs"
-          >
-            <Zap size={13} aria-hidden="true" />
-            {testingRole ? 'Verifying...' : 'Test Live Admin Endpoint'}
-          </button>
-          <button
             onClick={() => handleTabChange('resources')}
             className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors shadow-xs"
           >
@@ -473,31 +469,6 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
-
-      {/* Live Admin Endpoint Test Banner */}
-      {adminTestResult && (
-        <div
-          className={`p-4 rounded-2xl text-xs font-medium border flex items-center justify-between ${
-            adminTestResult.success
-              ? 'bg-[var(--success-soft)] border-[var(--success-border)] text-success'
-              : 'bg-[var(--destructive-soft)] border-[var(--destructive-border)] text-destructive'
-          }`}
-        >
-          <span>
-            <strong>FastAPI Response (/admin/test):</strong> {adminTestResult.message}
-          </span>
-          <button onClick={() => setAdminTestResult(null)} className="font-bold ml-2" aria-label="Dismiss admin test result">
-            <X size={14} aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      {/* Global Action Feedback */}
-      {feedback && (
-        <div className="p-3.5 rounded-xl bg-[var(--success-soft)] border border-[var(--success-border)] text-success text-xs font-semibold shadow-xs">
-          {feedback}
-        </div>
-      )}
 
       {/* Sub-Navigation Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-border pb-3">
@@ -630,24 +601,14 @@ export default function AdminPage() {
               </div>
             </section>
 
-            {/* Recent Activity */}
+            {/* Live record summary */}
             <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">ACTIVITY</span>
-              <h2 className="text-base font-bold text-foreground mt-0.5 mb-3">Recent activity</h2>
-              <div className="divide-y divide-[#eef2f3]">
-                {MOCK_ADMIN_ACTIVITY.map((act) => (
-                  <div key={act.id} className="py-3 flex items-start gap-2.5">
-                    <span
-                      className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                      style={{ backgroundColor: act.dotColor }}
-                    />
-                    <div className="flex-1">
-                      <strong className="block text-xs font-bold text-foreground">{act.text}</strong>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{act.desc}</p>
-                    </div>
-                    <time className="text-[10px] text-[#a1adb0]">{act.time}</time>
-                  </div>
-                ))}
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">LIVE RECORDS</span>
+              <h2 className="text-base font-bold text-foreground mt-0.5 mb-3">Portal summary</h2>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg bg-surface-secondary p-3"><strong className="block text-lg text-foreground">{adminUsers.length}</strong><span className="text-[10px] text-muted-foreground">Accounts</span></div>
+                <div className="rounded-lg bg-surface-secondary p-3"><strong className="block text-lg text-foreground">{resourceData.total || 0}</strong><span className="text-[10px] text-muted-foreground">Resources</span></div>
+                <div className="rounded-lg bg-surface-secondary p-3"><strong className="block text-lg text-foreground">{announcements.length}</strong><span className="text-[10px] text-muted-foreground">Notices</span></div>
               </div>
             </section>
           </div>
@@ -1085,7 +1046,7 @@ export default function AdminPage() {
                               {item.is_active ? (
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteResource(item.id, item.title || item.name)}
+                                  onClick={() => setPendingDelete({ kind: 'resource', id: item.id, title: item.title || item.name })}
                                   disabled={isDeleting}
                                   className="p-1.5 rounded-lg border border-[var(--destructive-border)] bg-[var(--destructive-soft)] text-destructive hover:bg-red-100 transition-colors"
                                   title="Archive / Remove resource"
@@ -1367,16 +1328,11 @@ export default function AdminPage() {
             <div className="flex gap-2 pt-3 border-t border-[#f4f7f8]">
               <button
                 type="submit"
-                className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors"
+                disabled={publishingEvent}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors disabled:opacity-50"
               >
-                Publish event
-              </button>
-              <button
-                type="button"
-                onClick={() => showFeedback('Draft saved locally.')}
-                className="px-4 py-2.5 rounded-xl border border-[#d7e2e4] text-muted-foreground text-xs font-bold hover:bg-gray-50"
-              >
-                Save draft
+                {publishingEvent && <RefreshCw size={13} className="animate-spin" />}
+                {publishingEvent ? 'Publishing…' : 'Publish event'}
               </button>
             </div>
           </form>
@@ -1709,7 +1665,7 @@ export default function AdminPage() {
                       </small>
                       <button
                         type="button"
-                        onClick={() => handleDeleteAnnouncement(item.id, item.title)}
+                        onClick={() => setPendingDelete({ kind: 'announcement', id: item.id, title: item.title })}
                         disabled={deletingId === item.id}
                         className="text-[#b64a4a] hover:text-[#8e2929] hover:bg-[var(--destructive-soft)] p-1.5 rounded-lg transition-colors text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
                         title="Delete announcement"
@@ -1760,59 +1716,60 @@ export default function AdminPage() {
             <input
               type="text"
               placeholder="Search students"
+              aria-label="Search portal accounts"
+              value={userSearch}
+              onChange={(event) => setUserSearch(event.target.value)}
               className="px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary"
             />
           </div>
 
+          {usersError && <div className="mb-4 flex items-center justify-between rounded-lg border border-[var(--destructive-border)] bg-[var(--destructive-soft)] p-3 text-xs text-destructive"><span>{usersError}</span><button type="button" onClick={fetchAdminUsers} className="font-bold underline">Retry</button></div>}
+          {usersLoading && <div className="py-10 text-center text-xs text-muted-foreground"><RefreshCw size={17} className="mx-auto mb-2 animate-spin text-primary" />Loading accounts…</div>}
+          {!usersLoading && !usersError && filteredUsers.length === 0 && <div className="py-10 text-center text-xs text-muted-foreground">No portal accounts match this search.</div>}
+          {!usersLoading && filteredUsers.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#eef2f3] text-[9px] uppercase tracking-wider text-[#94a1a5]">
                   <th className="py-2.5">Name</th>
-                  <th className="py-2.5">Student ID</th>
-                  <th className="py-2.5">Level</th>
+                  <th className="py-2.5">Email</th>
                   <th className="py-2.5">Role</th>
-                  <th className="py-2.5 text-right">Action</th>
+                  <th className="py-2.5 text-right">Joined</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#edf1f2]">
-                {MOCK_ADMIN_USERS.map((usr) => (
+                {filteredUsers.map((usr) => (
                   <tr key={usr.id} className="py-3">
                     <td className="py-3">
-                      <strong className="block text-xs font-bold text-foreground">{usr.name}</strong>
-                      <small className="text-[10px] text-[#98a5a8]">{usr.status}</small>
+                      <strong className="block text-xs font-bold text-foreground">{usr.full_name || 'Name not provided'}</strong>
                     </td>
-                    <td className="py-3 text-muted-foreground">{usr.studentId}</td>
-                    <td className="py-3 text-muted-foreground">{usr.level}</td>
+                    <td className="py-3 text-muted-foreground">{usr.email}</td>
                     <td className="py-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                          usr.badgeColor === 'blue'
-                            ? 'bg-[#e7f5f7] text-primary'
-                            : usr.badgeColor === 'green'
-                            ? 'bg-[var(--success-soft)] text-success'
-                            : 'bg-[var(--primary-soft)] text-primary'
-                        }`}
-                      >
+                      <span className="rounded-full border border-border bg-surface-secondary px-2 py-0.5 text-[9px] font-extrabold uppercase text-foreground">
                         {usr.role}
                       </span>
                     </td>
-                    <td className="py-3 text-right">
-                      <button
-                        onClick={() => showFeedback(`Selected user: ${usr.name}`)}
-                        className="text-xs font-bold text-primary hover:underline"
-                      >
-                        Edit
-                      </button>
-                    </td>
+                    <td className="py-3 text-right text-muted-foreground">{new Date(usr.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          )}
         </section>
       )}
       {previewResource && <AcademicResourceViewer resource={previewResource} onClose={() => setPreviewResource(null)} />}
+      <DeleteConfirmModal
+        isOpen={Boolean(pendingDelete)}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete?.kind === 'resource' ? handleDeleteResource(pendingDelete.id, pendingDelete.title) : handleDeleteAnnouncement(pendingDelete.id, pendingDelete.title)}
+        title={pendingDelete?.kind === 'resource' ? 'Archive resource' : 'Delete announcement'}
+        itemName={pendingDelete?.title}
+        message={pendingDelete?.kind === 'resource' ? 'This hides the resource from students. The stored file is retained and can be restored later.' : 'This removes the announcement and its linked notification for all students. This action cannot be undone.'}
+        confirmLabel={pendingDelete?.kind === 'resource' ? 'Archive' : 'Delete'}
+        busyLabel={pendingDelete?.kind === 'resource' ? 'Archiving…' : 'Deleting…'}
+        isDeleting={Boolean(actionLoadingId?.startsWith('delete-') || deletingId)}
+      />
     </div>
   )
 }

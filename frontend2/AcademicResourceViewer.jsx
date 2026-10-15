@@ -29,7 +29,9 @@ function formatLabel(resource, contentType = '') {
 }
 
 function messageFromError(error) {
-  return error?.message || 'Unable to retrieve this file from Academic Storage.'
+  return error?.name === 'ApiError'
+    ? error.message
+    : 'This file could not be previewed. Download the original file or try again.'
 }
 
 function LoadingState() {

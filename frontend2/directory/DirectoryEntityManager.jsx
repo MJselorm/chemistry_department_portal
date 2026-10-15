@@ -59,7 +59,7 @@ export default function DirectoryEntityManager({ categoryKey }) {
         const deptRes = await directoryApi.listEntities('/api/directory/departments', { limit: 100 })
         setDepartments(deptRes?.items || deptRes || [])
       } catch (err) {
-        console.error('Failed to load departments:', err)
+        if (import.meta.env.DEV) console.error('Failed to load departments:', err)
       }
 
       if (categoryConfig.fields.some((f) => f.type === 'course_select')) {
@@ -67,7 +67,7 @@ export default function DirectoryEntityManager({ categoryKey }) {
           const courseRes = await directoryApi.listEntities('/api/directory/courses', { limit: 100 })
           setCourses(courseRes?.items || courseRes || [])
         } catch (err) {
-          console.error('Failed to load courses:', err)
+          if (import.meta.env.DEV) console.error('Failed to load courses:', err)
         }
       }
 
@@ -76,7 +76,7 @@ export default function DirectoryEntityManager({ categoryKey }) {
           const lecRes = await directoryApi.listEntities('/api/directory/lecturers', { limit: 100 })
           setLecturers(lecRes?.items || lecRes || [])
         } catch (err) {
-          console.error('Failed to load lecturers:', err)
+          if (import.meta.env.DEV) console.error('Failed to load lecturers:', err)
         }
       }
     }

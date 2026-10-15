@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { CalendarDays, Clock, MapPin, RefreshCw, Search, Users, Mail, ExternalLink, Sparkles } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
+import { safeExternalHttpUrl } from './safeUrl'
 
 const EVENT_TYPES = ['All', 'Seminar', 'Workshop', 'Conference', 'Social']
 
@@ -70,6 +71,7 @@ export default function EventsPage() {
         <form onSubmit={handleSearchSubmit} className="w-full sm:w-72 relative">
           <Search className="absolute left-3 top-2.5 text-muted-foreground" size={14} aria-hidden="true" />
           <input
+            aria-label="Search events"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search events by title or topic…"
@@ -198,10 +200,10 @@ export default function EventsPage() {
                       )}
                     </div>
 
-                    {event.registration_url && (
+                    {safeExternalHttpUrl(event.registration_url) && (
                       <div className="pt-1">
                         <a
-                          href={event.registration_url}
+                          href={safeExternalHttpUrl(event.registration_url)}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors shadow-xs"

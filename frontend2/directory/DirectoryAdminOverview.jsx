@@ -65,7 +65,7 @@ export default function DirectoryAdminOverview() {
         setSearchResults(results)
         setShowResults(true)
       } catch (err) {
-        console.error('Search failed:', err)
+        if (import.meta.env.DEV) console.error('Search failed:', err)
       } finally {
         setSearching(false)
       }

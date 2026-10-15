@@ -62,6 +62,16 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [syncProfile])
 
+  useEffect(() => {
+    const expireSession = async () => {
+      tokenStore.clear()
+      setUser(null)
+      try { await signOut(firebaseAuth) } catch { /* Local session is already cleared. */ }
+    }
+    window.addEventListener('chemhub:session-expired', expireSession)
+    return () => window.removeEventListener('chemhub:session-expired', expireSession)
+  }, [])
+
   const login = useCallback(async (email, password, keepSignedIn = true) => {
     await setPersistence(
       firebaseAuth,

@@ -34,6 +34,10 @@ export default function PortalLayout({ children, title, subtitle }) {
     window.localStorage.setItem('chemhub-sidebar-collapsed', String(isSidebarCollapsed))
   }, [isSidebarCollapsed])
 
+  useEffect(() => {
+    document.title = `${title} | Chemistry Hub`
+  }, [title])
+
   const isDarkMode = theme === 'dark'
   const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
 

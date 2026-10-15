@@ -122,16 +122,3 @@ export const MOCK_DIRECTORY_PEOPLE = [
   { id: 'p6', name: 'Dr. Robert Brown', role: 'Senior Lecturer, Physical Chemistry', level: 'Office: Room 204, Chemistry Wing', category: 'Lecturers', initials: 'RB', email: 'rbrown@ug.edu.gh' },
   { id: 'p7', name: 'Prof. Margaret Hansen', role: 'Head of Department, Organic Chemistry', level: 'Office: HoD Office, 1st Floor', category: 'Lecturers', initials: 'MH', email: 'mhansen@ug.edu.gh' },
 ]
-
-export const MOCK_ADMIN_USERS = [
-  { id: 'u-1', name: 'Dela Gogah', studentId: 'CHM/2026/001', level: '300', status: 'Active', role: 'student', badgeColor: 'blue' },
-  { id: 'u-2', name: 'Jane Doe', studentId: 'CHM/2023/014', level: '400', status: 'Active', role: 'executive', badgeColor: 'purple' },
-  { id: 'u-3', name: 'John Smith', studentId: 'CHM/2024/032', level: '300', status: 'Pending verification', role: 'student', badgeColor: 'green' },
-  { id: 'u-4', name: 'Dr. Robert Brown', studentId: 'FAC/CHM/009', level: 'Faculty', status: 'Active', role: 'admin', badgeColor: 'purple' },
-]
-
-export const MOCK_ADMIN_ACTIVITY = [
-  { id: 'act-1', text: 'New resource uploaded', desc: 'Analytical Chemistry Lab Manual', time: '1h', dotColor: '#4ca776' },
-  { id: 'act-2', text: 'Event registration opened', desc: 'Advances in Nanotechnology', time: '3h', dotColor: '#4c92bc' },
-  { id: 'act-3', text: 'Announcement published', desc: 'Lab schedule update', time: '1d', dotColor: '#d79a37' },
-]
