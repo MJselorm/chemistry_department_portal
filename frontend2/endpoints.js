@@ -35,6 +35,7 @@ export const ENDPOINTS = {
   academicSearch: '/api/resources/search',
   academicHealth: '/api/resources/health',
   academicDownload: (id) => `/api/resources/${id}/download`,
+  academicDownloadLink: (id) => `/api/resources/${id}/download-link`,
   academicView: (id) => `/api/resources/${id}/view`,
   adminIndexMigratedResources: '/api/resources/storage-index',
   adminUpdateResource: (id) => `/api/resources/${id}`,

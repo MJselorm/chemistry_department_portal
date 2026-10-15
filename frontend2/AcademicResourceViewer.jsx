@@ -14,7 +14,8 @@ import {
 } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
-import { filenameFor, previewMimeType, resolveViewerKind, resourceExtension } from './filePreview'
+import { filenameFor, isSafeDocumentHref, previewMimeType, resolveViewerKind, resourceExtension, sanitizeDocumentLinks } from './filePreview'
+import { downloadAcademicResource } from './resourceDownload'
 import useDialogAccessibility from './useDialogAccessibility'
 
 const TEXT_PREVIEW_LIMIT = 1_000_000
@@ -117,7 +118,7 @@ function DocxPreview({ blob, onError }) {
         renderComments: false,
         renderFooters: true,
         renderHeaders: true,
-      }))
+      }).then(() => active && sanitizeDocumentLinks(container)))
       .catch((error) => {
         if (active) onError(messageFromError(error))
       })
@@ -137,9 +138,12 @@ function PptxPreview({ blob, onError }) {
   useEffect(() => {
     let active = true
     let viewer = null
+    let observer = null
     const container = containerRef.current
     if (!container) return undefined
     container.replaceChildren()
+    observer = new MutationObserver(() => sanitizeDocumentLinks(container))
+    observer.observe(container, { childList: true, subtree: true })
 
     import('pptx-viewer')
       .then(async ({ PPTXViewer }) => {
@@ -150,6 +154,7 @@ function PptxPreview({ blob, onError }) {
           onError: (error) => active && onError(messageFromError(error)),
         })
         await viewer.load(await blob.arrayBuffer())
+        sanitizeDocumentLinks(container)
       })
       .catch((error) => {
         if (active) onError(messageFromError(error))
@@ -157,12 +162,18 @@ function PptxPreview({ blob, onError }) {
 
     return () => {
       active = false
+      observer?.disconnect()
       viewer?.destroy?.()
       container.replaceChildren()
     }
   }, [blob, onError])
 
-  return <div ref={containerRef} className="academic-pptx-viewer h-full overflow-auto bg-surface-secondary p-3 sm:p-6" aria-label="PowerPoint presentation preview" />
+  const blockUnsafeLink = (event) => {
+    const link = event.target.closest?.('a')
+    if (link && !isSafeDocumentHref(link.getAttribute('href'))) event.preventDefault()
+  }
+
+  return <div ref={containerRef} onClickCapture={blockUnsafeLink} className="academic-pptx-viewer h-full overflow-auto bg-surface-secondary p-3 sm:p-6" aria-label="PowerPoint presentation preview" />
 }
 
 export default function AcademicResourceViewer({ resource, onClose }) {
@@ -173,7 +184,6 @@ export default function AcademicResourceViewer({ resource, onClose }) {
   const [pdfFitToWidth, setPdfFitToWidth] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const dialogRef = useDialogAccessibility(onClose)
-  const viewerRef = useRef(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -207,7 +217,7 @@ export default function AcademicResourceViewer({ resource, onClose }) {
   }, [resource, retryKey])
 
   useEffect(() => {
-    const updateFullscreen = () => setIsFullscreen(document.fullscreenElement === viewerRef.current)
+    const updateFullscreen = () => setIsFullscreen(document.fullscreenElement === dialogRef.current)
     document.addEventListener('fullscreenchange', updateFullscreen)
     return () => document.removeEventListener('fullscreenchange', updateFullscreen)
   }, [])
@@ -216,22 +226,14 @@ export default function AcademicResourceViewer({ resource, onClose }) {
   const handleRendererError = useCallback((error) => {
     setDocumentState((current) => ({ ...current, status: 'error', error }))
   }, [])
-  const download = useCallback(() => {
-    if (!documentState.blob) return
-    const url = URL.createObjectURL(documentState.blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filenameFor(resource) || 'document'
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
-  }, [documentState.blob, resource])
+  const download = useCallback(() => downloadAcademicResource(resource).catch((error) => {
+    setDocumentState((current) => ({ ...current, status: 'error', error: messageFromError(error) }))
+  }), [resource])
 
   const toggleFullscreen = useCallback(async () => {
     try {
       if (document.fullscreenElement) await document.exitFullscreen()
-      else await viewerRef.current?.requestFullscreen?.()
+      else await dialogRef.current?.requestFullscreen?.()
     } catch {
       // Fullscreen is optional and can be disabled by an embedded browser.
     }
@@ -284,7 +286,7 @@ export default function AcademicResourceViewer({ resource, onClose }) {
           <button type="button" onClick={toggleFullscreen} className="grid h-8 w-8 place-items-center rounded-lg border border-border text-foreground hover:bg-surface-secondary" title={isFullscreen ? 'Exit full screen' : 'Full screen'} aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}>{isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}</button>
           <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg border border-border text-foreground hover:bg-surface-secondary" title="Close preview" aria-label="Close preview"><X size={16} /></button>
         </header>
-        <div ref={viewerRef} className="min-h-0 flex-1 bg-surface">{renderPreview()}</div>
+        <div className="min-h-0 flex-1 bg-surface">{renderPreview()}</div>
       </section>
     </div>
   )

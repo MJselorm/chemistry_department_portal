@@ -3,6 +3,7 @@ import { BookOpen, Download, ExternalLink, FileText, Filter, FolderOpen, Refresh
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import AcademicResourceViewer from './AcademicResourceViewer'
+import { downloadAcademicResource } from './resourceDownload'
 
 const CATEGORIES = [
   'All Categories',
@@ -79,18 +80,7 @@ export default function AcademicHubPage() {
   const handleDownload = async (resource) => {
     setActionLoadingId(`download-${resource.id}`)
     try {
-      const { blob } = await api.blob(ENDPOINTS.academicDownload(resource.id))
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = resource.file_name || resource.name || 'document'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      // The browser starts the download asynchronously. Revoking immediately
-      // can leave it with an empty or cancelled download, particularly on
-      // mobile browsers.
-      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      await downloadAcademicResource(resource)
     } catch (err) {
       setFeedback({ type: 'error', message: err.message || 'Unable to download the file from Academic Storage.' })
       setTimeout(() => setFeedback(null), 5000)

@@ -39,7 +39,8 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
    To enable Academic Resources, configure `SUPABASE_URL`,
    `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_ACADEMIC_STORAGE_BUCKET`
    (normally `academic-resources`). The service-role key is server-only; the
-   browser accesses files through authenticated API streaming endpoints.
+   browser previews files through authenticated API streaming endpoints and
+   receives 60-second signed Storage URLs for downloads.
 
 3. In `frontend2/.env`, set the `VITE_FIREBASE_*` values from the Firebase web app, set `VITE_API_BASE_URL` if the API is not at `http://127.0.0.1:8000`, and set `VITE_SUPPORT_EMAIL` to a verified institutional support address before production. Firebase web configuration is client-visible, but local environment files remain untracked to keep environments separate.
 
@@ -88,8 +89,9 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
 - `GET /users/me` reads the authenticated profile.
 - `PATCH /users/me` updates the profile's `full_name`.
 - `GET /admin/test` verifies the database-backed admin role check.
-- `/api/resources/*` provides authenticated academic-resource browsing; sync
-  and metadata updates require an admin.
+- `/api/resources/*` provides authenticated academic-resource browsing,
+  preview, and short-lived download links; indexing, uploads, metadata updates,
+  and removal require an admin.
 - `/api/events/*` provides published-event viewing; event administration
   requires an admin.
 - `/api/directory/*` reads require an authenticated profile; writes require the database-backed `admin` role.
@@ -108,7 +110,7 @@ React route guards are user-interface controls only. Admin API routes independen
 
 Authentication uses bearer headers rather than cookies, so the API is not currently dependent on cookie-based CSRF protection. CORS is an additional browser control, not an authorization boundary. Production `CORS_ORIGINS` must contain exact origins and must never use arbitrary shared-hosting wildcards.
 
-The backend connects directly to PostgreSQL and uses parameterized SQLAlchemy queries. Supabase service-role credentials are server-only and are used for directory image storage and authenticated Academic Storage streaming; they must never be exposed as `VITE_*` variables. Directory image objects are returned through a public bucket URL, so administrators must not upload confidential images. Academic resource objects are streamed through FastAPI after Firebase authentication, so the academic bucket should remain private.
+The backend connects directly to PostgreSQL and uses parameterized SQLAlchemy queries. Supabase service-role credentials are server-only and are used for directory image storage, authenticated Academic Storage previews, and short-lived download signing; they must never be exposed as `VITE_*` variables. Directory image objects are returned through a public bucket URL, so administrators must not upload confidential images. Academic resource objects remain in a private bucket. Preview requests require Firebase authentication, and download URLs expire after 60 seconds.
 
 ## Production checklist
 
@@ -120,11 +122,11 @@ Before launch:
 4. Apply Alembic migrations using a restricted deployment identity. Use a least-privilege runtime database role where practical and confirm backups and restoration procedures.
 5. Confirm the `directory-media` bucket's public-read requirement and retention policy. Keep `academic-resources` private and allow the service-role key to read and write it; do not upload sensitive documents through the image endpoint.
 6. Configure platform/WAF rate limits for authentication, password reset, directory search, and uploads. The application does not include a distributed rate limiter.
-7. Replace all mock/placeholder event, academic-resource, notification, and settings integrations or disable those controls before launch.
+7. Replace all remaining mock/placeholder event, notification, and settings integrations or disable those controls before launch.
 8. Review the Privacy Notice and Terms of Use with the responsible university/society representative. Confirm the public contact, retention schedule, age/audience policy, and asset/logo permissions.
 9. Test sign-in, reset, logout, student/admin authorization, CRUD, uploads, CSP, and error handling against the actual production Firebase, database, storage, and domains.
 
-Vercel supplies CSP, clickjacking, referrer, permissions, MIME-sniffing, and HSTS headers from `frontend2/vercel.json`. FastAPI adds API security headers and `Cache-Control: no-store` to authenticated or sensitive responses. Production API documentation is disabled when `APP_ENV=production`.
+Vercel supplies CSP, clickjacking, referrer, permissions, MIME-sniffing, and HSTS headers from `frontend2/vercel.json`. Academic preview streams and signed-link responses use `Cache-Control: private, no-store`.
 
 ## Privacy and legal routes
 
@@ -175,5 +177,7 @@ npm audit --omit=dev
 ```
 
 The repository currently has no frontend lint, typecheck, or automated browser-test scripts. Add those before expanding the frontend's production surface.
+
+Academic Resource preview unit checks are available through `npm run test:preview`.
 
 The current npm audit also reports a moderate React Router advisory whose published fix requires the major React Router 7 migration. This client is browser-rendered rather than SSR, and the only dynamic post-login destination is constrained to a local slash-prefixed path with backslashes and protocol-relative paths rejected. Plan and test the major router upgrade rather than applying it unattended.

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { resolveViewerKind, viewerKind } from '../filePreview.js'
+import { isSafeDocumentHref, resolveViewerKind, viewerKind } from '../filePreview.js'
 
 const resource = (file_name, mime_type = null) => ({ file_name, name: file_name, mime_type })
 
@@ -20,4 +20,12 @@ test('does not interpret HTML or arbitrary binaries as previewable content', () 
 test('recovers a PDF preview from a migrated object with stale metadata', async () => {
   const blob = new Blob(['%PDF-1.7\n'], { type: 'application/octet-stream' })
   assert.equal(await resolveViewerKind(resource('lecture-note', 'application/octet-stream'), blob), 'pdf')
+})
+
+test('allows ordinary document links and rejects executable URL schemes', () => {
+  assert.equal(isSafeDocumentHref('https://example.edu/notes'), true)
+  assert.equal(isSafeDocumentHref('mailto:lecturer@example.edu'), true)
+  assert.equal(isSafeDocumentHref('#section-2'), true)
+  assert.equal(isSafeDocumentHref('javascript:alert(1)'), false)
+  assert.equal(isSafeDocumentHref('data:text/html,<script>alert(1)</script>'), false)
 })

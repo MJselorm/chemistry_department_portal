@@ -5,7 +5,7 @@ import uuid
 from typing import Annotated
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -16,7 +16,13 @@ from ..models import Resource, ResourceFolder, User
 from ..resource_schemas import FolderOut, ResourceOut, ResourcePage, ResourceUpdate, StorageIndexSummary
 from ..security import get_current_user, require_admin
 from ..services.storage_index import StorageResourceIndexer
-from ..storage import MAX_ACADEMIC_FILE_BYTES, academic_file_chunks, upload_academic_object
+from ..storage import (
+    MAX_ACADEMIC_FILE_BYTES,
+    academic_file_chunks,
+    create_academic_signed_url,
+    upload_academic_object,
+    validate_academic_upload,
+)
 
 router = APIRouter(prefix="/api/resources", tags=["Resources"])
 DB = Annotated[Session, Depends(get_db)]
@@ -76,9 +82,7 @@ async def upload_resource(file: Annotated[UploadFile, File(...)], _: Admin, sess
     if len(contents) > MAX_ACADEMIC_FILE_BYTES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Academic files must be 50 MB or smaller.")
     object_path = f"{safe_folder}/admin-file-{uuid.uuid4()}/{filename}"
-    mime_type = file.content_type
-    if not mime_type or mime_type == "application/octet-stream":
-        mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    mime_type = validate_academic_upload(filename, contents)
     upload_academic_object(object_path, contents, mime_type)
     record = Resource(name=name or filename, title=name or filename, file_name=filename, folder_path=safe_folder, mime_type=mime_type, file_size=len(contents), resource_type=mime_type.split("/")[-1], category=category, course_code=course_code, level=level, supabase_bucket=get_settings().supabase_academic_storage_bucket, supabase_storage_path=object_path)
     session.add(record); session.commit(); session.refresh(record)
@@ -124,6 +128,25 @@ def download_resource(resource_id: int, session: DB, _: Authenticated):
     if not resource.download_available:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Downloads are disabled for this resource.")
     return _storage_response(resource, "attachment")
+
+
+@router.get("/{resource_id}/download-link", summary="Create a short-lived Academic Storage download link")
+def resource_download_link(resource_id: int, response: Response, session: DB, _: Authenticated):
+    resource = get_resource(resource_id, session)
+    if not resource.download_available:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Downloads are disabled for this resource.")
+    bucket, object_path = require_storage_location(resource)
+    filename = re.sub(r"[\\/:*?\"<>|\r\n]+", "_", resource.file_name or resource.name).strip(". ") or "resource"
+    response.headers["Cache-Control"] = "private, no-store"
+    return {
+        "url": create_academic_signed_url(
+            bucket,
+            object_path,
+            expires_in=60,
+            download_filename=filename,
+        ),
+        "expires_in": 60,
+    }
 
 
 def _storage_response(resource: Resource, disposition: str) -> StreamingResponse:

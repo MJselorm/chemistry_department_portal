@@ -65,6 +65,29 @@ export function resourceExtension(resource) {
   return filename.includes('.') ? filename.split('.').pop().toLowerCase() : ''
 }
 
+export function isSafeDocumentHref(value) {
+  const href = String(value || '').trim()
+  if (!href || href.startsWith('#')) return true
+  try {
+    const parsed = new URL(href, 'https://chemhub.invalid')
+    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol)
+  } catch {
+    return false
+  }
+}
+
+export function sanitizeDocumentLinks(container) {
+  container?.querySelectorAll('a').forEach((link) => {
+    const href = link.getAttribute('href')
+    if (!isSafeDocumentHref(href)) {
+      link.removeAttribute('href')
+      link.setAttribute('aria-disabled', 'true')
+      return
+    }
+    if (link.target === '_blank') link.rel = 'noopener noreferrer'
+  })
+}
+
 /**
  * Choose a local, safe renderer. Files are fetched through the authenticated
  * backend first; no external document service receives the file or its URL.
