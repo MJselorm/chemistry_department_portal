@@ -40,7 +40,8 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
    `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_ACADEMIC_STORAGE_BUCKET`
    (normally `academic-resources`). The service-role key is server-only; the
    browser previews files through authenticated API streaming endpoints and
-   receives 60-second signed Storage URLs for downloads.
+   receives short-lived signed Storage URLs for downloads and lazy card
+   thumbnails. Keep the bucket private.
 
 3. In `frontend2/.env`, set the `VITE_FIREBASE_*` values from the Firebase web app, set `VITE_API_BASE_URL` if the API is not at `http://127.0.0.1:8000`, and set `VITE_SUPPORT_EMAIL` to a verified institutional support address before production. Firebase web configuration is client-visible, but local environment files remain untracked to keep environments separate.
 
@@ -90,8 +91,8 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
 - `PATCH /users/me` updates the profile's `full_name`.
 - `GET /admin/test` verifies the database-backed admin role check.
 - `/api/resources/*` provides authenticated academic-resource browsing,
-  preview, and short-lived download links; indexing, uploads, metadata updates,
-  and removal require an admin.
+  preview, short-lived thumbnail links, and download links; indexing, uploads,
+  metadata updates, and removal require an admin.
 - `/api/events/*` provides published-event viewing; event administration
   requires an admin.
 - `/api/directory/*` reads require an authenticated profile; writes require the database-backed `admin` role.
@@ -110,7 +111,7 @@ React route guards are user-interface controls only. Admin API routes independen
 
 Authentication uses bearer headers rather than cookies, so the API is not currently dependent on cookie-based CSRF protection. CORS is an additional browser control, not an authorization boundary. Production `CORS_ORIGINS` must contain exact origins and must never use arbitrary shared-hosting wildcards.
 
-The backend connects directly to PostgreSQL and uses parameterized SQLAlchemy queries. Supabase service-role credentials are server-only and are used for directory image storage, authenticated Academic Storage previews, and short-lived download signing; they must never be exposed as `VITE_*` variables. Directory image objects are returned through a public bucket URL, so administrators must not upload confidential images. Academic resource objects remain in a private bucket. Preview requests require Firebase authentication, and download URLs expire after 60 seconds.
+The backend connects directly to PostgreSQL and uses parameterized SQLAlchemy queries. Supabase service-role credentials are server-only and are used for directory image storage, authenticated Academic Storage previews, and short-lived URL signing; they must never be exposed as `VITE_*` variables. Directory image objects are returned through a public bucket URL, so administrators must not upload confidential images. Academic resource objects remain in a private bucket. Preview-link requests require Firebase authentication and expire after five minutes; download links expire after 60 seconds.
 
 ## Production checklist
 
@@ -179,5 +180,12 @@ npm audit --omit=dev
 The repository currently has no frontend lint, typecheck, or automated browser-test scripts. Add those before expanding the frontend's production surface.
 
 Academic Resource preview unit checks are available through `npm run test:preview`.
+
+PDF documents are rendered in-site with React-PDF/PDF.js using a worker bundled
+with the frontend. PDF and image card thumbnails load lazily from authenticated,
+short-lived preview links. PowerPoint cards use a file-type placeholder because
+the repository has no server-generated slide-thumbnail pipeline; PPTX files are
+parsed only after the user opens the full viewer, avoiding automatic full-deck
+downloads for every visible card.
 
 The current npm audit also reports a moderate React Router advisory whose published fix requires the major React Router 7 migration. This client is browser-rendered rather than SSR, and the only dynamic post-login destination is constrained to a local slash-prefixed path with backslashes and protocol-relative paths rejected. Plan and test the major router upgrade rather than applying it unattended.

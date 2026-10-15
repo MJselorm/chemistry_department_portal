@@ -46,7 +46,7 @@ All application routes except `/health` require `Authorization: Bearer <firebase
 - `/api/directory/*`: authenticated reads and admin-only writes/uploads
 - `GET /admin/test`: verify the database-backed admin role
 
-Several event, notification, and settings endpoints in `endpoints.js` remain placeholders. Academic Resources uses the authenticated FastAPI resource API, private Supabase Storage previews, and short-lived signed download links.
+Several event, notification, and settings endpoints in `endpoints.js` remain placeholders. Academic Resources uses the authenticated FastAPI resource API, private Supabase Storage, PDF.js rendering, lazy short-lived thumbnail links, and short-lived signed download links.
 
 ## Production deployment
 

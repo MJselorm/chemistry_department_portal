@@ -149,6 +149,17 @@ def resource_download_link(resource_id: int, response: Response, session: DB, _:
     }
 
 
+@router.get("/{resource_id}/preview-link", summary="Create a short-lived Academic Storage preview link")
+def resource_preview_link(resource_id: int, response: Response, session: DB, _: Authenticated):
+    resource = get_resource(resource_id, session)
+    bucket, object_path = require_storage_location(resource)
+    response.headers["Cache-Control"] = "private, no-store"
+    return {
+        "url": create_academic_signed_url(bucket, object_path, expires_in=300),
+        "expires_in": 300,
+    }
+
+
 def _storage_response(resource: Resource, disposition: str) -> StreamingResponse:
     bucket, object_path = require_storage_location(resource)
     filename = re.sub(r"[\\/:*?\"<>|\r\n]+", "_", resource.file_name or resource.name).strip(". ") or "resource"

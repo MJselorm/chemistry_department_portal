@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { BookOpen, Download, ExternalLink, FileText, Filter, FolderOpen, RefreshCw, Search, Sparkles } from 'lucide-react'
+import { CalendarDays, Download, Eye, Filter, FolderOpen, RefreshCw, Search } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import AcademicResourceViewer from './AcademicResourceViewer'
+import ResourceThumbnail from './ResourceThumbnail'
 import { downloadAcademicResource } from './resourceDownload'
+import { resourceExtension } from './filePreview'
 
 const CATEGORIES = [
   'All Categories',
@@ -21,6 +23,13 @@ const formatBytes = (value) => {
   if (!value || isNaN(value)) return 'Size unknown'
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`
   return `${(value / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const formatDate = (value) => {
+  if (!value) return 'Date unavailable'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Date unavailable'
+  return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
 }
 
 export default function AcademicHubPage() {
@@ -234,15 +243,15 @@ export default function AcademicHubPage() {
         </div>
       )}
 
-      {/* Resources Table / List */}
-      <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+      {/* Resource cards */}
+      <section aria-label="Academic materials">
         {loading ? (
-          <div className="py-16 text-center space-y-3">
+          <div className="rounded-lg border border-border bg-surface py-16 text-center space-y-3">
             <RefreshCw size={24} className="animate-spin text-primary mx-auto" />
-            <p className="text-xs text-muted-foreground">Indexing and loading resources…</p>
+            <p className="text-xs text-muted-foreground">Loading academic materials…</p>
           </div>
         ) : items.length === 0 ? (
-          <div className="py-14 text-center space-y-2">
+          <div className="rounded-lg border border-border bg-surface py-14 text-center space-y-2">
             <FolderOpen size={36} className="text-muted-foreground mx-auto opacity-50" />
             <h3 className="text-sm font-bold text-foreground">No resources found</h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
@@ -252,67 +261,51 @@ export default function AcademicHubPage() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => {
               const isDownloadLoading = actionLoadingId === `download-${item.id}`
+              const extension = resourceExtension(item)
 
               return (
-                <div
+                <article
                   key={item.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5 group hover:bg-[var(--surface-secondary)] px-2 rounded-xl transition-colors"
+                  className="group flex min-h-[330px] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-[border-color,box-shadow] hover:border-[var(--primary-border)] hover:shadow-raised"
                 >
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <div className="w-9 h-9 rounded-xl bg-[var(--primary-soft)] text-primary grid place-items-center shrink-0 mt-0.5">
-                      <FileText size={17} />
+                  <ResourceThumbnail resource={item} />
+                  <div className="flex flex-1 flex-col p-4">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="rounded bg-[var(--primary-soft)] px-2 py-0.5 text-[10px] font-extrabold uppercase text-primary">
+                        {extension || item.resource_type || 'File'}
+                      </span>
+                      <span className="truncate text-[10px] font-semibold text-muted-foreground">{item.category || 'General'}</span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <strong className="block text-xs sm:text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                    <strong className="line-clamp-2 min-h-10 text-sm font-bold leading-5 text-foreground transition-colors group-hover:text-primary">
                         {item.title || item.name}
-                      </strong>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[11px] text-muted-foreground">
-                        {item.course_code && (
-                          <span className="font-bold text-primary">{item.course_code}</span>
-                        )}
-                        {item.label && <span className="font-bold text-primary">· {item.label}</span>}
-                        {item.level && <span>· Level {item.level}</span>}
-                        {item.category && <span>· {item.category}</span>}
-                        {item.semester && <span>· Sem {item.semester}</span>}
-                        <span>· {formatBytes(item.file_size)}</span>
-                      </div>
-                      {item.description && (
-                        <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-                          {item.description}
-                        </p>
-                      )}
+                    </strong>
+                    <p className="mt-1 truncate text-[11px] font-semibold text-primary">
+                      {[item.course_code, item.course_name].filter(Boolean).join(' · ') || 'General Chemistry'}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                      {item.level && <span>Level {item.level}</span>}
+                      {item.semester && <span>Semester {item.semester}</span>}
+                      <span>{formatBytes(item.file_size)}</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                      <CalendarDays size={12} aria-hidden="true" />
+                      <span>{formatDate(item.created_at)}</span>
+                    </div>
+                    <div className="mt-auto flex items-center gap-2 pt-4">
+                      <button type="button" onClick={() => handleView(item)} disabled={isDownloadLoading} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface text-xs font-bold text-foreground transition-colors hover:bg-surface-secondary disabled:opacity-50">
+                        <Eye size={13} aria-hidden="true" />
+                        View
+                      </button>
+                      <button type="button" onClick={() => handleDownload(item)} disabled={isDownloadLoading || item.download_available === false} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-bold text-white transition-colors hover:bg-primary-hover disabled:opacity-50">
+                        {isDownloadLoading ? <RefreshCw size={13} className="animate-spin" aria-hidden="true" /> : <Download size={13} aria-hidden="true" />}
+                        Download
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleView(item)}
-                      disabled={isDownloadLoading}
-                      className="px-3 py-1.5 rounded-xl border border-border bg-surface hover:bg-gray-50 text-xs font-bold inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs"
-                    >
-                      <ExternalLink size={13} />
-                      <span>View</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDownload(item)}
-                      disabled={isDownloadLoading || item.download_available === false}
-                      className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs"
-                    >
-                      {isDownloadLoading ? (
-                        <RefreshCw size={13} className="animate-spin" />
-                      ) : (
-                        <Download size={13} />
-                      )}
-                      <span>Download</span>
-                    </button>
-                  </div>
-                </div>
+                </article>
               )
             })}
           </div>
@@ -320,7 +313,7 @@ export default function AcademicHubPage() {
 
         {/* Pagination */}
         {data.total_pages > 1 && (
-          <div className="flex items-center justify-between pt-4 border-t border-border mt-3">
+          <div className="flex items-center justify-between border-t border-border pt-4 mt-5">
             <span className="text-xs text-muted-foreground">
               Page {data.page || page} of {data.total_pages}
             </span>

@@ -145,10 +145,6 @@
     box-shadow: var(--shadow-raised);
   }
 
-  .academic-pptx-viewer > * {
-    min-height: 100%;
-  }
-
   .chem-hero {
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 46%),
