@@ -27,6 +27,12 @@ function resolveBaseUrl() {
 
 const BASE_URL = resolveBaseUrl()
 let accessToken = null
+// Render's free instances can need around half a minute to wake after idle.
+// Keep local failures quick, but give the hosted portal enough time to retry
+// through that normal cold-start window before showing a connection error.
+const RETRY_DELAYS_MS = import.meta.env.PROD
+  ? [2000, 4000, 8000, 16000]
+  : [500]
 
 export const tokenStore = {
   get: () => accessToken,
@@ -71,7 +77,7 @@ function messageFromDetail(payload, fallback) {
   return fallback
 }
 
-async function request(path, { method = 'GET', body, form, auth = true, signal, retryCount = 1 } = {}) {
+async function request(path, { method = 'GET', body, form, auth = true, signal, retryCount = RETRY_DELAYS_MS.length } = {}) {
   const headers = {}
   if (auth) {
     const token = tokenStore.get()
@@ -94,8 +100,10 @@ async function request(path, { method = 'GET', body, form, auth = true, signal, 
     res = await fetch(targetUrl, { method, headers, body: payload, signal, credentials: 'omit' })
   } catch (err) {
     if (retryCount > 0 && (err.name === 'TypeError' || err.message?.includes('fetch'))) {
-      // Server may be spinning up from cold sleep (e.g. Render free tier). Wait 2s and retry once.
-      await new Promise((r) => setTimeout(r, 2000))
+      const retryIndex = RETRY_DELAYS_MS.length - retryCount
+      const retryDelay = RETRY_DELAYS_MS[retryIndex] ?? RETRY_DELAYS_MS.at(-1)
+      // Server may be spinning up from cold sleep (e.g. Render free tier).
+      await new Promise((r) => setTimeout(r, retryDelay))
       return request(path, { method, body, form, auth, signal, retryCount: retryCount - 1 })
     }
     if (err.name === 'TypeError' || err.message?.includes('fetch')) {
