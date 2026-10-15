@@ -22,6 +22,13 @@ test('recovers a PDF preview from a migrated object with stale metadata', async 
   assert.equal(await resolveViewerKind(resource('lecture-note', 'application/octet-stream'), blob), 'pdf')
 })
 
+test('uses a PPTX filename before stale PDF response metadata', () => {
+  assert.equal(
+    viewerKind(resource('lecture-slides.pptx'), 'application/pdf'),
+    'pptx',
+  )
+})
+
 test('allows ordinary document links and rejects executable URL schemes', () => {
   assert.equal(isSafeDocumentHref('https://example.edu/notes'), true)
   assert.equal(isSafeDocumentHref('mailto:lecturer@example.edu'), true)

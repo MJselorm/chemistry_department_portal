@@ -182,10 +182,11 @@ The repository currently has no frontend lint, typecheck, or automated browser-t
 Academic Resource preview unit checks are available through `npm run test:preview`.
 
 PDF documents are rendered in-site with React-PDF/PDF.js using a worker bundled
-with the frontend. PDF and image card thumbnails load lazily from authenticated,
-short-lived preview links. PowerPoint cards use a file-type placeholder because
-the repository has no server-generated slide-thumbnail pipeline; PPTX files are
-parsed only after the user opens the full viewer, avoiding automatic full-deck
-downloads for every visible card.
+with the frontend. PDF, image, and PPTX card thumbnails load lazily from
+authenticated, short-lived preview links. PPTX first slides are rendered locally
+and cached in bounded browser memory for the active session; private document
+content is not persisted in browser storage. Legacy binary `.ppt` files remain
+download-only because the current renderer supports Open XML `.pptx` files and
+the deployment does not include a server-side Office conversion runtime.
 
 The current npm audit also reports a moderate React Router advisory whose published fix requires the major React Router 7 migration. This client is browser-rendered rather than SSR, and the only dynamic post-login destination is constrained to a local slash-prefixed path with backslashes and protocol-relative paths rejected. Plan and test the major router upgrade rather than applying it unattended.

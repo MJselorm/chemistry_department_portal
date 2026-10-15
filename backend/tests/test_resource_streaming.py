@@ -39,6 +39,24 @@ def test_storage_response_prefers_a_pdf_extension_over_stale_metadata(monkeypatc
     assert response.media_type == "application/pdf"
 
 
+def test_storage_response_prefers_a_pptx_extension_over_stale_metadata(monkeypatch):
+    monkeypatch.setattr(resources, "academic_file_chunks", lambda *_: iter([b"PK\x03\x04"]))
+    resource = Resource(
+        name="CHEM 151 slides.pptx",
+        file_name="CHEM 151 slides.pptx",
+        folder_path="CHEM 100/SEM 1",
+        supabase_bucket="academic",
+        supabase_storage_path="CHEM 100/SEM 1/CHEM 151 slides.pptx",
+        mime_type="application/pdf",
+        file_size=999_999,
+    )
+
+    response = resources._storage_response(resource, "inline")
+
+    assert response.media_type == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    assert "content-length" not in response.headers
+
+
 def test_storage_response_rejects_a_resource_without_a_storage_location():
     resource = Resource(name="missing.pdf", folder_path="CHEM 100/SEM 1")
 

@@ -2,6 +2,7 @@ import math
 import mimetypes
 import re
 import uuid
+from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote
 
@@ -17,6 +18,7 @@ from ..resource_schemas import FolderOut, ResourceOut, ResourcePage, ResourceUpd
 from ..security import get_current_user, require_admin
 from ..services.storage_index import StorageResourceIndexer
 from ..storage import (
+    ACADEMIC_MIME_TYPES,
     MAX_ACADEMIC_FILE_BYTES,
     academic_file_chunks,
     create_academic_signed_url,
@@ -165,14 +167,10 @@ def _storage_response(resource: Resource, disposition: str) -> StreamingResponse
     filename = re.sub(r"[\\/:*?\"<>|\r\n]+", "_", resource.file_name or resource.name).strip(". ") or "resource"
     mime_type = resource.mime_type
     guessed_mime_type = mimetypes.guess_type(filename)[0]
-    # Prefer the filename for browser-native formats when a migrated record
-    # still holds stale or generic repository metadata.
-    if guessed_mime_type and (
-        not mime_type
-        or mime_type == "application/octet-stream"
-        or guessed_mime_type == "application/pdf"
-        or guessed_mime_type.startswith("image/")
-    ):
+    # Indexed Storage metadata can be stale after an object is moved or
+    # replaced. A recognized filename is the stable source for every format
+    # accepted by the upload validator, including Office documents.
+    if guessed_mime_type and Path(filename).suffix.lower() in ACADEMIC_MIME_TYPES:
         mime_type = guessed_mime_type
     if not mime_type:
         mime_type = "application/octet-stream"
@@ -180,8 +178,6 @@ def _storage_response(resource: Resource, disposition: str) -> StreamingResponse
         "Cache-Control": "private, no-store",
         "Content-Disposition": f"{disposition}; filename*=UTF-8''{quote(filename, safe='')}",
     }
-    if resource.file_size is not None:
-        headers["Content-Length"] = str(resource.file_size)
     return StreamingResponse(academic_file_chunks(bucket, object_path), media_type=mime_type, headers=headers)
 
 

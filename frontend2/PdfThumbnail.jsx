@@ -2,25 +2,25 @@ import { useEffect, useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { RefreshCw } from 'lucide-react'
-import { getAcademicPreviewLink } from './resourcePreviewLinks'
+import { fetchAcademicPreviewBlob } from './resourcePreviewLinks'
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
 export default function PdfThumbnail({ resource, onUnavailable }) {
-  const [url, setUrl] = useState('')
+  const [blob, setBlob] = useState(null)
 
   useEffect(() => {
     let active = true
-    getAcademicPreviewLink(resource.id)
-      .then((previewUrl) => active && setUrl(previewUrl))
+    fetchAcademicPreviewBlob(resource.id)
+      .then((previewBlob) => active && setBlob(previewBlob))
       .catch(() => active && onUnavailable())
     return () => { active = false }
   }, [onUnavailable, resource.id])
 
-  if (!url) return <RefreshCw size={18} className="animate-spin text-primary" aria-label="Loading document thumbnail" />
+  if (!blob) return <RefreshCw size={18} className="animate-spin text-primary" aria-label="Loading document thumbnail" />
 
   return (
-    <Document file={url} loading={<RefreshCw size={18} className="animate-spin text-primary" />} onLoadError={onUnavailable}>
+    <Document file={blob} loading={<RefreshCw size={18} className="animate-spin text-primary" />} onLoadError={onUnavailable}>
       <Page
         pageNumber={1}
         height={142}

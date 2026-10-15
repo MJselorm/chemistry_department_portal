@@ -93,12 +93,15 @@ export function sanitizeDocumentLinks(container) {
  * backend first; no external document service receives the file or its URL.
  */
 export function viewerKind(resource, responseContentType = '') {
-  const type = previewMimeType(resource, responseContentType)
   const extension = resourceExtension(resource)
+  const type = previewMimeType(resource, responseContentType)
 
-  if (type === 'application/pdf') return 'pdf'
+  // The indexed object's filename is more reliable than stale Storage MIME
+  // metadata. Resolve structured document extensions before response types.
+  if (extension === 'pdf') return 'pdf'
   if (extension === 'docx' || type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx'
   if (extension === 'pptx' || type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx'
+  if (type === 'application/pdf') return 'pdf'
   if (type.startsWith('image/') && type !== 'image/svg+xml') return 'image'
 
   // HTML is intentionally excluded: resources are not trusted application UI

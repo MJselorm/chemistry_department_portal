@@ -28,3 +28,15 @@ export async function getAcademicPreviewLink(resourceId) {
   previewLinkCache.set(resourceId, { promise, expiresAt: 0 })
   return promise
 }
+
+export async function fetchAcademicPreviewBlob(resourceId) {
+  try {
+    const url = await getAcademicPreviewLink(resourceId)
+    const response = await fetch(url, { credentials: 'omit' })
+    if (!response.ok) throw new Error('The preview link could not be loaded.')
+    return await response.blob()
+  } catch {
+    const { blob } = await api.blob(ENDPOINTS.academicView(resourceId))
+    return blob
+  }
+}

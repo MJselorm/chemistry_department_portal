@@ -271,7 +271,7 @@ export default function AcademicHubPage() {
                   key={item.id}
                   className="group flex min-h-[330px] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-[border-color,box-shadow] hover:border-[var(--primary-border)] hover:shadow-raised"
                 >
-                  <ResourceThumbnail resource={item} />
+                  <ResourceThumbnail resource={item} onOpen={() => handleView(item)} />
                   <div className="flex flex-1 flex-col p-4">
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <span className="rounded bg-[var(--primary-soft)] px-2 py-0.5 text-[10px] font-extrabold uppercase text-primary">
