@@ -32,18 +32,6 @@
   ],
   "rewrites": [
     {
-      "source": "/api/directory/:match*",
-      "destination": "https://chemistry-department-portal.onrender.com/api/directory/:match*"
-    },
-    {
-      "source": "/api/resources/:match*",
-      "destination": "https://chemistry-department-portal.onrender.com/api/resources/:match*"
-    },
-    {
-      "source": "/api/events/:match*",
-      "destination": "https://chemistry-department-portal.onrender.com/api/events/:match*"
-    },
-    {
       "source": "/api/:match*",
       "destination": "https://chemistry-department-portal.onrender.com/:match*"
     },
