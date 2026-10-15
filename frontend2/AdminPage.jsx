@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
-import { canPreviewInBrowser, previewBlob } from './filePreview'
+import AcademicResourceViewer from './AcademicResourceViewer'
 import { useAuth } from './AuthContext'
 import { MOCK_ADMIN_USERS, MOCK_ADMIN_ACTIVITY } from './mocks'
 
@@ -102,6 +102,7 @@ export default function AdminPage() {
   const [includeInactive, setIncludeInactive] = useState(false)
   const [indexingStorage, setIndexingStorage] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState(null)
+  const [previewResource, setPreviewResource] = useState(null)
 
   // Resource Edit Modal state
   const [editingResource, setEditingResource] = useState(null)
@@ -344,31 +345,7 @@ export default function AdminPage() {
   }
 
   // View File
-  const handleViewResource = async (resource) => {
-    setActionLoadingId(`view-${resource.id}`)
-    try {
-      const previewWindow = window.open('', '_blank')
-      if (!previewWindow) {
-        showFeedback('Your browser blocked the preview tab. Allow pop-ups for this site and try again.')
-        return
-      }
-      previewWindow.opener = null
-
-      const { blob, contentType } = await api.blob(ENDPOINTS.academicView(resource.id))
-      if (!canPreviewInBrowser(resource, contentType)) {
-        previewWindow.close()
-        showFeedback('This file type cannot be previewed in the browser. Please use Download to save it with its original filename.')
-        return
-      }
-      const url = URL.createObjectURL(previewBlob(blob, resource, contentType))
-      previewWindow.location.replace(url)
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
-    } catch (err) {
-      showFeedback(err.message || 'Unable to open file preview from Academic Storage.')
-    } finally {
-      setActionLoadingId(null)
-    }
-  }
+  const handleViewResource = (resource) => setPreviewResource(resource)
 
   // Download File
   const handleDownloadResource = async (resource) => {
@@ -1012,7 +989,6 @@ export default function AdminPage() {
                     {adminResources.map((item) => {
                       const isDeleting = actionLoadingId === `delete-${item.id}`
                       const isRestoring = actionLoadingId === `restore-${item.id}`
-                      const isViewing = actionLoadingId === `view-${item.id}`
                       const isDownloading = actionLoadingId === `download-${item.id}`
 
                       return (
@@ -1085,11 +1061,10 @@ export default function AdminPage() {
                               <button
                                 type="button"
                                 onClick={() => handleViewResource(item)}
-                                disabled={isViewing}
                                 className="p-1.5 rounded-lg border border-border bg-surface hover:bg-gray-50 text-foreground transition-colors"
                                 title="View preview"
                               >
-                                {isViewing ? <RefreshCw size={13} className="animate-spin" /> : <Eye size={13} />}
+                                <Eye size={13} />
                               </button>
 
                               {/* Download */}
@@ -1844,6 +1819,7 @@ export default function AdminPage() {
           </div>
         </section>
       )}
+      {previewResource && <AcademicResourceViewer resource={previewResource} onClose={() => setPreviewResource(null)} />}
     </div>
   )
 }

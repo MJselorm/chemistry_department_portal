@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { BookOpen, Download, ExternalLink, FileText, Filter, FolderOpen, RefreshCw, Search, Sparkles } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
-import { canPreviewInBrowser, previewBlob } from './filePreview'
+import AcademicResourceViewer from './AcademicResourceViewer'
 
 const CATEGORIES = [
   'All Categories',
@@ -35,6 +35,7 @@ export default function AcademicHubPage() {
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState(null)
   const [feedback, setFeedback] = useState(null)
+  const [previewResource, setPreviewResource] = useState(null)
 
   const loadResources = useCallback(async () => {
     setLoading(true)
@@ -98,37 +99,7 @@ export default function AcademicHubPage() {
     }
   }
 
-  const handleView = async (resource) => {
-    setActionLoadingId(`view-${resource.id}`)
-    try {
-      // Open the tab while this click is still a trusted browser gesture.
-      // Opening it after awaiting the authenticated fetch is blocked as a
-      // popup by most browsers.
-      const previewWindow = window.open('', '_blank')
-      if (!previewWindow) {
-        setFeedback({ type: 'error', message: 'Your browser blocked the preview tab. Allow pop-ups for this site and try again.' })
-        setTimeout(() => setFeedback(null), 5000)
-        return
-      }
-      previewWindow.opener = null
-
-      const { blob, contentType } = await api.blob(ENDPOINTS.academicView(resource.id))
-      if (!canPreviewInBrowser(resource, contentType)) {
-        previewWindow.close()
-        setFeedback({ type: 'error', message: 'This file type cannot be previewed in the browser. Please use Download to save it with its original filename.' })
-        setTimeout(() => setFeedback(null), 5000)
-        return
-      }
-      const url = URL.createObjectURL(previewBlob(blob, resource, contentType))
-      previewWindow.location.replace(url)
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
-    } catch (err) {
-      setFeedback({ type: 'error', message: err.message || 'Unable to open file preview from Academic Storage.' })
-      setTimeout(() => setFeedback(null), 5000)
-    } finally {
-      setActionLoadingId(null)
-    }
-  }
+  const handleView = (resource) => setPreviewResource(resource)
 
   return (
     <div className="space-y-6">
@@ -293,7 +264,6 @@ export default function AcademicHubPage() {
         ) : (
           <div className="divide-y divide-border">
             {items.map((item) => {
-              const isViewLoading = actionLoadingId === `view-${item.id}`
               const isDownloadLoading = actionLoadingId === `download-${item.id}`
 
               return (
@@ -331,21 +301,17 @@ export default function AcademicHubPage() {
                     <button
                       type="button"
                       onClick={() => handleView(item)}
-                      disabled={isViewLoading || isDownloadLoading}
+                      disabled={isDownloadLoading}
                       className="px-3 py-1.5 rounded-xl border border-border bg-surface hover:bg-gray-50 text-xs font-bold inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs"
                     >
-                      {isViewLoading ? (
-                        <RefreshCw size={13} className="animate-spin text-primary" />
-                      ) : (
-                        <ExternalLink size={13} />
-                      )}
+                      <ExternalLink size={13} />
                       <span>View</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleDownload(item)}
-                      disabled={isViewLoading || isDownloadLoading || item.download_available === false}
+                      disabled={isDownloadLoading || item.download_available === false}
                       className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs"
                     >
                       {isDownloadLoading ? (
@@ -387,6 +353,7 @@ export default function AcademicHubPage() {
           </div>
         )}
       </section>
+      {previewResource && <AcademicResourceViewer resource={previewResource} onClose={() => setPreviewResource(null)} />}
     </div>
   )
 }

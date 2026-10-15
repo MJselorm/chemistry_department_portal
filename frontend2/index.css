@@ -133,6 +133,22 @@
 }
 
 @layer components {
+  .academic-docx-viewer .docx-wrapper {
+    background: transparent;
+    padding: 0;
+  }
+
+  .academic-docx-viewer .docx {
+    margin: 0 auto 1.5rem;
+    max-width: 100%;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-raised);
+  }
+
+  .academic-pptx-viewer > * {
+    min-height: 100%;
+  }
+
   .chem-hero {
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 46%),

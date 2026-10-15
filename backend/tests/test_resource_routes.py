@@ -49,3 +49,5 @@ def test_authenticated_student_can_stream_a_storage_resource(monkeypatch):
     assert response.content == b"%PDF"
     assert response.headers["content-type"].startswith("application/pdf")
     assert response.headers["cache-control"] == "private, no-store"
+    assert response.headers["content-disposition"].startswith("inline;")
+    assert "CHEM%20101%20notes.pdf" in response.headers["content-disposition"]

@@ -8,7 +8,9 @@ const PREVIEWABLE_TYPES = new Set([
 ])
 
 const MIME_TYPES_BY_EXTENSION = {
+  bmp: 'image/bmp',
   csv: 'text/csv',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   gif: 'image/gif',
   htm: 'text/html',
   html: 'text/html',
@@ -17,13 +19,14 @@ const MIME_TYPES_BY_EXTENSION = {
   json: 'application/json',
   pdf: 'application/pdf',
   png: 'image/png',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   svg: 'image/svg+xml',
   txt: 'text/plain',
   webp: 'image/webp',
   xml: 'application/xml',
 }
 
-function filenameFor(resource) {
+export function filenameFor(resource) {
   return resource.file_name || resource.name || ''
 }
 
@@ -55,4 +58,49 @@ export function canPreviewInBrowser(resource, responseContentType = '') {
 
 export function previewBlob(blob, resource, responseContentType = '') {
   return new Blob([blob], { type: previewMimeType(resource, responseContentType) })
+}
+
+export function resourceExtension(resource) {
+  const filename = filenameFor(resource)
+  return filename.includes('.') ? filename.split('.').pop().toLowerCase() : ''
+}
+
+/**
+ * Choose a local, safe renderer. Files are fetched through the authenticated
+ * backend first; no external document service receives the file or its URL.
+ */
+export function viewerKind(resource, responseContentType = '') {
+  const type = previewMimeType(resource, responseContentType)
+  const extension = resourceExtension(resource)
+
+  if (type === 'application/pdf') return 'pdf'
+  if (extension === 'docx' || type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx'
+  if (extension === 'pptx' || type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx'
+  if (type.startsWith('image/') && type !== 'image/svg+xml') return 'image'
+
+  // HTML is intentionally excluded: resources are not trusted application UI
+  // and must never be interpreted as executable markup inside the portal.
+  if (
+    type === 'text/plain' ||
+    type === 'text/csv' ||
+    type === 'application/json' ||
+    type === 'application/xml' ||
+    extension === 'log' ||
+    extension === 'md'
+  ) return 'text'
+
+  return 'unsupported'
+}
+
+export async function resolveViewerKind(resource, blob, responseContentType = '') {
+  const declaredKind = viewerKind(resource, responseContentType)
+  if (declaredKind !== 'unsupported') return declaredKind
+
+  // Some migrated records have no usable filename or MIME metadata. Recover
+  // PDFs from their standard file signature without pretending arbitrary
+  // binary files are browser-previewable.
+  const header = new Uint8Array(await blob.slice(0, 5).arrayBuffer())
+  if (String.fromCharCode(...header) === '%PDF-') return 'pdf'
+
+  return 'unsupported'
 }
