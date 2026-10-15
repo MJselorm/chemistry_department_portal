@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
+import { canPreviewInBrowser, previewBlob } from './filePreview'
 import { useAuth } from './AuthContext'
 import { MOCK_ADMIN_USERS, MOCK_ADMIN_ACTIVITY } from './mocks'
 
@@ -99,7 +100,6 @@ export default function AdminPage() {
   const [resourceData, setResourceData] = useState({ total: 0, total_pages: 0 })
   const [showUploadResource, setShowUploadResource] = useState(false)
   const [includeInactive, setIncludeInactive] = useState(false)
-  const [syncingDrive, setSyncingDrive] = useState(false)
   const [indexingStorage, setIndexingStorage] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState(null)
 
@@ -229,28 +229,12 @@ export default function AdminPage() {
     }
   }
 
-  // Google Drive Sync
-  const handleSyncDrive = async () => {
-    setSyncingDrive(true)
-    try {
-      const result = await api.post(ENDPOINTS.adminSyncResources, {})
-      showFeedback(
-        `Google Drive sync complete: ${result.files_scanned || 0} scanned, ${result.new_resources || 0} new, ${result.updated_resources || 0} updated.`
-      )
-      fetchAdminResources()
-    } catch (err) {
-      showFeedback(err.message || 'Unable to synchronize Google Drive.')
-    } finally {
-      setSyncingDrive(false)
-    }
-  }
-
   const handleIndexMigratedStorage = async () => {
     setIndexingStorage(true)
     try {
       const result = await api.post(ENDPOINTS.adminIndexMigratedResources, {})
       showFeedback(
-        `Migrated storage indexed: ${result.objects_indexed || 0} files scanned, ${result.new_resources || 0} new, ${result.updated_resources || 0} updated.`
+        `Academic Storage indexed: ${result.objects_indexed || 0} files scanned, ${result.new_resources || 0} new, ${result.updated_resources || 0} updated.`
       )
       fetchAdminResources()
     } catch (err) {
@@ -363,16 +347,24 @@ export default function AdminPage() {
   const handleViewResource = async (resource) => {
     setActionLoadingId(`view-${resource.id}`)
     try {
-      const { blob } = await api.blob(ENDPOINTS.academicView(resource.id))
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank', 'noopener,noreferrer')
+      const previewWindow = window.open('', '_blank')
+      if (!previewWindow) {
+        showFeedback('Your browser blocked the preview tab. Allow pop-ups for this site and try again.')
+        return
+      }
+      previewWindow.opener = null
+
+      const { blob, contentType } = await api.blob(ENDPOINTS.academicView(resource.id))
+      if (!canPreviewInBrowser(resource, contentType)) {
+        previewWindow.close()
+        showFeedback('This file type cannot be previewed in the browser. Please use Download to save it with its original filename.')
+        return
+      }
+      const url = URL.createObjectURL(previewBlob(blob, resource, contentType))
+      previewWindow.location.replace(url)
       setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch (err) {
-      if (resource.web_view_link) {
-        window.open(resource.web_view_link, '_blank', 'noopener,noreferrer')
-      } else {
-        showFeedback(err.message || 'Unable to open file preview.')
-      }
+      showFeedback(err.message || 'Unable to open file preview from Academic Storage.')
     } finally {
       setActionLoadingId(null)
     }
@@ -390,7 +382,7 @@ export default function AdminPage() {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (err) {
       showFeedback(err.message || 'Unable to download file.')
     } finally {
@@ -695,7 +687,7 @@ export default function AdminPage() {
       {/* ── Tab: ACADEMIC RESOURCES (Full Admin Management) ──────── */}
       {activeTab === 'resources' && (
         <div className="space-y-6">
-          {/* Header Card with Sync and Upload Actions */}
+          {/* Header Card with Storage indexing and upload actions */}
           <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">
@@ -709,24 +701,13 @@ export default function AdminPage() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={handleSyncDrive}
-                disabled={syncingDrive}
-                className="px-3.5 py-2.5 rounded-xl border border-border bg-surface hover:bg-gray-50 text-foreground text-xs font-bold inline-flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50"
-                title="Sync files from connected Google Drive root folder"
-              >
-                <RefreshCw size={13} className={syncingDrive ? 'animate-spin text-primary' : ''} />
-                <span>{syncingDrive ? 'Syncing Drive…' : 'Sync Google Drive'}</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={handleIndexMigratedStorage}
-                disabled={indexingStorage || syncingDrive}
+                disabled={indexingStorage}
                 className="px-3.5 py-2.5 rounded-xl border border-border bg-surface hover:bg-gray-50 text-foreground text-xs font-bold inline-flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50"
                 title="Index files already migrated to Academic Storage"
               >
                 <RefreshCw size={13} className={indexingStorage ? 'animate-spin text-primary' : ''} />
-                <span>{indexingStorage ? 'Indexing Storage…' : 'Index Migrated Storage'}</span>
+                <span>{indexingStorage ? 'Indexing Storage…' : 'Refresh Academic Storage Index'}</span>
               </button>
 
               <button
@@ -1011,7 +992,7 @@ export default function AdminPage() {
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                   {resourceSearch || resourceCategoryFilter !== 'All' || resourceLevelFilter !== 'All'
                     ? 'No materials matched your search or filters. Try adjusting your query.'
-                    : 'Click "+ Upload Resource" or "Sync Google Drive" to add materials.'}
+                    : 'Click "+ Upload Resource" or refresh the Academic Storage index to add materials.'}
                 </p>
               </div>
             ) : (

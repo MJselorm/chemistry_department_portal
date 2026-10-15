@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { BookOpen, Download, ExternalLink, FileText, Filter, FolderOpen, RefreshCw, Search, Sparkles } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
+import { canPreviewInBrowser, previewBlob } from './filePreview'
 
 const CATEGORIES = [
   'All Categories',
@@ -85,9 +86,12 @@ export default function AcademicHubPage() {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      // The browser starts the download asynchronously. Revoking immediately
+      // can leave it with an empty or cancelled download, particularly on
+      // mobile browsers.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (err) {
-      setFeedback({ type: 'error', message: err.message || 'Unable to stream file from Google Drive.' })
+      setFeedback({ type: 'error', message: err.message || 'Unable to download the file from Academic Storage.' })
       setTimeout(() => setFeedback(null), 5000)
     } finally {
       setActionLoadingId(null)
@@ -95,21 +99,32 @@ export default function AcademicHubPage() {
   }
 
   const handleView = async (resource) => {
-    // If resource has a direct web_view_link, or use streaming proxy
     setActionLoadingId(`view-${resource.id}`)
     try {
+      // Open the tab while this click is still a trusted browser gesture.
+      // Opening it after awaiting the authenticated fetch is blocked as a
+      // popup by most browsers.
+      const previewWindow = window.open('', '_blank')
+      if (!previewWindow) {
+        setFeedback({ type: 'error', message: 'Your browser blocked the preview tab. Allow pop-ups for this site and try again.' })
+        setTimeout(() => setFeedback(null), 5000)
+        return
+      }
+      previewWindow.opener = null
+
       const { blob, contentType } = await api.blob(ENDPOINTS.academicView(resource.id))
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank', 'noopener,noreferrer')
+      if (!canPreviewInBrowser(resource, contentType)) {
+        previewWindow.close()
+        setFeedback({ type: 'error', message: 'This file type cannot be previewed in the browser. Please use Download to save it with its original filename.' })
+        setTimeout(() => setFeedback(null), 5000)
+        return
+      }
+      const url = URL.createObjectURL(previewBlob(blob, resource, contentType))
+      previewWindow.location.replace(url)
       setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch (err) {
-      // Fallback to web_view_link if direct stream fails
-      if (resource.web_view_link) {
-        window.open(resource.web_view_link, '_blank', 'noopener,noreferrer')
-      } else {
-        setFeedback({ type: 'error', message: err.message || 'Unable to open file preview.' })
-        setTimeout(() => setFeedback(null), 5000)
-      }
+      setFeedback({ type: 'error', message: err.message || 'Unable to open file preview from Academic Storage.' })
+      setTimeout(() => setFeedback(null), 5000)
     } finally {
       setActionLoadingId(null)
     }
@@ -214,7 +229,7 @@ export default function AcademicHubPage() {
             >
               <option value="name">Name (A-Z)</option>
               <option value="created_at">Date Added</option>
-              <option value="last_modified_drive">Google Drive Modified</option>
+              <option value="updated_at">Last Updated</option>
             </select>
           </div>
 
@@ -272,7 +287,7 @@ export default function AcademicHubPage() {
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
               {search || selectedCategory !== 'All Categories' || selectedLevel !== 'All Levels' || selectedSemester !== 'All Semesters'
                 ? 'No documents matched your active search or filters. Try adjusting your selections.'
-                : 'The department repository does not have indexed files matching this category yet. An administrator can sync the repository from the Admin Console.'}
+                : 'The department repository does not have indexed files matching this category yet. An administrator can refresh the Academic Storage index from the Admin Console.'}
             </p>
           </div>
         ) : (

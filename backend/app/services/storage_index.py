@@ -1,6 +1,5 @@
 """Index already-migrated academic objects from the private Storage bucket."""
 from datetime import datetime, timezone
-import hashlib
 import json
 import mimetypes
 import re
@@ -11,7 +10,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
-from ..models import Resource
+from ..models import Resource, ResourceFolder
 
 
 def academic_metadata_from_path(object_path: str) -> tuple[str | None, str | None]:
@@ -99,8 +98,8 @@ class StorageResourceIndexer:
         except (HTTPError, URLError) as exc:
             raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Could not list Academic Storage objects.") from exc
 
-    def object_paths(self) -> list[str]:
-        paths: list[str] = []
+    def object_entries(self) -> list[tuple[str, dict]]:
+        entries_with_paths: list[tuple[str, dict]] = []
 
         def walk(prefix: str = ""):
             offset = 0
@@ -113,7 +112,7 @@ class StorageResourceIndexer:
                     path = f"{prefix.rstrip('/')}/{name}" if prefix else name
                     # Storage returns directory entries without an object id.
                     if entry.get("id"):
-                        paths.append(path)
+                        entries_with_paths.append((path, entry))
                     else:
                         walk(path)
                 if len(entries) < 1000:
@@ -121,13 +120,47 @@ class StorageResourceIndexer:
                 offset += len(entries)
 
         walk()
-        return paths
+        return entries_with_paths
+
+    def object_paths(self) -> list[str]:
+        return [path for path, _ in self.object_entries()]
 
     def index(self, session: Session) -> dict:
         now = datetime.now(timezone.utc)
-        paths = self.object_paths()
-        seen, created, updated = set(paths), 0, 0
-        for object_path in paths:
+        entries = self.object_entries()
+        seen, created, updated = {path for path, _ in entries}, 0, 0
+        folder_paths = {
+            "/".join(object_path.split("/")[:depth])
+            for object_path in seen
+            for depth in range(1, len(object_path.split("/")))
+        }
+
+        for folder_path in sorted(folder_paths, key=lambda value: (value.count("/"), value)):
+            parent_path = folder_path.rpartition("/")[0] or None
+            folder = (
+                session.query(ResourceFolder)
+                .filter(ResourceFolder.folder_path == folder_path)
+                .order_by(ResourceFolder.id)
+                .first()
+            )
+            if folder is None:
+                folder = ResourceFolder(
+                    name=folder_path.rsplit("/", 1)[-1],
+                    folder_path=folder_path,
+                    parent_folder_path=parent_path,
+                    level=academic_metadata_from_path(f"{folder_path}/placeholder")[0],
+                    is_active=True,
+                    last_synced_at=now,
+                )
+                session.add(folder)
+            else:
+                folder.name = folder_path.rsplit("/", 1)[-1]
+                folder.parent_folder_path = parent_path
+                folder.level = academic_metadata_from_path(f"{folder_path}/placeholder")[0] or folder.level
+                folder.is_active = True
+                folder.last_synced_at = now
+
+        for object_path, entry in entries:
             record = session.query(Resource).filter_by(
                 supabase_bucket=self.bucket, supabase_storage_path=object_path
             ).one_or_none()
@@ -137,17 +170,22 @@ class StorageResourceIndexer:
             label = academic_label(level, semester)
             filename = object_path.rsplit("/", 1)[-1]
             folder_path = object_path.rsplit("/", 1)[0] if "/" in object_path else ""
-            mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+            metadata = entry.get("metadata") or {}
+            mime_type = metadata.get("mimetype") or metadata.get("content_type") or mimetypes.guess_type(filename)[0] or "application/octet-stream"
+            raw_size = metadata.get("size", entry.get("size"))
+            try:
+                file_size = int(raw_size) if raw_size is not None else None
+            except (TypeError, ValueError):
+                file_size = None
             if record is None:
-                stable_id = hashlib.sha256(object_path.encode()).hexdigest()
                 record = Resource(
                     name=filename,
                     title=filename,
                     file_name=filename,
                     folder_path=folder_path,
-                    google_drive_file_id=f"storage-{stable_id}",
                     resource_type=filename.rsplit(".", 1)[-1].lower() if "." in filename else "other",
                     mime_type=mime_type,
+                    file_size=file_size,
                     level=level, semester=semester, course_code=course_code, category=category, label=label,
                     supabase_bucket=self.bucket,
                     supabase_storage_path=object_path,
@@ -157,8 +195,12 @@ class StorageResourceIndexer:
                 created += 1
             else:
                 record.name = record.title = record.file_name = filename
-                record.folder_path, record.level, record.semester, record.label = folder_path, level, semester, label
+                record.folder_path = folder_path
+                record.level = level or record.level
+                record.semester = semester or record.semester
+                record.label = label or record.label
                 record.mime_type = mime_type
+                record.file_size = file_size
                 if course_code:
                     record.course_code = course_code
                 if category:
@@ -166,6 +208,9 @@ class StorageResourceIndexer:
                 record.is_active, record.is_missing = True, False
                 record.storage_migrated_at = record.storage_migrated_at or now
                 updated += 1
+        for folder in session.query(ResourceFolder).filter(ResourceFolder.is_active.is_(True)):
+            if folder.folder_path not in folder_paths:
+                folder.is_active = False
         for record in session.query(Resource).filter(
             Resource.supabase_bucket == self.bucket,
             Resource.supabase_storage_path.is_not(None),
@@ -174,4 +219,4 @@ class StorageResourceIndexer:
             if record.supabase_storage_path not in seen:
                 record.is_missing = True
         session.commit()
-        return {"success": True, "objects_indexed": len(paths), "new_resources": created, "updated_resources": updated, "indexed_at": now}
+        return {"success": True, "objects_indexed": len(entries), "new_resources": created, "updated_resources": updated, "indexed_at": now}

@@ -28,7 +28,7 @@ export const ENDPOINTS = {
   publishEvent: (id) => `/api/events/${id}/publish`,
   cancelEvent: (id) => `/api/events/${id}/cancel`,
 
-  // Google Drive Academic Resource API
+  // Academic Storage resource API
   academicCategories: '/academic/categories',
   academicResources: '/api/resources',
   academicFolders: '/api/resources/folders',
@@ -36,7 +36,6 @@ export const ENDPOINTS = {
   academicHealth: '/api/resources/health',
   academicDownload: (id) => `/api/resources/${id}/download`,
   academicView: (id) => `/api/resources/${id}/view`,
-  adminSyncResources: '/api/resources/sync',
   adminIndexMigratedResources: '/api/resources/storage-index',
   adminUpdateResource: (id) => `/api/resources/${id}`,
   adminUploadResource: '/api/resources/upload',

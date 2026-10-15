@@ -19,7 +19,7 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
 - Python 3.10 or later
 - A Firebase project with Email/Password sign-in enabled
 - A Supabase PostgreSQL project
-- A Google Cloud service account with the Drive API enabled (for Academic Resources)
+- Supabase Storage with the existing private `academic-resources` bucket
 
 ## Configure local environment
 
@@ -36,10 +36,10 @@ A Chemistry Department portal for the Ghana Society of Chemical Sciences at KNUS
 
    Use the `postgresql+psycopg://` URL scheme and URL-encode special characters in the database password. Keep all credentials out of version control.
 
-   To enable Academic Resources, configure `GOOGLE_DRIVE_ROOT_FOLDER_ID` and a
-   Drive service-account credential. Share the Drive root folder with that
-   service account's `client_email` as Viewer. Use the path setting locally and
-   the JSON setting only in the production secret store.
+   To enable Academic Resources, configure `SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_ACADEMIC_STORAGE_BUCKET`
+   (normally `academic-resources`). The service-role key is server-only; the
+   browser accesses files through authenticated API streaming endpoints.
 
 3. In `frontend2/.env`, set the `VITE_FIREBASE_*` values from the Firebase web app, set `VITE_API_BASE_URL` if the API is not at `http://127.0.0.1:8000`, and set `VITE_SUPPORT_EMAIL` to a verified institutional support address before production. Firebase web configuration is client-visible, but local environment files remain untracked to keep environments separate.
 
@@ -108,7 +108,7 @@ React route guards are user-interface controls only. Admin API routes independen
 
 Authentication uses bearer headers rather than cookies, so the API is not currently dependent on cookie-based CSRF protection. CORS is an additional browser control, not an authorization boundary. Production `CORS_ORIGINS` must contain exact origins and must never use arbitrary shared-hosting wildcards.
 
-The backend connects directly to PostgreSQL and uses parameterized SQLAlchemy queries. Supabase service-role credentials are server-only and are used for directory image storage; they must never be exposed as `VITE_*` variables. Directory image objects are returned through a public bucket URL, so administrators must not upload confidential images.
+The backend connects directly to PostgreSQL and uses parameterized SQLAlchemy queries. Supabase service-role credentials are server-only and are used for directory image storage and authenticated Academic Storage streaming; they must never be exposed as `VITE_*` variables. Directory image objects are returned through a public bucket URL, so administrators must not upload confidential images. Academic resource objects are streamed through FastAPI after Firebase authentication, so the academic bucket should remain private.
 
 ## Production checklist
 
@@ -118,7 +118,7 @@ Before launch:
 2. Set all Firebase web values and a verified `VITE_SUPPORT_EMAIL` in Vercel. Confirm that the CSP in `frontend2/vercel.json` permits only services actually in use.
 3. Configure Firebase authorized domains, password-reset templates, and provider-level abuse protections. Set `ALLOWED_EMAIL_DOMAINS` and/or `ALLOWED_USER_EMAILS` to the institution-approved account policy; production access fails closed when both are empty. Keep `REQUIRE_VERIFIED_EMAIL=true` unless the institution explicitly approves a different process.
 4. Apply Alembic migrations using a restricted deployment identity. Use a least-privilege runtime database role where practical and confirm backups and restoration procedures.
-5. Confirm the `directory-media` bucket's public-read requirement and retention policy. Do not upload sensitive documents through the image endpoint.
+5. Confirm the `directory-media` bucket's public-read requirement and retention policy. Keep `academic-resources` private and allow the service-role key to read and write it; do not upload sensitive documents through the image endpoint.
 6. Configure platform/WAF rate limits for authentication, password reset, directory search, and uploads. The application does not include a distributed rate limiter.
 7. Replace all mock/placeholder event, academic-resource, notification, and settings integrations or disable those controls before launch.
 8. Review the Privacy Notice and Terms of Use with the responsible university/society representative. Confirm the public contact, retention schedule, age/audience policy, and asset/logo permissions.

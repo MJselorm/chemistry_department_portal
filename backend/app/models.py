@@ -39,11 +39,10 @@ class ResourceFolder(Base):
     __tablename__ = "resource_folders"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    google_drive_folder_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    parent_drive_folder_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     folder_path: Mapped[str] = mapped_column(Text, nullable=False)
+    parent_folder_path: Mapped[str | None] = mapped_column(Text, nullable=True, index=True)
     level: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -56,8 +55,7 @@ class Resource(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
-    # Drive-index fields below are additive aliases/metadata; ``name`` remains
-    # the existing API display field used by the portal.
+    # ``name`` remains the existing API display field used by the portal.
     title: Mapped[str | None] = mapped_column(String(500), nullable=True)
     file_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Human-readable classification derived from a migrated bucket path.
@@ -69,12 +67,8 @@ class Resource(Base):
     level: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     category: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     folder_path: Mapped[str] = mapped_column(Text, nullable=False)
-    google_drive_file_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    google_drive_parent_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     mime_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
     file_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    web_view_link: Mapped[str | None] = mapped_column(Text, nullable=True)
-    web_content_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     supabase_bucket: Mapped[str | None] = mapped_column(String(255), nullable=True)
     supabase_storage_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     storage_migrated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -85,7 +79,6 @@ class Resource(Base):
     download_available: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true", index=True)
     is_missing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false", index=True)
-    last_modified_drive: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())

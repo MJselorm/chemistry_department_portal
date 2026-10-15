@@ -1,4 +1,4 @@
-"""Small Supabase Storage adapter; database records retain only the resulting URL."""
+"""Server-side Supabase Storage adapter for directory images and academic objects."""
 import mimetypes
 import uuid
 from pathlib import Path
@@ -55,8 +55,14 @@ def academic_file_chunks(bucket: str, object_path: str) -> Iterator[bytes]:
     request = Request(url, headers={"Authorization": f"Bearer {settings.supabase_service_role_key}", "apikey": settings.supabase_service_role_key})
     try:
         response = urlopen(request, timeout=60)
-    except (HTTPError, URLError) as exc:
+    except HTTPError as exc:
+        if exc.code == 404:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "This file is no longer available in Academic Storage.") from exc
+        if exc.code in {401, 403}:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Academic Storage access is not configured correctly.") from exc
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Academic Storage retrieval failed.") from exc
+    except URLError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Academic Storage is unavailable.") from exc
     def generate():
         with response:
             while data := response.read(1024 * 1024):

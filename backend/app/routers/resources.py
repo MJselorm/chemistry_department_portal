@@ -3,6 +3,7 @@ import mimetypes
 import re
 import uuid
 from typing import Annotated
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -12,12 +13,9 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..database import get_db
 from ..models import Resource, ResourceFolder, User
-from ..resource_schemas import FolderOut, ResourceOut, ResourcePage, ResourceUpdate, StorageIndexSummary, SyncSummary, TestMigrationRequest
+from ..resource_schemas import FolderOut, ResourceOut, ResourcePage, ResourceUpdate, StorageIndexSummary
 from ..security import get_current_user, require_admin
-from ..services.google_drive import GoogleDriveService
-from ..services.resource_sync import sync_resources
 from ..services.storage_index import StorageResourceIndexer
-from ..services.test_drive_migration import DriveMigrationProbe
 from ..storage import MAX_ACADEMIC_FILE_BYTES, academic_file_chunks, upload_academic_object
 
 router = APIRouter(prefix="/api/resources", tags=["Resources"])
@@ -33,13 +31,26 @@ def get_resource(resource_id: int, session: Session) -> Resource:
     return resource
 
 
+def require_storage_location(resource: Resource) -> tuple[str, str]:
+    if not resource.supabase_bucket or not resource.supabase_storage_path:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "This resource has not been indexed in Academic Storage. Ask an administrator to refresh the storage index.",
+        )
+    return resource.supabase_bucket, resource.supabase_storage_path
+
+
 @router.get("/health", summary="Resource repository health")
-def resources_health():
-    """Configuration-only check; it never returns credentials or contacts Drive."""
-    return {"status": "ok", "google_drive_configured": bool(get_settings().google_drive_root_folder_id)}
+def resources_health(_: Authenticated):
+    """Configuration-only check; it never returns credentials or object paths."""
+    settings = get_settings()
+    return {
+        "status": "ok" if settings.supabase_url and settings.supabase_service_role_key else "not_configured",
+        "access_mode": "authenticated_server_proxy",
+    }
 
 
-@router.get("/folders", response_model=list[FolderOut], summary="List indexed Drive folders")
+@router.get("/folders", response_model=list[FolderOut], summary="List indexed Academic Storage folders")
 def list_folders(session: DB, _: Authenticated):
     return session.query(ResourceFolder).filter(ResourceFolder.is_active.is_(True)).order_by(ResourceFolder.folder_path).all()
 
@@ -49,23 +60,10 @@ def search_resources(session: DB, user: Authenticated, q: str = Query(min_length
     return list_resources(session, user, page, page_size, search=q)
 
 
-@router.post("/sync", response_model=SyncSummary, summary="Admin-only Google Drive synchronization")
-def synchronize_resources(session: DB, _: Admin):
-    root_id = get_settings().google_drive_root_folder_id
-    if not root_id: raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Google Drive repository is not configured.")
-    return sync_resources(session, root_id)
-
-
-@router.post("/storage-index", response_model=StorageIndexSummary, summary="Admin-only migrated Storage indexing")
+@router.post("/storage-index", response_model=StorageIndexSummary, summary="Admin-only Academic Storage indexing")
 def index_migrated_storage(session: DB, _: Admin):
     """Index files already present in Academic Storage; no uploads or deletes occur."""
     return StorageResourceIndexer().index(session)
-
-
-@router.post("/migration-test", summary="Admin-only one-file Drive to private Supabase test bucket migration")
-def migration_test(payload: TestMigrationRequest, _: Admin):
-    """No database writes and no Drive mutations; file ID makes retries idempotent."""
-    return DriveMigrationProbe().run(payload.google_drive_file_id, dry_run=payload.dry_run).as_dict()
 
 
 @router.post("/upload", response_model=ResourceOut, summary="Admin-only academic file upload")
@@ -82,14 +80,14 @@ async def upload_resource(file: Annotated[UploadFile, File(...)], _: Admin, sess
     if not mime_type or mime_type == "application/octet-stream":
         mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
     upload_academic_object(object_path, contents, mime_type)
-    record = Resource(name=name or filename, title=name or filename, file_name=filename, folder_path=safe_folder, google_drive_file_id=f"manual-{uuid.uuid4()}", mime_type=mime_type, file_size=len(contents), resource_type=mime_type.split("/")[-1], category=category, course_code=course_code, level=level, supabase_bucket=get_settings().supabase_academic_storage_bucket, supabase_storage_path=object_path)
+    record = Resource(name=name or filename, title=name or filename, file_name=filename, folder_path=safe_folder, mime_type=mime_type, file_size=len(contents), resource_type=mime_type.split("/")[-1], category=category, course_code=course_code, level=level, supabase_bucket=get_settings().supabase_academic_storage_bucket, supabase_storage_path=object_path)
     session.add(record); session.commit(); session.refresh(record)
     return record
 
 
 @router.get("", response_model=ResourcePage, summary="Browse active academic resources")
-def list_resources(session: DB, user: Authenticated, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100), course: str | None = None, course_code: str | None = None, level: str | None = None, category: str | None = None, resource_type: str | None = None, folder: str | None = None, semester: str | None = None, academic_year: str | None = None, department: str | None = None, sort_by: str = Query("name", pattern="^(name|created_at|last_modified_drive)$"), sort_order: str = Query("asc", pattern="^(asc|desc)$"), search: str | None = Query(None, max_length=200), include_inactive: bool = Query(False)):
-    query = session.query(Resource)
+def list_resources(session: DB, user: Authenticated, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100), course: str | None = None, course_code: str | None = None, level: str | None = None, category: str | None = None, resource_type: str | None = None, folder: str | None = None, semester: str | None = None, academic_year: str | None = None, department: str | None = None, sort_by: str = Query("name", pattern="^(name|created_at|updated_at)$"), sort_order: str = Query("asc", pattern="^(asc|desc)$"), search: str | None = Query(None, max_length=200), include_inactive: bool = Query(False)):
+    query = session.query(Resource).filter(Resource.supabase_bucket.is_not(None), Resource.supabase_storage_path.is_not(None))
     if not (user.role == "admin" and include_inactive):
         # Students see only files that have completed migration into Storage.
         query = query.filter(Resource.is_active.is_(True), Resource.is_missing.is_(False), Resource.supabase_storage_path.is_not(None))
@@ -115,35 +113,42 @@ def list_resources(session: DB, user: Authenticated, page: int = Query(1, ge=1),
 def resource_detail(resource_id: int, session: DB, _: Authenticated): return get_resource(resource_id, session)
 
 
-@router.get("/{resource_id}/view", summary="Open a resource in Google Drive")
+@router.get("/{resource_id}/view", summary="Stream a resource for browser preview")
 def view_resource(resource_id: int, session: DB, _: Authenticated):
-    resource = get_resource(resource_id, session)
-    if resource.supabase_bucket and resource.supabase_storage_path:
-        return _storage_response(resource, "inline")
-    # Stream through the authenticated API so a private service-account share is
-    # sufficient; the student's browser never needs Drive credentials.
-    chunks, media_type = GoogleDriveService().file_chunks(resource.google_drive_file_id, resource.mime_type)
-    filename = re.sub(r"[\\/:*?\"<>|\r\n]+", "_", resource.name).strip(". ") or "resource"
-    return StreamingResponse(chunks, media_type=media_type, headers={"Content-Disposition": f"inline; filename*=UTF-8''{filename}"})
+    return _storage_response(get_resource(resource_id, session), "inline")
 
 
-@router.get("/{resource_id}/download", summary="Stream a resource from Google Drive")
+@router.get("/{resource_id}/download", summary="Download a resource from Academic Storage")
 def download_resource(resource_id: int, session: DB, _: Authenticated):
     resource = get_resource(resource_id, session)
-    if not resource.download_available: raise HTTPException(status.HTTP_403_FORBIDDEN, "Downloads are disabled for this resource.")
-    if resource.supabase_bucket and resource.supabase_storage_path:
-        return _storage_response(resource, "attachment")
-    chunks, media_type = GoogleDriveService().file_chunks(resource.google_drive_file_id, resource.mime_type)
-    filename = re.sub(r"[\\/:*?\"<>|\r\n]+", "_", resource.name).strip(". ") or "resource"
-    return StreamingResponse(chunks, media_type=media_type, headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"})
+    if not resource.download_available:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Downloads are disabled for this resource.")
+    return _storage_response(resource, "attachment")
 
 
 def _storage_response(resource: Resource, disposition: str) -> StreamingResponse:
-    filename = re.sub(r"[\\/:*?\"<>|\r\n]+", "_", resource.name).strip(". ") or "resource"
+    bucket, object_path = require_storage_location(resource)
+    filename = re.sub(r"[\\/:*?\"<>|\r\n]+", "_", resource.file_name or resource.name).strip(". ") or "resource"
     mime_type = resource.mime_type
-    if not mime_type or mime_type == "application/octet-stream":
-        mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
-    return StreamingResponse(academic_file_chunks(resource.supabase_bucket, resource.supabase_storage_path), media_type=mime_type, headers={"Content-Disposition": f"{disposition}; filename*=UTF-8''{filename}"})
+    guessed_mime_type = mimetypes.guess_type(filename)[0]
+    # Prefer the filename for browser-native formats when a migrated record
+    # still holds stale or generic repository metadata.
+    if guessed_mime_type and (
+        not mime_type
+        or mime_type == "application/octet-stream"
+        or guessed_mime_type == "application/pdf"
+        or guessed_mime_type.startswith("image/")
+    ):
+        mime_type = guessed_mime_type
+    if not mime_type:
+        mime_type = "application/octet-stream"
+    headers = {
+        "Cache-Control": "private, no-store",
+        "Content-Disposition": f"{disposition}; filename*=UTF-8''{quote(filename, safe='')}",
+    }
+    if resource.file_size is not None:
+        headers["Content-Length"] = str(resource.file_size)
+    return StreamingResponse(academic_file_chunks(bucket, object_path), media_type=mime_type, headers=headers)
 
 
 @router.patch("/{resource_id}", response_model=ResourceOut, summary="Admin-only resource metadata update")

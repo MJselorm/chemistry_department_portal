@@ -7,14 +7,11 @@ class ResourceOut(BaseModel):
     id: int; name: str; description: str | None = None; resource_type: str | None = None
     title: str | None = None; file_name: str | None = None; label: str | None = None
     course_code: str | None = None; course_name: str | None = None; level: str | None = None
-    category: str | None = None; folder_path: str; google_drive_file_id: str
-    google_drive_parent_id: str | None = None; mime_type: str | None = None; file_size: int | None = None
-    web_view_link: str | None = None; web_content_link: str | None = None
-    supabase_bucket: str | None = None; supabase_storage_path: str | None = None
+    category: str | None = None; folder_path: str; mime_type: str | None = None; file_size: int | None = None
     storage_migrated_at: datetime | None = None
     academic_year: str | None = None; semester: str | None = None; lecturer: str | None = None; department: str | None = None
     download_available: bool; is_active: bool; is_missing: bool
-    last_modified_drive: datetime | None = None; last_synced_at: datetime | None = None
+    last_synced_at: datetime | None = None
     created_at: datetime; updated_at: datetime
 
 
@@ -41,22 +38,15 @@ class ResourcePage(BaseModel):
 class FolderOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    google_drive_folder_id: str
-    parent_drive_folder_id: str | None = None
     name: str
     description: str | None = None
     folder_path: str
+    parent_folder_path: str | None = None
     level: str | None = None
     is_active: bool
     last_synced_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
-
-
-class SyncSummary(BaseModel):
-    success: bool; folders_scanned: int; files_scanned: int; new_resources: int
-    updated_resources: int; unchanged_resources: int; missing_resources: int
-    sync_completed_at: datetime
 
 
 class StorageIndexSummary(BaseModel):
@@ -65,8 +55,3 @@ class StorageIndexSummary(BaseModel):
     new_resources: int
     updated_resources: int
     indexed_at: datetime
-
-
-class TestMigrationRequest(BaseModel):
-    google_drive_file_id: str = Field(min_length=1, max_length=255)
-    dry_run: bool = False
