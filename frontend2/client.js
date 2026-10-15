@@ -9,25 +9,17 @@ const PRODUCTION_API_ORIGIN = 'https://chemistry-department-portal.onrender.com'
 
 function resolveBaseUrl() {
   const envUrl = import.meta.env.VITE_API_BASE_URL
-  // A localhost API URL works during Vite development but can never work from
-  // a visitor's browser after deployment. Guard against a mistakenly copied
-  // production environment variable and use the live API directly.
-  if (import.meta.env.PROD && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(envUrl || '')) {
-    console.warn('Ignoring a localhost VITE_API_BASE_URL in the production build.')
-    return PRODUCTION_API_ORIGIN
-  }
-  // Calling Render directly matches local development and avoids relying on a
-  // platform rewrite between the browser and the API. A fully qualified custom
-  // VITE_API_BASE_URL still takes precedence for alternate deployments.
-  if (import.meta.env.PROD && (!envUrl || envUrl === '/api')) {
+  // The public deployment has one verified API origin. Ignoring all build-time
+  // overrides here prevents a stale Vercel environment variable from pointing
+  // browsers at an old proxy or a localhost address.
+  if (import.meta.env.PROD) {
+    if (envUrl && envUrl.replace(/\/+$/, '') !== PRODUCTION_API_ORIGIN) {
+      console.warn('Ignoring VITE_API_BASE_URL in the production build; using the configured production API origin.')
+    }
     return PRODUCTION_API_ORIGIN
   }
   if (envUrl) {
     return envUrl.replace(/\/+$/, '')
-  }
-  // Production has already returned above; this is retained for completeness.
-  if (import.meta.env.PROD) {
-    return PRODUCTION_API_ORIGIN
   }
   // In local development, fall back to localhost
   return 'http://127.0.0.1:8000'
