@@ -57,24 +57,24 @@ export default function DirectoryEntityManager({ categoryKey }) {
     async function loadSelectOptions() {
       try {
         const deptRes = await directoryApi.listEntities('/api/directory/departments', { limit: 100 })
-        setDepartments(deptRes?.items || deptRes || [])
+        setDepartments(Array.isArray(deptRes?.items) ? deptRes.items : Array.isArray(deptRes) ? deptRes : [])
       } catch (err) {
         if (import.meta.env.DEV) console.error('Failed to load departments:', err)
       }
 
-      if (categoryConfig.fields.some((f) => f.type === 'course_select')) {
+      if (categoryConfig.fields?.some((f) => f.type === 'course_select')) {
         try {
           const courseRes = await directoryApi.listEntities('/api/directory/courses', { limit: 100 })
-          setCourses(courseRes?.items || courseRes || [])
+          setCourses(Array.isArray(courseRes?.items) ? courseRes.items : Array.isArray(courseRes) ? courseRes : [])
         } catch (err) {
           if (import.meta.env.DEV) console.error('Failed to load courses:', err)
         }
       }
 
-      if (categoryConfig.fields.some((f) => f.type === 'lecturer_select')) {
+      if (categoryConfig.fields?.some((f) => f.type === 'lecturer_select')) {
         try {
           const lecRes = await directoryApi.listEntities('/api/directory/lecturers', { limit: 100 })
-          setLecturers(lecRes?.items || lecRes || [])
+          setLecturers(Array.isArray(lecRes?.items) ? lecRes.items : Array.isArray(lecRes) ? lecRes : [])
         } catch (err) {
           if (import.meta.env.DEV) console.error('Failed to load lecturers:', err)
         }
@@ -109,7 +109,7 @@ export default function DirectoryEntityManager({ categoryKey }) {
       if (departmentFilter !== 'all') params.department_id = departmentFilter
 
       const res = await directoryApi.listEntities(categoryConfig.endpoint, params)
-      const list = res?.items || res || []
+      const list = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []
       const totalCount = res?.total !== undefined ? res.total : list.length
 
       // Client-side search filtering if search query entered

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
+import { AlertCircle } from 'lucide-react'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
+import ErrorBoundary from './ErrorBoundary'
 
 const readStoredBoolean = (key, fallback) => {
   if (typeof window === 'undefined') return fallback
@@ -63,7 +65,31 @@ export default function PortalLayout({ children, title, subtitle }) {
           onToggleTheme={toggleTheme}
         />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 max-w-7xl w-full mx-auto">
-          {children}
+          <ErrorBoundary
+            fallback={(error, retry) => (
+              <div className="py-12 text-center max-w-md mx-auto bg-surface border border-border rounded-2xl p-6 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-[var(--destructive-soft)] text-destructive grid place-items-center mx-auto mb-3 font-bold">
+                  <AlertCircle size={22} />
+                </div>
+                <h2 className="text-base font-bold text-foreground">Something went wrong</h2>
+                <p className="text-xs text-muted-foreground mt-1">Chemistry Hub could not display this section.</p>
+                {error && (
+                  <div className="mt-3 p-3 bg-red-50 text-red-700 text-[11px] text-left font-mono rounded-lg overflow-auto max-h-40">
+                    {error.message || String(error)}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="mt-4 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-hover transition-colors shadow-xs"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+          >
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

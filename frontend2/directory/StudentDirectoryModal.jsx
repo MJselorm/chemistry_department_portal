@@ -43,6 +43,15 @@ function getInitials(name = '') {
     .join('')
 }
 
+function safeUrl(raw) {
+  if (!raw || typeof raw !== 'string') return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i.test(trimmed)) return `https://${trimmed}`
+  return null
+}
+
 export default function StudentDirectoryModal({
   isOpen,
   onClose,
@@ -246,22 +255,22 @@ export default function StudentDirectoryModal({
                 </button>
               )}
 
-              {record.website && (
+              {safeUrl(record.website) && (
                 <a
-                  href={record.website.startsWith('http') ? record.website : `https://${record.website}`}
+                  href={safeUrl(record.website)}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noreferrer noopener"
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-surface text-primary text-xs font-bold hover:bg-[#f8fbfb] transition-colors"
                 >
                   <ExternalLink size={13} /> Website
                 </a>
               )}
 
-              {record.social_links && (
+              {safeUrl(record.social_links) && (
                 <a
-                  href={record.social_links.startsWith('http') ? record.social_links : `https://${record.social_links}`}
+                  href={safeUrl(record.social_links)}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noreferrer noopener"
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#d6e3e5] bg-surface text-primary text-xs font-bold hover:bg-[#f8fbfb] transition-colors"
                 >
                   <ExternalLink size={13} /> Social Link

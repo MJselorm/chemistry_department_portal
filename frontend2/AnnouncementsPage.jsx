@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext'
 import AdminNotificationsPanel from './AdminNotificationsPanel'
 import DeleteConfirmModal from './directory/DeleteConfirmModal'
 import { useToast } from './directory/Toast'
+import ErrorBoundary from './ErrorBoundary'
 
 const badgeClass = (category) => {
   const value = (category || '').toLowerCase()
@@ -15,9 +16,33 @@ const badgeClass = (category) => {
   return 'bg-[var(--success-soft)] text-success border border-[var(--success-border)]'
 }
 
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
+function formatPublishedDate(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return null
+  return d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 const timeAgo = (date) => {
   if (!date) return ''
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 60000))
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+  const minutes = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000))
   if (minutes < 60) return `${Math.max(1, minutes)}m ago`
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours}h ago`
@@ -47,7 +72,7 @@ export default function AnnouncementsPage() {
     audience: 'All students',
     issuer: user?.full_name || 'Chemistry Board of Studies',
     is_pinned: false,
-    publication_key: crypto.randomUUID(),
+    publication_key: generateUUID(),
   })
 
   // Filter state
@@ -58,7 +83,10 @@ export default function AnnouncementsPage() {
     setLoading(true)
     setError('')
     api.get(ENDPOINTS.announcements)
-      .then((data) => setAnnouncements(Array.isArray(data) ? data : []))
+      .then((data) => {
+        const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : []
+        setAnnouncements(items)
+      })
       .catch((err) => {
         if (import.meta.env.DEV) console.error('Unable to load announcements:', err)
         setError('Unable to load announcements right now. Please try again.')
@@ -97,7 +125,7 @@ export default function AnnouncementsPage() {
         audience: 'All students',
         issuer: user?.full_name || 'Chemistry Board of Studies',
         is_pinned: false,
-        publication_key: crypto.randomUUID(),
+        publication_key: generateUUID(),
       })
       setShowCreateForm(false)
       if (created?.id) {
@@ -132,6 +160,7 @@ export default function AnnouncementsPage() {
   }
 
   const filteredAnnouncements = announcements.filter((item) => {
+    if (!item) return false
     if (targetAnnouncementId) return String(item.id) === targetAnnouncementId
     const matchesCategory =
       categoryFilter === 'All' ||
@@ -193,7 +222,11 @@ export default function AnnouncementsPage() {
         </div>
       </div>
 
-      {isAdmin && <AdminNotificationsPanel />}
+      {isAdmin && (
+        <ErrorBoundary fallback={null}>
+          <AdminNotificationsPanel />
+        </ErrorBoundary>
+      )}
 
       {/* Admin Inline Creation Form */}
       {isAdmin && showCreateForm && (
@@ -342,7 +375,7 @@ export default function AnnouncementsPage() {
             const count =
               cat === 'All'
                 ? announcements.length
-                : announcements.filter((a) => a.category?.toLowerCase() === cat.toLowerCase()).length
+                : announcements.filter((a) => a?.category?.toLowerCase() === cat.toLowerCase()).length
             return (
               <button
                 key={cat}
@@ -496,14 +529,8 @@ export default function AnnouncementsPage() {
                 <span>•</span>
                 <span className="font-semibold text-foreground">{item.issuer}</span>
               </div>
-              {item.published_at && (
-                <span>
-                  {new Date(item.published_at).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
+              {formatPublishedDate(item.published_at) && (
+                <span>{formatPublishedDate(item.published_at)}</span>
               )}
             </div>
           </article>

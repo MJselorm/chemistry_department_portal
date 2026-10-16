@@ -539,7 +539,7 @@ export default function AdminPage() {
               <span className="w-8 h-8 rounded-lg bg-[#eaf7f0] text-success text-sm grid place-items-center mb-3 font-bold">
                 <Users size={17} aria-hidden="true" />
               </span>
-              <strong className="block text-2xl font-black text-foreground group-hover:text-primary transition-colors">342</strong>
+              <strong className="block text-2xl font-black text-foreground group-hover:text-primary transition-colors">{adminUsers.length || '—'}</strong>
               <span className="block text-xs text-muted-foreground mt-1">Students</span>
             </div>
           </div>
@@ -1462,10 +1462,6 @@ export default function AdminPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
                     >
                       <option value="All students">All students</option>
-                      <option value="Level 100">Level 100</option>
-                      <option value="Level 200">Level 200</option>
-                      <option value="Level 300">Level 300</option>
-                      <option value="Level 400">Level 400</option>
                     </select>
                   </div>
 
@@ -1749,7 +1745,11 @@ export default function AdminPage() {
                         {usr.role}
                       </span>
                     </td>
-                    <td className="py-3 text-right text-muted-foreground">{new Date(usr.created_at).toLocaleDateString()}</td>
+                    <td className="py-3 text-right text-muted-foreground">
+                      {usr.created_at && !isNaN(new Date(usr.created_at).getTime())
+                        ? new Date(usr.created_at).toLocaleDateString()
+                        : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

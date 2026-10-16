@@ -236,7 +236,8 @@ export default function DirectoryAdminOverview() {
                           key={item.id}
                           onClick={() => {
                             setShowResults(false)
-                            navigate(`/admin/directory/${groupKey.replace('_', '-')}`)
+                            const targetRoute = groupKey === 'representatives' ? 'class-representatives' : groupKey.replace('_', '-')
+                            navigate(`/admin/directory/${targetRoute}`)
                           }}
                           className="w-full text-left p-2 rounded-xl hover:bg-[#f2f7f8] flex items-center justify-between transition-colors text-xs group"
                         >
@@ -279,6 +280,15 @@ export default function DirectoryAdminOverview() {
             Refresh metrics
           </button>
         </div>
+
+        {error && (
+          <div className="p-4 rounded-xl bg-[var(--destructive-soft)] border border-[var(--destructive-border)] text-destructive text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadSummary} className="font-bold underline ml-3">
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* 3x3 Card Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">

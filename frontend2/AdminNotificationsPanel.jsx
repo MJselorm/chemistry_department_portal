@@ -8,9 +8,17 @@ const emptyForm = { title: '', message: '', category: 'general', priority: 'norm
 export default function AdminNotificationsPanel() {
   const [items, setItems] = useState([]); const [form, setForm] = useState(emptyForm)
   const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
-  const load = () => { setLoading(true); return api.get(ENDPOINTS.adminNotifications).then(setItems).catch(() => setError('Unable to load notification history.')).finally(() => setLoading(false)) }
-  const act = async (endpoint) => { setError(''); try { await api.post(endpoint); await load() } catch { setError('Unable to update this notification. Please try again.') } }
-  useEffect(load, [])
+  const load = () => {
+    setLoading(true)
+    api.get(ENDPOINTS.adminNotifications)
+      .then((data) => setItems(Array.isArray(data) ? data : []))
+      .catch(() => setError('Unable to load notification history.'))
+      .finally(() => setLoading(false))
+  }
+  const act = async (endpoint) => { setError(''); try { await api.post(endpoint); load() } catch { setError('Unable to update this notification. Please try again.') } }
+  useEffect(() => {
+    load()
+  }, [])
   const create = async (event) => {
     event.preventDefault(); setBusy(true); setError('')
     try { await api.post(ENDPOINTS.adminNotifications, { ...form, target_email: form.audience_type === 'individual' ? form.target_email : null, destination_path: form.destination_path || null, scheduled_for: form.scheduled_for ? new Date(form.scheduled_for).toISOString() : null }); setForm(emptyForm); load() }
@@ -31,7 +39,7 @@ export default function AdminNotificationsPanel() {
     </form>
     {error && <p className="mt-3 text-xs text-destructive" role="alert">{error}</p>}
     {loading && <p className="mt-4 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground"><RefreshCw size={13} className="animate-spin" />Loading notification history…</p>}
-    {!loading && !error && items.length === 0 && <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">No standalone notifications yet.</p>}
-    {!loading && items.length > 0 && <div className="mt-4 divide-y divide-border border-t border-border">{items.slice(0, 8).map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-xs"><div className="min-w-0"><strong className="block truncate text-foreground">{item.title}</strong><span className="text-muted-foreground">{item.status} · {item.read_count}/{item.eligible_recipients} read · {item.push_accepted}/{item.push_attempts} push accepted</span></div><div className="flex gap-2">{item.status === 'scheduled' && <button type="button" onClick={() => act(ENDPOINTS.adminNotificationCancel(item.id))} className="font-bold text-destructive">Cancel</button>}{item.status === 'published' && <button type="button" onClick={() => act(ENDPOINTS.adminNotificationResend(item.id))} className="font-bold text-primary">Resend</button>}{item.status !== 'archived' && <button type="button" onClick={() => act(ENDPOINTS.adminNotificationArchive(item.id))} className="font-bold text-muted-foreground">Archive</button>}</div></div>)}</div>}
+    {!loading && !error && (!Array.isArray(items) || items.length === 0) && <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">No standalone notifications yet.</p>}
+    {!loading && Array.isArray(items) && items.length > 0 && <div className="mt-4 divide-y divide-border border-t border-border">{items.slice(0, 8).map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-xs"><div className="min-w-0"><strong className="block truncate text-foreground">{item.title}</strong><span className="text-muted-foreground">{item.status} · {item.read_count}/{item.eligible_recipients} read · {item.push_accepted}/{item.push_attempts} push accepted</span></div><div className="flex gap-2">{item.status === 'scheduled' && <button type="button" onClick={() => act(ENDPOINTS.adminNotificationCancel(item.id))} className="font-bold text-destructive">Cancel</button>}{item.status === 'published' && <button type="button" onClick={() => act(ENDPOINTS.adminNotificationResend(item.id))} className="font-bold text-primary">Resend</button>}{item.status !== 'archived' && <button type="button" onClick={() => act(ENDPOINTS.adminNotificationArchive(item.id))} className="font-bold text-muted-foreground">Archive</button>}</div></div>)}</div>}
   </section>
 }

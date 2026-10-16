@@ -8,6 +8,8 @@ import StatusPage from './StatusPage'
 
 import { ToastProvider } from './directory/Toast'
 
+import AnnouncementsPage from './AnnouncementsPage'
+
 const LoginPage = lazy(() => import('./LoginPage'))
 const ForgotPasswordPage = lazy(() => import('./ForgotPasswordPage'))
 const LegalPage = lazy(() => import('./LegalPage'))
@@ -15,7 +17,6 @@ const DashboardPage = lazy(() => import('./DashboardPage'))
 const EventsPage = lazy(() => import('./EventsPage'))
 const AcademicHubPage = lazy(() => import('./AcademicHubPage'))
 const DirectoryPage = lazy(() => import('./DirectoryPage'))
-const AnnouncementsPage = lazy(() => import('./AnnouncementsPage'))
 const ProfilePage = lazy(() => import('./ProfilePage'))
 const SettingsPage = lazy(() => import('./SettingsPage'))
 const AdminPage = lazy(() => import('./AdminPage'))
@@ -171,6 +172,11 @@ export default function App() {
 
           <Route
             path="/admin/directory/course-representatives"
+            element={<Navigate to="/admin/directory/class-representatives" replace />}
+          />
+
+          <Route
+            path="/admin/directory/representatives"
             element={<Navigate to="/admin/directory/class-representatives" replace />}
           />
 

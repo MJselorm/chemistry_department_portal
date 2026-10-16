@@ -37,6 +37,7 @@ const STAT_TONES = {
 const formatEventDateBadge = (isoStr) => {
   if (!isoStr) return { month: 'TBD', day: '--' }
   const d = new Date(isoStr)
+  if (isNaN(d.getTime())) return { month: 'TBD', day: '--' }
   return {
     month: d.toLocaleString([], { month: 'short' }).toUpperCase(),
     day: d.getDate(),
@@ -45,7 +46,9 @@ const formatEventDateBadge = (isoStr) => {
 
 const formatEventTime = (isoStr) => {
   if (!isoStr) return ''
-  return new Date(isoStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const d = new Date(isoStr)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 export default function DashboardPage() {

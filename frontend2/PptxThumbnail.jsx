@@ -87,5 +87,5 @@ export default function PptxThumbnail({ resource, onUnavailable }) {
   }, [onUnavailable, resource.id])
 
   if (!url) return <RefreshCw size={18} className="animate-spin text-primary" aria-label="Loading presentation thumbnail" />
-  return <img src={url} alt="" className="h-full w-full object-contain" />
+  return <img src={url} alt="" className="h-full w-full object-contain" onError={onUnavailable} />
 }

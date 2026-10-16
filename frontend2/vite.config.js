@@ -13,7 +13,8 @@ export default defineConfig({
         rewrite: (path) =>
           path.startsWith('/api/directory') ||
           path.startsWith('/api/resources') ||
-          path.startsWith('/api/events')
+          path.startsWith('/api/events') ||
+          path.startsWith('/api/notifications')
             ? path
             : path.replace(/^\/api/, ''),
       },

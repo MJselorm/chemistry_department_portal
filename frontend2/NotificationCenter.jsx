@@ -5,7 +5,10 @@ import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 
 const relativeTime = (value) => {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000))
+  if (!value) return ''
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return ''
+  const minutes = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000))
   if (minutes < 60) return `${Math.max(1, minutes)}m ago`
   if (minutes < 1440) return `${Math.floor(minutes / 60)}h ago`
   return `${Math.floor(minutes / 1440)}d ago`

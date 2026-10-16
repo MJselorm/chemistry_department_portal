@@ -2,18 +2,26 @@ import React from 'react'
 import StatusPage from './StatusPage'
 
 export default class ErrorBoundary extends React.Component {
-  state = { failed: false }
+  state = { failed: false, error: null }
 
-  static getDerivedStateFromError() {
-    return { failed: true }
+  static getDerivedStateFromError(error) {
+    return { failed: true, error }
   }
 
   componentDidCatch(error, info) {
-    if (import.meta.env.DEV) console.error('Unhandled interface error', error, info)
+    console.error('Unhandled interface error', error, info)
   }
 
   render() {
-    if (this.state.failed) return <StatusPage status={500} onRetry={() => this.setState({ failed: false })} />
+    if (this.state.failed) {
+      return (
+        <StatusPage
+          status={500}
+          error={this.state.error}
+          onRetry={() => this.setState({ failed: false, error: null })}
+        />
+      )
+    }
     return this.props.children
   }
 }

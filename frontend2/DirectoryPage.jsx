@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Users,
   UserCheck,
@@ -32,6 +33,14 @@ const TABS = [
   { key: 'contacts', label: 'Offices & Contacts', icon: Phone, summaryKey: 'contacts' },
 ]
 
+function normalizeTabKey(tab) {
+  if (!tab) return null
+  const clean = String(tab).toLowerCase().replace(/[-_]/g, '')
+  if (clean === 'representatives' || clean === 'classrepresentatives') return 'classRepresentatives'
+  const match = TABS.find((t) => t.key.toLowerCase() === clean)
+  return match ? match.key : null
+}
+
 function getInitials(name = '') {
   return name
     .split(' ')
@@ -42,7 +51,9 @@ function getInitials(name = '') {
 }
 
 export default function DirectoryPage() {
-  const [activeTabKey, setActiveTabKey] = useState('executives')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialTab = normalizeTabKey(searchParams.get('tab'))
+  const [activeTabKey, setActiveTabKey] = useState(initialTab || 'executives')
   const [searchQuery, setSearchQuery] = useState('')
   const [levelFilter, setLevelFilter] = useState('All')
   const [categoryFilter, setCategoryFilter] = useState('All')
@@ -87,7 +98,7 @@ export default function DirectoryPage() {
 
     try {
       const res = await directoryApi.listEntities(config.endpoint, { is_active: true, limit: 100 })
-      const items = Array.isArray(res) ? res : res?.items || []
+      const items = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : []
       setCache((prev) => ({ ...prev, [catKey]: items }))
     } catch (err) {
       if (import.meta.env.DEV) console.error('Unable to load directory data:', err)
@@ -102,12 +113,32 @@ export default function DirectoryPage() {
     fetchSummary()
   }, [])
 
+  // Keep state synced with URL search param if changed externally
+  useEffect(() => {
+    const tab = normalizeTabKey(searchParams.get('tab'))
+    if (tab && tab !== activeTabKey) {
+      setActiveTabKey(tab)
+    }
+  }, [searchParams, activeTabKey])
+
   // Load data when active tab changes
   useEffect(() => {
     loadCategoryData(activeTabKey)
     setLevelFilter('All')
     setCategoryFilter('All')
   }, [activeTabKey])
+
+  const handleTabChange = (key) => {
+    setActiveTabKey(key)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('tab', key)
+        return next
+      },
+      { replace: true }
+    )
+  }
 
   const handleRefresh = () => {
     fetchSummary()
@@ -120,7 +151,7 @@ export default function DirectoryPage() {
   }
 
   // Filter items in active tab
-  const rawItems = cache[activeTabKey] || []
+  const rawItems = Array.isArray(cache[activeTabKey]) ? cache[activeTabKey] : []
 
   const filteredItems = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
@@ -231,7 +262,7 @@ export default function DirectoryPage() {
           return (
             <button
               key={tab.key}
-              onClick={() => setActiveTabKey(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                 isActive
                   ? 'bg-primary text-white shadow-xs'

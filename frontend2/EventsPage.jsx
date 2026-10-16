@@ -9,15 +9,18 @@ const EVENT_TYPES = ['All', 'Seminar', 'Workshop', 'Conference', 'Social']
 const formatEventDate = (isoStr) => {
   if (!isoStr) return ''
   const d = new Date(isoStr)
+  if (isNaN(d.getTime())) return ''
   return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 const formatEventTimeRange = (startIso, endIso) => {
   if (!startIso) return ''
   const start = new Date(startIso)
+  if (isNaN(start.getTime())) return ''
   const startTime = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   if (!endIso) return startTime
   const end = new Date(endIso)
+  if (isNaN(end.getTime())) return startTime
   const endTime = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   return `${startTime} – ${endTime}`
 }
@@ -142,8 +145,9 @@ export default function EventsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {events.map((event) => {
             const startDate = new Date(event.start_datetime)
-            const dayNum = startDate.getDate()
-            const monthStr = startDate.toLocaleString([], { month: 'short' }).toUpperCase()
+            const isValidDate = !isNaN(startDate.getTime())
+            const dayNum = isValidDate ? startDate.getDate() : '--'
+            const monthStr = isValidDate ? startDate.toLocaleString([], { month: 'short' }).toUpperCase() : 'TBD'
 
             return (
               <article
