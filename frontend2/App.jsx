@@ -5,6 +5,7 @@ import ProtectedRoute from './ProtectedRoute'
 import PortalLayout from './PortalLayout'
 import ErrorBoundary from './ErrorBoundary'
 import StatusPage from './StatusPage'
+import CookieConsent from './CookieConsent'
 
 import { ToastProvider } from './directory/Toast'
 
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/privacy" element={<LegalPage type="privacy" />} />
           <Route path="/terms" element={<LegalPage type="terms" />} />
+          <Route path="/cookies" element={<LegalPage type="cookies" />} />
 
           {/* Authenticated Department Portal Routes */}
           <Route
@@ -248,6 +250,7 @@ export default function App() {
 
           <Route path="*" element={<StatusPage status={404} />} />
         </Routes>
+          <CookieConsent />
           </Suspense></ErrorBoundary>
         </ToastProvider>
       </AuthProvider>

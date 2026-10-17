@@ -2,8 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
+import { preferenceStorageAllowed } from './cookiePreferences'
 
-const storedTheme = window.localStorage.getItem('chemhub-theme')
+const storedTheme = preferenceStorageAllowed() ? window.localStorage.getItem('chemhub-theme') : null
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
 const initialTheme = storedTheme || (prefersDark ? 'dark' : 'light')
 document.documentElement.dataset.theme = initialTheme

@@ -3,9 +3,11 @@ import { AlertCircle } from 'lucide-react'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import ErrorBoundary from './ErrorBoundary'
+import { preferenceStorageAllowed } from './cookiePreferences'
 
 const readStoredBoolean = (key, fallback) => {
   if (typeof window === 'undefined') return fallback
+  if (!preferenceStorageAllowed()) return fallback
   const value = window.localStorage.getItem(key)
   if (value === null) return fallback
   return value === 'true'
@@ -13,7 +15,7 @@ const readStoredBoolean = (key, fallback) => {
 
 const getInitialTheme = () => {
   if (typeof window === 'undefined') return 'light'
-  const stored = window.localStorage.getItem('chemhub-theme')
+  const stored = preferenceStorageAllowed() ? window.localStorage.getItem('chemhub-theme') : null
   if (stored === 'light' || stored === 'dark') return stored
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
@@ -29,12 +31,22 @@ export default function PortalLayout({ children, title, subtitle }) {
     const root = document.documentElement
     root.dataset.theme = theme
     root.classList.toggle('dark', theme === 'dark')
-    window.localStorage.setItem('chemhub-theme', theme)
+    if (preferenceStorageAllowed()) window.localStorage.setItem('chemhub-theme', theme)
   }, [theme])
 
   useEffect(() => {
-    window.localStorage.setItem('chemhub-sidebar-collapsed', String(isSidebarCollapsed))
+    if (preferenceStorageAllowed()) window.localStorage.setItem('chemhub-sidebar-collapsed', String(isSidebarCollapsed))
   }, [isSidebarCollapsed])
+
+  useEffect(() => {
+    const applyPreferences = (event) => {
+      if (!event.detail?.functional) return
+      window.localStorage.setItem('chemhub-theme', theme)
+      window.localStorage.setItem('chemhub-sidebar-collapsed', String(isSidebarCollapsed))
+    }
+    window.addEventListener('chemhub:cookie-preferences-changed', applyPreferences)
+    return () => window.removeEventListener('chemhub:cookie-preferences-changed', applyPreferences)
+  }, [theme, isSidebarCollapsed])
 
   useEffect(() => {
     document.title = `${title} | Chemistry Hub`
