@@ -97,6 +97,27 @@ class PushDelivery(Base):
     attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
+class PrivacyRequest(Base):
+    __tablename__ = "privacy_requests"
+    __table_args__ = (
+        CheckConstraint("request_type IN ('data_export', 'account_deletion')", name="privacy_requests_type_check"),
+        CheckConstraint("status IN ('pending', 'in_review', 'completed', 'rejected', 'cancelled')", name="privacy_requests_status_check"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    requester_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    requester_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    request_type: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", server_default="pending", index=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resolved_by_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class ResourceFolder(Base):
     __tablename__ = "resource_folders"
 

@@ -101,6 +101,12 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
 - `/api/notifications/*` provides user-scoped notification history, read state,
   unread counts, and push subscriptions. `/api/notifications/admin/*` requires
   the database-backed `admin` role.
+- `/api/privacy/requests/me` returns only the authenticated user's request
+  history. `/api/privacy/requests/export` creates an audit record and returns an
+  ownership-scoped JSON export. `/api/privacy/requests/deletion` creates one
+  active reviewed deletion request per user. `/api/privacy/admin/*` requires an
+  administrator and updates workflow status only; it never automatically
+  deletes accounts or shared academic resources.
 
 ## Security model
 
@@ -130,7 +136,7 @@ Before launch:
 7. Confirm that every enabled event, profile, notification, and settings control is backed by the deployed API; unsupported controls remain removed.
 8. Review the Privacy Notice and Terms of Use with the responsible university/society representative. Confirm the public contact, retention schedule, age/audience policy, and asset/logo permissions.
 9. Test sign-in, reset, logout, student/admin authorization, CRUD, uploads, CSP, and error handling against the actual production Firebase, database, storage, and domains.
-10. Apply migration `20261015_13`, generate one VAPID key pair, and configure
+10. Apply migrations through `20261018_14`, generate one VAPID key pair, and configure
     `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` in Render. The
     private key must never be added to Vercel or any `VITE_*` variable.
 
@@ -140,11 +146,14 @@ Vercel supplies CSP, clickjacking, referrer, permissions, MIME-sniffing, and HST
 
 - `/privacy` documents verified data processing, essential Firebase/browser storage, service providers, and account-data requests.
 - `/terms` provides an operational acceptable-use baseline requiring institutional/legal review.
+- `/cookies` documents essential authentication storage and optional local theme/sidebar preferences.
 - No refund policy is included because the application does not process payments.
-- No cookie-consent banner is included because no analytics, advertising, or other non-essential trackers were found. Reassess before adding such services.
+- A first-visit preference banner gates optional local theme/sidebar storage.
+  Analytics and advertising trackers are not initialized. The stored consent
+  record is essential so the choice is respected on later visits.
 - `robots.txt` and page metadata prevent this authenticated portal from being indexed; no sitemap is generated because there are no intended indexable routes.
 
-The application processes account identifiers, email addresses, names, roles, directory contact/academic information, and administrator-provided profile images. The repository does not define a final retention schedule or automated account deletion. Requests must be identity-verified and handled by the responsible institution.
+The application processes account identifiers, email addresses, names, roles, directory contact/academic information, administrator-provided profile images, notification state, and tracked privacy requests. The repository does not define a final institution-approved retention schedule or automated account deletion. Deletion requests remain pending until identity-verified administrative review is completed.
 
 ## Notifications and Web Push
 

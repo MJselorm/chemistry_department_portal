@@ -63,6 +63,13 @@ export const ENDPOINTS = {
   adminNotificationArchive: (id) => `/api/notifications/admin/${id}/archive`,
   adminNotificationResend: (id) => `/api/notifications/admin/${id}/resend`,
   adminManageUsers: '/admin/users',
+
+  // Authenticated privacy and personal-data requests
+  privacyRequests: '/api/privacy/requests/me',
+  privacyExport: '/api/privacy/requests/export',
+  privacyDeletion: '/api/privacy/requests/deletion',
+  adminPrivacyRequests: '/api/privacy/admin/requests',
+  adminPrivacyRequest: (id) => `/api/privacy/admin/requests/${id}`,
 }
 
 export const HUB_ENDPOINTS = {

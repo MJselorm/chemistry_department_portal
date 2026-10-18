@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class UserProfile(BaseModel):
@@ -18,7 +18,17 @@ class UserProfile(BaseModel):
 
 
 class UpdateMyProfile(BaseModel):
-    full_name: str | None = Field(default=None, max_length=200)
+    full_name: str | None = Field(default=None, min_length=2, max_length=200)
+
+    @field_validator("full_name")
+    @classmethod
+    def normalize_full_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = " ".join(value.split())
+        if len(normalized) < 2:
+            raise ValueError("Display name must contain at least 2 characters.")
+        return normalized
 
 
 class AnnouncementCreate(BaseModel):

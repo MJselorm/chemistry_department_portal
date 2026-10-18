@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { GscsLogo } from './Logos'
 import { useAuth } from './AuthContext'
 
-const UPDATED_DATE = 'October 17, 2026'
+const UPDATED_DATE = 'October 18, 2026'
 const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL?.trim()
 
 const privacySections = [

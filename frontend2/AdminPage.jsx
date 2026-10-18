@@ -34,6 +34,7 @@ import { downloadAcademicResource } from './resourceDownload'
 import { useAuth } from './AuthContext'
 import DeleteConfirmModal from './directory/DeleteConfirmModal'
 import { useToast } from './directory/Toast'
+import AdminPrivacyRequestsPanel from './AdminPrivacyRequestsPanel'
 
 const CATEGORIES = [
   'All',
@@ -478,6 +479,7 @@ export default function AdminPage() {
           { id: 'events', label: 'Events' },
           { id: 'announcements', label: `Announcements (${announcements.length})` },
           { id: 'users', label: 'Students & Users' },
+          { id: 'privacy', label: 'Privacy Requests' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -1758,6 +1760,7 @@ export default function AdminPage() {
           )}
         </section>
       )}
+      {activeTab === 'privacy' && <AdminPrivacyRequestsPanel />}
       {previewResource && <AcademicResourceViewer resource={previewResource} onClose={() => setPreviewResource(null)} />}
       <DeleteConfirmModal
         isOpen={Boolean(pendingDelete)}

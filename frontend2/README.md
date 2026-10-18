@@ -1,6 +1,6 @@
 # Chemistry Hub React frontend
 
-The active client is a React 18, React Router, Tailwind, Firebase Authentication, and Vite single-page application. It contains authenticated student pages, database-backed admin pages, password recovery, and public privacy and terms pages.
+The active client is a React 18, React Router, Tailwind, Firebase Authentication, and Vite single-page application. It contains authenticated student pages, database-backed admin pages, password recovery, public privacy/terms/cookie pages, consent preferences, personal-data export, and tracked deletion requests.
 
 ## Run locally
 
