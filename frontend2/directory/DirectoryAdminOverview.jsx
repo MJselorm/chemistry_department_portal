@@ -301,7 +301,7 @@ export default function DirectoryAdminOverview() {
               >
                 {/* Card Top: Icon & Manage link */}
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#e6f7f8] text-primary grid place-items-center transition-colors group-hover:bg-primary group-hover:text-white shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--primary-soft)] text-primary grid place-items-center transition-colors group-hover:bg-primary group-hover:text-[var(--primary-foreground)] shadow-xs">
                     <Icon size={20} />
                   </div>
 

@@ -5,6 +5,7 @@ import { useToast } from './Toast'
 import ImageUpload from './ImageUpload'
 import useDialogAccessibility from '../useDialogAccessibility'
 import DeleteConfirmModal from './DeleteConfirmModal'
+import SafeImage from '../SafeImage'
 
 export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
   const { showToast } = useToast()
@@ -276,14 +277,13 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
                   className="flex items-center justify-between p-3 rounded-xl border border-border bg-surface hover:border-[var(--primary-border)] transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    {m.photo_url ? (
-                      <img
+                    <SafeImage
                         src={m.photo_url}
                         alt={m.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-10 h-10 rounded-full object-cover border border-border"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-[#d8f0f1] text-primary font-black text-xs grid place-items-center">
+                        fallback={<div className="w-10 h-10 rounded-full bg-[var(--primary-soft)] text-primary font-black text-xs grid place-items-center">
                         {m.name
                           .split(' ')
                           .filter(Boolean)
@@ -291,8 +291,8 @@ export default function CommitteeMembersModal({ committee, isOpen, onClose }) {
                           .slice(0, 2)
                           .join('')
                           .toUpperCase()}
-                      </div>
-                    )}
+                      </div>}
+                    />
                     <div>
                       <div className="flex items-center gap-2">
                         <strong className="text-xs font-bold text-foreground">{m.name}</strong>

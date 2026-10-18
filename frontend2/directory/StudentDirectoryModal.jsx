@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { directoryApi } from './directoryApi'
 import useDialogAccessibility from '../useDialogAccessibility'
+import SafeImage from '../SafeImage'
 
 /**
  * Formats "HH:MM:SS" or "HH:MM" into "10:00 AM" format.
@@ -166,19 +167,16 @@ export default function StudentDirectoryModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Profile Overview Header */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-            {photoUrl ? (
-              <img
+            <SafeImage
                 src={photoUrl}
                 alt={displayName}
                 loading="lazy"
                 decoding="async"
                 className="w-20 h-20 rounded-2xl object-cover border border-border shadow-sm flex-shrink-0"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#dff2f4] to-[#c2e7ea] text-primary font-black text-2xl grid place-items-center flex-shrink-0 shadow-xs">
+                fallback={<div className="w-20 h-20 rounded-2xl bg-[var(--primary-soft)] text-primary font-black text-2xl grid place-items-center flex-shrink-0 shadow-xs">
                 {getInitials(displayName) || 'CH'}
-              </div>
-            )}
+              </div>}
+            />
 
             <div className="flex-1 min-w-0">
               <h2 id="student-directory-title" className="text-xl font-bold text-foreground leading-snug break-words">

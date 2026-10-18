@@ -1630,7 +1630,7 @@ export default function AdminPage() {
                   key={item.id}
                   className={`bg-surface border rounded-2xl p-5 shadow-xs transition-all ${
                     item.is_pinned
-                      ? 'border-[#f2d89f] bg-gradient-to-r from-[#fffdfa] to-white ring-1 ring-[#f2d89f]/40'
+                      ? 'border-[var(--primary-border)] bg-[var(--accent-soft)]'
                       : 'border-border hover:border-[var(--primary-border)]'
                   }`}
                 >

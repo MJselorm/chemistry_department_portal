@@ -28,15 +28,15 @@ const STAT_ICONS = {
 
 const STAT_TONES = {
   events: 'bg-[var(--primary-soft)] text-[var(--primary)]',
-  resources: 'bg-[var(--accent-soft)] text-[var(--warning)]',
-  students: 'bg-[var(--success-soft)] text-[var(--success)]',
+  resources: 'bg-[var(--accent-soft)] text-[var(--accent-foreground)]',
+  students: 'bg-[var(--primary-soft)] text-[var(--primary)]',
   announcements: 'bg-[var(--surface-secondary)] text-[var(--muted-foreground)]',
 }
 
 const STAT_ACCENTS = {
   events: 'var(--primary)',
   resources: 'var(--accent)',
-  students: 'var(--success)',
+  students: 'var(--primary)',
   announcements: 'var(--muted-foreground)',
 }
 
@@ -211,7 +211,7 @@ export default function DashboardPage() {
       {/* ── HERO BANNER ─────────────────────────────────────────── */}
       {isDisplayingAdmin ? (
         /* Admin Hero Banner */
-        <section className="chem-hero dashboard-campus-hero min-h-[18rem] rounded-lg p-6 sm:p-8 text-white relative overflow-hidden shadow-raised flex items-end">
+        <section className="dashboard-campus-hero min-h-[18rem] rounded-lg p-6 sm:p-8 text-white relative overflow-hidden shadow-raised flex items-end">
           <div className="relative z-10 max-w-2xl">
             <span className="text-[10px] uppercase tracking-widest font-extrabold text-[#e8c95b]">
               ADMIN CONSOLE · CHEMISTRY DEPARTMENT
@@ -247,7 +247,7 @@ export default function DashboardPage() {
         </section>
       ) : (
         /* Student Hero Banner */
-        <section className="chem-hero dashboard-campus-hero min-h-[18rem] rounded-lg p-6 sm:p-8 text-white relative overflow-hidden shadow-raised flex items-end">
+        <section className="dashboard-campus-hero min-h-[18rem] rounded-lg p-6 sm:p-8 text-white relative overflow-hidden shadow-raised flex items-end">
           <div className="relative z-10 max-w-2xl">
             <span className="text-[10px] uppercase tracking-widest font-extrabold text-[#e8c95b]">
               STUDENT DASHBOARD · CHEMISTRY DEPARTMENT

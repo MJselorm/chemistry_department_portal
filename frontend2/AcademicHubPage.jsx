@@ -103,29 +103,32 @@ export default function AcademicHubPage() {
 
   return (
     <div className="space-y-6">
-      {/* Repository hero */}
-      <section className="academic-hero relative overflow-hidden rounded-lg px-5 py-6 text-white shadow-raised sm:min-h-[15rem] sm:px-7 sm:py-7">
-        <div className="relative z-10 flex h-full max-w-2xl flex-col justify-end">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#e8c95b]">
+      <section className="page-intro content-panel rounded-lg px-5 py-6 sm:px-7">
+        <div className="max-w-2xl">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
             STUDY CENTRE & REPOSITORY
           </span>
-          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Academic Hub</h1>
-          <p className="mt-2 max-w-xl text-xs leading-relaxed text-white/75 sm:text-sm">
+          <div className="mt-1 flex items-center gap-3">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg bg-[var(--primary-soft)] text-primary">
+              <BookOpen size={20} aria-hidden="true" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Academic Hub</h1>
+          </div>
+          <p className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
             Access course lecture slides, past examination papers, laboratory guides, and study materials.
           </p>
 
           <form onSubmit={handleSearchSubmit} className="relative mt-5 w-full max-w-xl">
-            <Search className="absolute left-3.5 top-3 text-slate-500" size={15} aria-hidden="true" />
+            <Search className="absolute left-3.5 top-3 text-muted-foreground" size={15} aria-hidden="true" />
             <input
               aria-label="Search academic materials"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by title, course code or tag…"
-              className="w-full rounded-lg border border-white/30 bg-white py-2.5 pl-10 pr-4 text-xs text-[#171923] shadow-raised outline-none placeholder:text-slate-500 focus:border-[#e8c95b]"
+              className="w-full rounded-lg border border-border bg-surface py-2.5 pl-10 pr-4 text-xs text-foreground shadow-xs outline-none placeholder:text-muted-foreground focus:border-primary"
             />
           </form>
         </div>
-        <BookOpen className="absolute right-7 top-7 hidden text-white/20 sm:block" size={44} strokeWidth={1.4} aria-hidden="true" />
       </section>
 
       {/* Action and Filter Controls */}

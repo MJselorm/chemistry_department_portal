@@ -57,11 +57,11 @@
     --muted-foreground: #a6adbb;
     --border: #292e3d;
     --input: #1c2030;
-    --primary: #8f96ff;
-    --primary-hover: #a8adff;
+    --primary: #aeb4cf;
+    --primary-hover: #c4c8da;
     --primary-foreground: #0d0f17;
-    --primary-soft: rgba(143, 150, 255, 0.14);
-    --primary-border: rgba(143, 150, 255, 0.3);
+    --primary-soft: rgba(174, 180, 207, 0.12);
+    --primary-border: rgba(174, 180, 207, 0.26);
     --accent: #e8c95b;
     --accent-foreground: #0d0f17;
     --accent-soft: rgba(232, 201, 91, 0.14);
@@ -161,26 +161,6 @@
     box-shadow: var(--shadow-raised);
   }
 
-  .chem-hero {
-    background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 46%),
-      linear-gradient(135deg, #171a4a 0%, #272c75 100%);
-  }
-
-  .chem-hero::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.16;
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(232, 201, 91, 0.8) 1px, transparent 1.5px),
-      linear-gradient(30deg, transparent 48%, rgba(255,255,255,0.16) 49%, rgba(255,255,255,0.16) 51%, transparent 52%);
-    background-size: 44px 44px, 88px 76px;
-    mask-image: linear-gradient(to left, black, transparent 72%);
-    -webkit-mask-image: linear-gradient(to left, black, transparent 72%);
-  }
-
   .auth-campus-hero {
     background-color: #171a4a;
   }
@@ -196,6 +176,15 @@
       background-position: center;
       background-size: cover;
     }
+
+    html.dark .auth-campus-hero {
+      background-image:
+        linear-gradient(90deg, rgba(13, 15, 23, 0.96) 0%, rgba(13, 15, 23, 0.86) 52%, rgba(13, 15, 23, 0.7) 100%),
+        image-set(
+          url('/images/knust-social-science.jpg') 1x,
+          url('/images/knust-social-science-1920.jpg') 2x
+        );
+    }
   }
 
   @media (min-width: 640px) {
@@ -209,11 +198,18 @@
       background-position: center 54%;
       background-size: cover;
     }
+
+    html.dark .dashboard-campus-hero {
+      background-image:
+        linear-gradient(90deg, rgba(13, 15, 23, 0.96) 0%, rgba(13, 15, 23, 0.88) 58%, rgba(13, 15, 23, 0.72) 100%),
+        image-set(
+          url('/images/knust-built-environment.jpg') 1x,
+          url('/images/knust-built-environment-1600.jpg') 2x
+        );
+    }
   }
 
-  .portal-shell {
-    background-image: linear-gradient(180deg, var(--surface-highlight) 0, var(--background) 14rem);
-  }
+  .portal-shell { background: var(--background); }
 
   .topbar {
     box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02), 0 8px 24px -24px rgba(16, 24, 40, 0.45);
@@ -221,7 +217,7 @@
 
   .sidebar-brand {
     border-color: rgba(255, 255, 255, 0.1);
-    background: linear-gradient(135deg, #171a4a 0%, #242966 100%);
+    background: #171a4a;
   }
 
   .page-intro {
@@ -236,7 +232,7 @@
     position: absolute;
     inset: 0 auto 0 0;
     width: 4px;
-    background: linear-gradient(180deg, var(--accent), var(--primary));
+    background: var(--accent);
   }
 
   .content-panel {
@@ -248,7 +244,7 @@
   .dashboard-stat {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(145deg, var(--surface) 0%, var(--surface-highlight) 100%);
+    background: var(--surface);
   }
 
   .dashboard-stat::after {
@@ -260,64 +256,22 @@
     opacity: 0.72;
   }
 
-  .academic-hero {
-    background-color: #171a4a;
-    background-image:
-      linear-gradient(90deg, rgba(11, 14, 42, 0.95) 0%, rgba(20, 24, 66, 0.82) 54%, rgba(20, 24, 66, 0.42) 100%),
-      image-set(
-        url('/images/knust-college-science.jpg') 1x,
-        url('/images/knust-college-science-1600.jpg') 2x
-      );
-    background-position: center 48%;
-    background-size: cover;
-  }
-
-  .library-card {
-    background: linear-gradient(180deg, var(--surface-highlight), var(--surface) 42%);
-  }
+  .library-card { background: var(--surface); }
 
   .file-badge {
     color: var(--primary);
     background: var(--primary-soft);
   }
 
-  .file-badge[data-file-type='pdf'] {
-    color: var(--destructive);
-    background: var(--destructive-soft);
-  }
+  .document-thumbnail { background: var(--surface-secondary); }
 
-  .file-badge[data-file-type='ppt'],
-  .file-badge[data-file-type='pptx'] {
-    color: var(--warning);
-    background: var(--warning-soft);
-  }
-
-  .file-badge[data-file-type='doc'],
-  .file-badge[data-file-type='docx'] {
-    color: #2563a8;
-    background: rgba(37, 99, 168, 0.1);
-  }
-
-  .document-thumbnail {
-    background-color: var(--surface-secondary);
-    background-image:
-      linear-gradient(var(--border) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 24px 24px;
-  }
-
-  .settings-section > header {
-    background: linear-gradient(90deg, var(--surface-highlight), var(--surface));
-  }
+  .settings-section > header { background: var(--surface-secondary); }
 
   @media (max-width: 639px) {
     .page-intro {
       padding: 1rem 0 1rem 1rem;
     }
 
-    .academic-hero {
-      background-image: linear-gradient(135deg, #171a4a, #2d3376);
-    }
   }
 
   .status-success { color: var(--success); background: var(--success-soft); border-color: var(--success-border); }

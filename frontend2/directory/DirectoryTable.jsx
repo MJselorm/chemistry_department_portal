@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react'
+import SafeImage from '../SafeImage'
 
 export default function DirectoryTable({
   categoryConfig,
@@ -74,19 +75,16 @@ export default function DirectoryTable({
 
     return (
       <div className="flex items-center gap-3">
-        {image ? (
-          <img
+        <SafeImage
             src={image}
             alt={title}
             loading="lazy"
             decoding="async"
             className="w-9 h-9 rounded-xl object-cover border border-border flex-shrink-0"
-          />
-        ) : (
-          <div className="w-9 h-9 rounded-xl bg-[var(--primary-soft)] text-primary font-black text-xs grid place-items-center flex-shrink-0">
+            fallback={<div className="w-9 h-9 rounded-xl bg-[var(--primary-soft)] text-primary font-black text-xs grid place-items-center flex-shrink-0">
             {(title || '?')[0].toUpperCase()}
-          </div>
-        )}
+          </div>}
+        />
         <div className="min-w-0">
           <strong className="block text-xs font-bold text-foreground truncate hover:text-primary">
             {item.title ? `${item.title} ` : ''}
