@@ -20,7 +20,7 @@ export default function StatusPage({ status = 404, error, onRetry }) {
         <p className="mt-5 text-xs font-bold text-muted-foreground">Error {status}</p>
         <h1 className="mt-1 text-2xl font-bold text-foreground">{content.title}</h1>
         <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">{content.message}</p>
-        {error && (
+        {import.meta.env.DEV && error && (
           <div className="mx-auto mt-4 max-w-sm rounded-lg border border-red-200 bg-red-50 p-3 text-left font-mono text-[11px] text-red-700 overflow-auto max-h-40">
             <strong>Error:</strong> {error.message || String(error)}
           </div>

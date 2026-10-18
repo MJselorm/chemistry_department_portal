@@ -85,7 +85,7 @@ export default function PortalLayout({ children, title, subtitle }) {
                 </div>
                 <h2 className="text-base font-bold text-foreground">Something went wrong</h2>
                 <p className="text-xs text-muted-foreground mt-1">Chemistry Hub could not display this section.</p>
-                {error && (
+                {import.meta.env.DEV && error && (
                   <div className="mt-3 p-3 bg-red-50 text-red-700 text-[11px] text-left font-mono rounded-lg overflow-auto max-h-40">
                     {error.message || String(error)}
                   </div>

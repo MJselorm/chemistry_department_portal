@@ -9,8 +9,6 @@ import CookieConsent from './CookieConsent'
 
 import { ToastProvider } from './directory/Toast'
 
-import AnnouncementsPage from './AnnouncementsPage'
-
 const LoginPage = lazy(() => import('./LoginPage'))
 const ForgotPasswordPage = lazy(() => import('./ForgotPasswordPage'))
 const LegalPage = lazy(() => import('./LegalPage'))
@@ -21,6 +19,7 @@ const DirectoryPage = lazy(() => import('./DirectoryPage'))
 const ProfilePage = lazy(() => import('./ProfilePage'))
 const SettingsPage = lazy(() => import('./SettingsPage'))
 const AdminPage = lazy(() => import('./AdminPage'))
+const AnnouncementsPage = lazy(() => import('./AnnouncementsPage'))
 const DirectoryAdminOverview = lazy(() => import('./directory/DirectoryAdminOverview'))
 const DirectoryEntityManager = lazy(() => import('./directory/DirectoryEntityManager'))
 

@@ -179,6 +179,36 @@
     -webkit-mask-image: linear-gradient(to left, black, transparent 72%);
   }
 
+  .auth-campus-hero {
+    background-color: #171a4a;
+  }
+
+  @media (min-width: 1024px) {
+    .auth-campus-hero {
+      background-image:
+        linear-gradient(90deg, rgba(12, 14, 45, 0.9) 0%, rgba(18, 21, 67, 0.74) 48%, rgba(18, 21, 67, 0.46) 100%),
+        image-set(
+          url('/images/knust-social-science.jpg') 1x,
+          url('/images/knust-social-science-1920.jpg') 2x
+        );
+      background-position: center;
+      background-size: cover;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .dashboard-campus-hero {
+      background-image:
+        linear-gradient(90deg, rgba(12, 14, 45, 0.94) 0%, rgba(18, 21, 67, 0.86) 56%, rgba(18, 21, 67, 0.56) 100%),
+        image-set(
+          url('/images/knust-social-science.jpg') 1x,
+          url('/images/knust-social-science-1920.jpg') 2x
+        );
+      background-position: center;
+      background-size: cover;
+    }
+  }
+
   .status-success { color: var(--success); background: var(--success-soft); border-color: var(--success-border); }
   .status-warning { color: var(--warning); background: var(--warning-soft); border-color: var(--warning-border); }
   .status-destructive { color: var(--destructive); background: var(--destructive-soft); border-color: var(--destructive-border); }

@@ -79,9 +79,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[1.35fr_1fr]">
+    <main className="min-h-[100dvh] bg-panel lg:grid lg:grid-cols-[1.35fr_1fr]">
       {/* ── Left: the society's story ─────────────────────────────── */}
-      <section className="chem-hero relative flex min-h-[26rem] flex-col justify-between overflow-hidden px-8 py-10 text-white sm:px-14 lg:min-h-screen lg:px-16 lg:py-14">
+      <section className="auth-campus-hero relative hidden min-h-screen flex-col justify-between overflow-hidden px-14 py-12 text-white lg:flex lg:px-16 lg:py-14">
 
         <header className="relative flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
@@ -136,15 +136,23 @@ export default function LoginPage() {
       </section>
 
       {/* ── Right: sign in ────────────────────────────────────────── */}
-      <section className="flex min-h-screen flex-col justify-center bg-panel px-7 py-14 sm:px-14">
+      <section className="flex min-h-[100dvh] flex-col justify-start bg-panel px-5 py-6 sm:px-10 sm:py-10 lg:justify-center lg:px-14 lg:py-12">
         <div className="mx-auto w-full max-w-sm">
-          <h2 className="font-display text-[2.4rem] font-light leading-tight">Academic Portal</h2>
-          <p className="mt-3 text-[0.86rem] leading-relaxed text-slate-500">
+          <header className="mb-7 flex items-center gap-3 lg:hidden">
+            <GscsLogo className="h-10 w-10 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-head text-sm font-bold text-ink">Chemistry Hub</p>
+              <p className="text-[0.7rem] text-slate-500">Ghana Students' Chemical Society</p>
+            </div>
+          </header>
+
+          <h1 className="font-display text-[2rem] font-light leading-tight sm:text-[2.4rem]">Welcome back</h1>
+          <p className="mt-2 text-[0.86rem] leading-relaxed text-slate-500 sm:mt-3">
             Sign in with your university credentials to access the chemical directory, lab
             schedules, and member forum.
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-9 space-y-5" noValidate>
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4 sm:mt-9 sm:space-y-5" noValidate>
             <Field
               id="email"
               label="University email"
@@ -237,7 +245,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <footer className="mx-auto mt-16 max-w-sm text-center text-[0.72rem] leading-relaxed text-slate-400">
+        <footer className="mx-auto mt-8 max-w-sm text-center text-[0.72rem] leading-relaxed text-slate-400 sm:mt-12 lg:mt-16">
           <p>Authorized access only. Applicable institutional policies govern use.</p>
           <p className="my-1 flex items-center justify-center gap-3">
             <Link to="/privacy" className="hover:text-primary hover:underline">Privacy</Link>
@@ -247,7 +255,7 @@ export default function LoginPage() {
           <p>© {new Date().getFullYear()} Ghana Students' Chemical Society, KNUST</p>
         </footer>
       </section>
-    </div>
+    </main>
   )
 }
 

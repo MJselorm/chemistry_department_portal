@@ -30,8 +30,9 @@ export function AuthProvider({ children }) {
 
     const request = (async () => {
       tokenStore.set(token)
-      await api.post(ENDPOINTS.sync)
-      return api.get(ENDPOINTS.me)
+      // The sync endpoint already returns the current profile. Reuse it so
+      // session restoration and sign-in need one backend round trip, not two.
+      return api.post(ENDPOINTS.sync)
     })()
     profileRequests.current.set(requestKey, request)
     try {

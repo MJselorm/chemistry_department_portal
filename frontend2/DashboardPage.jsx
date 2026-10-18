@@ -204,7 +204,7 @@ export default function DashboardPage() {
       {/* ── HERO BANNER ─────────────────────────────────────────── */}
       {isDisplayingAdmin ? (
         /* Admin Hero Banner */
-        <div className="chem-hero rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-sm">
+        <div className="chem-hero dashboard-campus-hero rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-sm">
           <div className="relative z-10 max-w-2xl">
             <span className="text-[10px] uppercase tracking-widest font-extrabold text-[#e8c95b]">
               ADMIN CONSOLE · CHEMISTRY DEPARTMENT
@@ -243,7 +243,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         /* Student Hero Banner */
-        <div className="chem-hero rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-sm">
+        <div className="chem-hero dashboard-campus-hero rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-sm">
           <div className="relative z-10 max-w-2xl">
             <span className="text-[10px] uppercase tracking-widest font-extrabold text-[#e8c95b]">
               STUDENT DASHBOARD · CHEMISTRY DEPARTMENT
