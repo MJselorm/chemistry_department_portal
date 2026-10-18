@@ -1,36 +1,46 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
+import { useToast } from './directory/Toast'
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuth()
+  const { showToast } = useToast()
   const [fullName, setFullName] = useState(user?.full_name || '')
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState(null)
 
   useEffect(() => {
-    if (user?.full_name) {
-      setFullName(user.full_name)
-    }
+    setFullName(user?.full_name || '')
   }, [user?.full_name])
 
-  const displayName = fullName || user?.email?.split('@')[0] || 'Dela Gogah'
+  const displayName = user?.full_name || user?.email?.split('@')[0] || 'Student'
   const initials = displayName
     .split(' ')
     .filter(Boolean)
     .map((n) => n[0])
     .slice(0, 2)
     .join('')
-    .toUpperCase() || 'DG'
+    .toUpperCase() || 'ST'
 
   const handleSave = async (e) => {
     e.preventDefault()
+    const normalizedName = fullName.trim().replace(/\s+/g, ' ')
+    if (normalizedName.length < 2) {
+      const text = 'Enter a display name with at least 2 characters.'
+      setMessage({ type: 'error', text })
+      showToast(text, 'error')
+      return
+    }
     setIsSaving(true)
     setMessage(null)
     try {
-      await updateProfile(fullName.trim())
-      setMessage({ type: 'success', text: 'Profile updated successfully.' })
+      await updateProfile(normalizedName)
+      setFullName(normalizedName)
+      setMessage({ type: 'success', text: 'Display name updated successfully.' })
+      showToast('Display name updated successfully.', 'success')
     } catch (err) {
       setMessage({ type: 'error', text: 'Your profile could not be updated. Please try again.' })
+      showToast('Your profile could not be updated. Please try again.', 'error')
     } finally {
       setIsSaving(false)
     }
@@ -97,6 +107,7 @@ export default function ProfilePage() {
                 maxLength="200"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                autoComplete="name"
                 required
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
                 placeholder="Your full name"
@@ -120,7 +131,7 @@ export default function ProfilePage() {
           <div className="pt-4 border-t border-[#f4f7f8] flex flex-col items-start gap-3 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between">
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || fullName.trim().length < 2 || fullName.trim().replace(/\s+/g, ' ') === (user?.full_name || '')}
               className="w-full px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50 min-[480px]:w-auto"
             >
               {isSaving ? 'Saving changes...' : 'Save changes'}

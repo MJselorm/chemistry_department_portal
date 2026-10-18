@@ -6,6 +6,7 @@ import AcademicResourceViewer from './AcademicResourceViewer'
 import ResourceThumbnail from './ResourceThumbnail'
 import { downloadAcademicResource } from './resourceDownload'
 import { resourceExtension } from './filePreview'
+import SelectField from './SelectField'
 
 const CATEGORIES = [
   'All Categories',
@@ -156,52 +157,55 @@ export default function AcademicHubPage() {
               <Filter size={13} className="text-primary" />
               <span className="font-semibold">Level:</span>
             </div>
-            <select
+            <SelectField
+              aria-label="Filter by academic level"
               value={selectedLevel}
               onChange={(e) => {
                 setSelectedLevel(e.target.value)
                 setPage(1)
               }}
-              className="px-2.5 py-1.5 rounded-xl border border-border bg-surface text-xs font-medium focus:outline-none focus:border-primary shadow-xs"
+              className="rounded-lg py-1.5 pl-2.5 text-xs font-medium"
             >
               {LEVELS.map((lvl) => (
                 <option key={lvl} value={lvl}>
                   {lvl}
                 </option>
               ))}
-            </select>
+            </SelectField>
 
             <div className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
               <span className="font-semibold">Semester:</span>
             </div>
-            <select
+            <SelectField
+              aria-label="Filter by semester"
               value={selectedSemester}
               onChange={(e) => {
                 setSelectedSemester(e.target.value)
                 setPage(1)
               }}
-              className="px-2.5 py-1.5 rounded-xl border border-border bg-surface text-xs font-medium focus:outline-none focus:border-primary shadow-xs"
+              className="rounded-lg py-1.5 pl-2.5 text-xs font-medium"
             >
               {SEMESTERS.map((semester) => (
                 <option key={semester} value={semester}>{semester}</option>
               ))}
-            </select>
+            </SelectField>
 
             <div className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
               <span className="font-semibold">Sort:</span>
             </div>
-            <select
+            <SelectField
+              aria-label="Sort academic materials"
               value={sortBy}
               onChange={(e) => {
                 setSortBy(e.target.value)
                 setPage(1)
               }}
-              className="px-2.5 py-1.5 rounded-xl border border-border bg-surface text-xs font-medium focus:outline-none focus:border-primary shadow-xs"
+              className="rounded-lg py-1.5 pl-2.5 text-xs font-medium"
             >
               <option value="name">Name (A-Z)</option>
               <option value="created_at">Date Added</option>
               <option value="updated_at">Last Updated</option>
-            </select>
+            </SelectField>
           </div>
 
           <div className="flex items-center gap-2">

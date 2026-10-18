@@ -2,14 +2,15 @@ import { useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { GscsLogo } from './Logos'
+import { useAuth } from './AuthContext'
 
-const UPDATED_DATE = 'September 26, 2026'
+const UPDATED_DATE = 'October 17, 2026'
 const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL?.trim()
 
 const privacySections = [
   {
     title: 'Information processed',
-    body: 'Chemistry Hub processes Firebase account identifiers, email address, display name, application role, and account timestamps. Directory records may include names, student or staff identifiers, academic roles, contact details, biographies, office information, and profile images when administrators provide them.',
+    body: 'Chemistry Hub processes Firebase account identifiers, email address, display name, application role, and account timestamps. The portal also records notification read state and, when enabled by a user, device push-subscription details. Directory records may include names, student or staff identifiers, academic roles, contact details, biographies, office information, and profile images supplied through authorized administration.',
   },
   {
     title: 'Why it is used',
@@ -17,19 +18,42 @@ const privacySections = [
   },
   {
     title: 'Services and storage',
-    body: 'Authentication is provided by Firebase. Application records are stored in PostgreSQL hosted by Supabase, and approved directory images may be stored in Supabase Storage. The API and frontend are configured for Render and Vercel deployment. Google Fonts is loaded by the frontend and may receive standard connection information such as an IP address and browser metadata.',
+    body: 'Authentication is provided by Firebase. Application records are stored in PostgreSQL hosted by Supabase, and approved academic files and directory media may be stored in Supabase Storage. The API and frontend are configured for Render and Vercel deployment. Google Fonts is loaded by the frontend and may receive standard connection information such as an IP address and browser metadata.',
   },
   {
     title: 'Cookies and browser storage',
-    body: 'Chemistry Hub does not initialize advertising or analytics trackers. Firebase uses essential browser storage to maintain the selected sign-in session. The portal stores theme and sidebar preferences locally. API bearer tokens are held in memory and are not copied into localStorage by the application.',
+    body: 'Chemistry Hub does not initialize advertising or analytics trackers. Firebase uses essential browser storage to maintain the selected sign-in session. With permission, the portal stores theme and sidebar preferences locally. The consent choice is also stored so the banner is not repeatedly displayed. API bearer tokens are held in memory and are not copied into localStorage by the application.',
   },
   {
     title: 'Retention and access requests',
-    body: 'The repository does not define a fixed institutional retention schedule. Account and directory records should be retained only while needed for portal and departmental administration. Requests to access, correct, or delete personal information require identity verification and institutional review before records are changed.',
+    body: 'The repository does not define an institution-approved retention schedule. Account, directory, notification, and request records should be retained only while needed for portal and departmental administration or an applicable institutional obligation. Requests to access, correct, or delete personal information require verified identity and administrative review before records are changed.',
   },
   {
     title: 'Security',
     body: 'The portal uses Firebase identity verification, server-side role checks, encrypted HTTPS deployment, strict request validation, and restricted administrative endpoints. No online service can guarantee absolute security.',
+  },
+]
+
+const cookieSections = [
+  {
+    title: 'Essential browser storage',
+    body: 'Firebase Authentication uses browser storage to maintain the sign-in persistence selected by the user. Chemistry Hub stores the cookie-preference decision locally and may use a service worker for requested push notifications. These functions support account security and requested portal features and are not used for advertising.',
+  },
+  {
+    title: 'Optional functional preferences',
+    body: 'With permission, Chemistry Hub uses localStorage to remember light or dark theme and the sidebar layout on the current browser. These values remain until browser data is cleared or optional preferences are rejected. Rejecting them does not restrict academic materials; visual choices simply stop persisting between visits.',
+  },
+  {
+    title: 'Analytics and advertising',
+    body: 'The application does not initialize analytics, advertising pixels, behavioral profiling, or cross-site tracking. If optional analytics are introduced later, this policy and the consent controls must be updated before those scripts are enabled.',
+  },
+  {
+    title: 'Third-party services',
+    body: 'Firebase provides authentication. Supabase hosts application records and approved files through the backend. Render and Vercel host the API and frontend, and Google Fonts supplies typefaces. These providers may process ordinary connection and security logs under their own service terms.',
+  },
+  {
+    title: 'Managing your choice',
+    body: 'Use Manage Cookie Preferences in Settings to accept or reject optional functional storage at any time. Rejecting optional storage removes saved theme and sidebar values. Essential authentication storage can be cleared by signing out and using browser controls, although clearing it may end the session.',
   },
 ]
 
@@ -57,9 +81,11 @@ const termsSections = [
 ]
 
 export default function LegalPage({ type }) {
+  const { user } = useAuth()
   const isPrivacy = type === 'privacy'
-  const title = isPrivacy ? 'Privacy Notice' : 'Terms of Use'
-  const sections = isPrivacy ? privacySections : termsSections
+  const isCookies = type === 'cookies'
+  const title = isPrivacy ? 'Privacy Policy' : isCookies ? 'Cookie Policy' : 'Terms of Use'
+  const sections = isPrivacy ? privacySections : isCookies ? cookieSections : termsSections
 
   useEffect(() => {
     document.title = `${title} | Chemistry Hub`
@@ -73,8 +99,8 @@ export default function LegalPage({ type }) {
             <GscsLogo className="h-9 w-9" />
             <span>Chemistry Hub</span>
           </Link>
-          <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-            <ArrowLeft size={15} aria-hidden="true" /> Sign in
+          <Link to={user ? '/settings' : '/'} className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+            <ArrowLeft size={15} aria-hidden="true" /> {user ? 'Back to settings' : 'Sign in'}
           </Link>
         </div>
       </header>
@@ -95,7 +121,7 @@ export default function LegalPage({ type }) {
           ))}
 
           <section aria-labelledby={`${type}-contact`} className="border-t border-border pt-7">
-            <h2 id={`${type}-contact`} className="text-lg font-bold">Questions and requests</h2>
+            <h2 id={`${type}-contact`} className="text-lg font-bold">Questions, requests, and administrator review</h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">
               {supportEmail ? (
                 <>Contact the portal administrator at <a className="font-semibold text-primary hover:underline" href={`mailto:${supportEmail}`}>{supportEmail}</a>.</>
@@ -103,12 +129,14 @@ export default function LegalPage({ type }) {
                 <>A public privacy and support email has not yet been configured. Contact the Department of Chemistry administration through established university channels. The deployment owner must configure <code className="rounded bg-surface-secondary px-1 py-0.5">VITE_SUPPORT_EMAIL</code> before production launch.</>
               )}
             </p>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">The responsible university or society representative must confirm the portal operator's legal name, public contact details, approved retention schedule, and any institution-specific policy wording before production approval.</p>
           </section>
         </div>
 
         <nav aria-label="Legal pages" className="mt-12 flex gap-4 border-t border-border pt-6 text-sm font-semibold text-primary">
           <Link to="/privacy" className="hover:underline">Privacy</Link>
           <Link to="/terms" className="hover:underline">Terms</Link>
+          <Link to="/cookies" className="hover:underline">Cookies</Link>
         </nav>
       </main>
     </div>

@@ -242,6 +242,7 @@ export default function LoginPage() {
           <p className="my-1 flex items-center justify-center gap-3">
             <Link to="/privacy" className="hover:text-primary hover:underline">Privacy</Link>
             <Link to="/terms" className="hover:text-primary hover:underline">Terms</Link>
+            <Link to="/cookies" className="hover:text-primary hover:underline">Cookies</Link>
           </p>
           <p>© {new Date().getFullYear()} Ghana Students' Chemical Society, KNUST</p>
         </footer>
