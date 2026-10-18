@@ -207,7 +207,7 @@ export default function DirectoryPage() {
   return (
     <div className="space-y-6">
       {/* ── PAGE HEADER ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="page-intro flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
             PEOPLE & DIRECTORY
@@ -253,7 +253,7 @@ export default function DirectoryPage() {
       </div>
 
       {/* ── CATEGORY TABS ───────────────────────────────────────── */}
-      <div className="flex gap-2 overflow-x-auto pb-1 border-b border-border scrollbar-none">
+      <div className="content-panel flex gap-1 overflow-x-auto rounded-lg p-1.5 scrollbar-none">
         {TABS.map((tab) => {
           const isActive = activeTabKey === tab.key
           const Icon = tab.icon

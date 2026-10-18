@@ -451,7 +451,7 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="page-intro flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
             ADMINISTRATION CONSOLE
@@ -472,7 +472,7 @@ export default function AdminPage() {
       </div>
 
       {/* Sub-Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-border pb-3">
+      <div className="content-panel flex gap-1 overflow-x-auto rounded-lg p-1.5 scrollbar-none">
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'resources', label: `Resources (${resourceData.total || adminResources.length})` },
@@ -484,7 +484,7 @@ export default function AdminPage() {
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+            className={`min-h-9 whitespace-nowrap px-3.5 py-1.5 rounded-md text-xs font-bold transition-colors ${
               activeTab === tab.id
                 ? 'bg-primary text-white shadow-xs'
                 : 'bg-surface border border-border text-muted-foreground hover:border-[var(--primary-border)]'

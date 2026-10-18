@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Mail, Save, ShieldCheck, UserRound } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import { useToast } from './directory/Toast'
 
@@ -49,21 +50,22 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6 max-w-3xl">
       {/* Page Head */}
-      <div>
+      <div className="page-intro">
         <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">ACCOUNT</span>
         <h1 className="text-2xl font-bold text-foreground mt-1">My profile</h1>
         <p className="text-xs text-muted-foreground mt-1">Manage the name associated with your portal account.</p>
       </div>
 
-      <section className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
+      <section className="content-panel overflow-hidden rounded-lg">
         {/* Profile Hero Header */}
-        <div className="flex items-center gap-4 sm:gap-6 pb-6 border-b border-border mb-6">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#d8f0f1] text-primary font-black text-xl sm:text-2xl grid place-items-center flex-shrink-0">
+        <div className="flex items-center gap-4 sm:gap-6 border-b border-[var(--primary-border)] bg-[var(--primary-soft)] p-5 sm:p-7">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary text-primary-foreground font-black text-xl sm:text-2xl grid place-items-center flex-shrink-0 ring-4 ring-[var(--surface)] shadow-raised">
             {initials}
           </div>
           <div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">{displayName}</h2>
-            <p className="text-xs text-muted-foreground mt-0.5 mb-2">
+            <p className="text-xs text-muted-foreground mt-0.5 mb-2 inline-flex items-center gap-1.5">
+              <ShieldCheck size={13} aria-hidden="true" />
               {user?.role === 'admin' ? 'Administrator' : 'Student'} · Chemistry Hub
             </p>
             <div className="flex items-center gap-2">
@@ -80,6 +82,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Feedback Alert */}
+        <div className="p-5 sm:p-7">
         {message && (
           <div
             role={message.type === 'error' ? 'alert' : 'status'}
@@ -97,8 +100,8 @@ export default function ProfilePage() {
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="profile-full-name" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Full name
+              <label htmlFor="profile-full-name" className="flex items-center gap-1.5 text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
+                <UserRound size={13} aria-hidden="true" /> Full name
               </label>
               <input
                 id="profile-full-name"
@@ -115,8 +118,8 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="profile-email" className="block text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
-                Email address
+              <label htmlFor="profile-email" className="flex items-center gap-1.5 text-[11px] font-extrabold text-foreground uppercase tracking-wider mb-2">
+                <Mail size={13} aria-hidden="true" /> Email address
               </label>
               <input
                 id="profile-email"
@@ -132,8 +135,9 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={isSaving || fullName.trim().length < 2 || fullName.trim().replace(/\s+/g, ' ') === (user?.full_name || '')}
-              className="w-full px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50 min-[480px]:w-auto"
+              className="w-full px-5 py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50 min-[480px]:w-auto inline-flex items-center justify-center gap-2"
             >
+              <Save size={14} aria-hidden="true" />
               {isSaving ? 'Saving changes...' : 'Save changes'}
             </button>
             <span className="text-[10px] text-muted-foreground">
@@ -141,6 +145,7 @@ export default function ProfilePage() {
             </span>
           </div>
         </form>
+        </div>
       </section>
     </div>
   )

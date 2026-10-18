@@ -73,22 +73,22 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         }`}
       >
         {/* Brand Header */}
-        <div className={`flex items-center gap-3 border-b border-[var(--sidebar-border)] px-4 py-4 ${isCollapsed ? 'lg:justify-center' : ''}`}>
+        <div className={`sidebar-brand flex items-center gap-3 border-b px-4 py-5 ${isCollapsed ? 'lg:justify-center' : ''}`}>
           <img
             src="/gscs-logo-circle.png"
             alt="GSCS"
-            className="w-10 h-10 rounded-full object-contain flex-shrink-0 ring-1 ring-[var(--border)] bg-surface"
+            className="w-10 h-10 rounded-full object-contain flex-shrink-0 ring-2 ring-white/20 bg-white shadow-sm"
           />
           <div className={isCollapsed ? 'lg:hidden' : ''}>
-            <strong className="block text-sm font-bold text-[var(--sidebar-foreground)] leading-none">Chemistry Hub</strong>
-            <span className="block text-[10px] text-[var(--muted-foreground)] mt-1">
+            <strong className="block text-sm font-bold text-white leading-none">Chemistry Hub</strong>
+            <span className="block text-[10px] text-white/60 mt-1">
               {isAdmin ? 'Admin Console' : 'Department Portal'}
             </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="ml-auto grid h-10 w-10 place-items-center rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)] lg:hidden"
+            className="ml-auto grid h-10 w-10 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Close navigation menu"
           >
             <X size={20} aria-hidden="true" />
@@ -135,7 +135,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                     isCollapsed ? 'lg:justify-center' : ''
                   } ${
                     isActive || isDirectoryActive || isAdminConsoleActive
-                      ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-bold before:absolute before:left-0 before:h-5 before:w-0.5 before:rounded-full before:bg-[var(--accent)]'
+                      ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-bold shadow-xs before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--accent)]'
                       : 'text-[var(--muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)]'
                   }`
                 }
@@ -174,7 +174,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                 isCollapsed ? 'lg:justify-center' : ''
               } ${
                 isActive
-                  ? 'bg-[var(--primary-soft)] text-[var(--primary)] before:absolute before:left-0 before:h-5 before:w-0.5 before:rounded-full before:bg-[var(--accent)]'
+                  ? 'bg-[var(--primary-soft)] text-[var(--primary)] shadow-xs before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--accent)]'
                   : 'text-[var(--muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)]'
               }`
             }

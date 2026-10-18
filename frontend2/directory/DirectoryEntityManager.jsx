@@ -228,7 +228,7 @@ export default function DirectoryEntityManager({ categoryKey }) {
   return (
     <div className="space-y-6">
       {/* Breadcrumb & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="page-intro flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           {/* Breadcrumbs */}
           <nav className="flex items-center gap-1.5 text-xs text-[#8da0a5] mb-1.5">

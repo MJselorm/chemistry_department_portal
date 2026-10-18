@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Atom,
   BookOpen,
   CalendarClock,
   CalendarDays,
@@ -34,6 +33,13 @@ const STAT_TONES = {
   announcements: 'bg-[var(--surface-secondary)] text-[var(--muted-foreground)]',
 }
 
+const STAT_ACCENTS = {
+  events: 'var(--primary)',
+  resources: 'var(--accent)',
+  students: 'var(--success)',
+  announcements: 'var(--muted-foreground)',
+}
+
 const formatEventDateBadge = (isoStr) => {
   if (!isoStr) return { month: 'TBD', day: '--' }
   const d = new Date(isoStr)
@@ -54,6 +60,7 @@ const formatEventTime = (isoStr) => {
 export default function DashboardPage() {
   const { user } = useAuth()
   const isActualAdmin = user?.role === 'admin'
+  const firstName = user?.full_name?.trim().split(/\s+/)[0] || (isActualAdmin ? 'Administrator' : 'Student')
 
   // Allow admins to preview student dashboard if desired
   const [previewAsStudent, setPreviewAsStudent] = useState(false)
@@ -151,7 +158,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* ── TOP ROLE BANNER SPECIFICATION ────────────────────────── */}
       {isDisplayingAdmin ? (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--primary-soft)] border border-[var(--primary-border)] text-[var(--primary)] px-4 py-3 rounded-xl">
+        <div className="content-panel flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[var(--primary)] px-4 py-3 rounded-lg">
           <div className="flex items-center gap-2.5">
             <ShieldCheck size={18} className="flex-shrink-0" aria-hidden="true" />
             <div>
@@ -173,7 +180,7 @@ export default function DashboardPage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--primary-soft)] border border-[var(--primary-border)] text-[var(--primary)] px-4 py-3 rounded-xl">
+        <div className="content-panel flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[var(--primary)] px-4 py-3 rounded-lg">
           <div className="flex items-center gap-2.5">
             <GraduationCap size={18} className="flex-shrink-0" aria-hidden="true" />
             <div>
@@ -204,13 +211,13 @@ export default function DashboardPage() {
       {/* ── HERO BANNER ─────────────────────────────────────────── */}
       {isDisplayingAdmin ? (
         /* Admin Hero Banner */
-        <div className="chem-hero dashboard-campus-hero rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-sm">
+        <section className="chem-hero dashboard-campus-hero min-h-[18rem] rounded-lg p-6 sm:p-8 text-white relative overflow-hidden shadow-raised flex items-end">
           <div className="relative z-10 max-w-2xl">
             <span className="text-[10px] uppercase tracking-widest font-extrabold text-[#e8c95b]">
               ADMIN CONSOLE · CHEMISTRY DEPARTMENT
             </span>
             <h1 className="text-2xl sm:text-3xl font-bold mt-2 mb-3 leading-tight">
-              Administrator Hub — Department operations in one place.
+              Welcome back, {firstName}.
             </h1>
             <p className="text-white/75 text-xs sm:text-sm leading-relaxed max-w-xl">
               Publish events, manage syllabus materials, issue department notices, and manage student accounts across all levels.
@@ -237,19 +244,16 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
-          <div className="absolute right-10 top-1/2 -translate-y-1/2 select-none opacity-15 pointer-events-none hidden md:block">
-            <Atom size={132} strokeWidth={1} aria-hidden="true" />
-          </div>
-        </div>
+        </section>
       ) : (
         /* Student Hero Banner */
-        <div className="chem-hero dashboard-campus-hero rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-sm">
+        <section className="chem-hero dashboard-campus-hero min-h-[18rem] rounded-lg p-6 sm:p-8 text-white relative overflow-hidden shadow-raised flex items-end">
           <div className="relative z-10 max-w-2xl">
             <span className="text-[10px] uppercase tracking-widest font-extrabold text-[#e8c95b]">
               STUDENT DASHBOARD · CHEMISTRY DEPARTMENT
             </span>
             <h1 className="text-2xl sm:text-3xl font-bold mt-2 mb-3 leading-tight">
-              Everything you need, in one place.
+              Welcome back, {firstName}.
             </h1>
             <p className="text-white/75 text-xs sm:text-sm leading-relaxed max-w-xl">
               Events, academic resources, announcements and your department community — organized for chemistry students.
@@ -269,10 +273,7 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
-          <div className="absolute right-10 top-1/2 -translate-y-1/2 select-none opacity-15 pointer-events-none hidden md:block">
-            <Atom size={132} strokeWidth={1} aria-hidden="true" />
-          </div>
-        </div>
+        </section>
       )}
 
       {/* ── SECTION HEAD ────────────────────────────────────────── */}
@@ -300,14 +301,15 @@ export default function DashboardPage() {
           return (
             <div
               key={stat.id}
-              className="bg-surface border border-border rounded-2xl p-4 shadow-sm transition-[border-color,box-shadow] hover:border-[var(--primary-border)] hover:shadow-md"
+              className="dashboard-stat border border-border rounded-lg p-4 shadow-sm transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[var(--primary-border)] hover:shadow-md"
+              style={{ '--stat-accent': STAT_ACCENTS[stat.id] }}
             >
               <div
                 className={`w-9 h-9 rounded-lg text-sm grid place-items-center mb-3 ${STAT_TONES[stat.id]}`}
               >
                 <Icon size={17} aria-hidden="true" />
               </div>
-              <strong className="block text-2xl font-bold text-foreground">{stat.value}</strong>
+              <strong className={`block text-2xl font-bold text-foreground ${loadingCounts ? 'animate-pulse' : ''}`}>{loadingCounts ? '—' : stat.value}</strong>
               <span className="block text-xs text-muted-foreground mt-1">{stat.label}</span>
             </div>
           )
@@ -317,7 +319,7 @@ export default function DashboardPage() {
       {/* ── 2-COLUMN GRID ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left Panel: Up Next Event */}
-        <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+        <section className="content-panel rounded-lg p-5 sm:p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
@@ -372,7 +374,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Right Panel: Latest Announcements */}
-        <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+        <section className="content-panel rounded-lg p-5 sm:p-6">
           <div className="flex items-center justify-between mb-3">
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">LATEST</span>
@@ -420,11 +422,11 @@ export default function DashboardPage() {
       </div>
 
       {/* ── QUICK ACCESS GRID ───────────────────────────────────── */}
-      <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+      <section>
         <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
           {isDisplayingAdmin ? 'ADMINISTRATIVE SHORTCUTS' : 'QUICK ACCESS'}
         </span>
-        <h3 className="text-base font-bold text-foreground mt-0.5 mb-4">
+        <h3 className="text-lg font-bold text-foreground mt-0.5 mb-4">
           {isDisplayingAdmin ? 'Management tools' : 'What do you need?'}
         </h3>
 
@@ -433,7 +435,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-4 gap-3">
             <Link
               to="/admin?tab=events"
-              className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
+              className="content-panel p-4 rounded-lg hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block group"
             >
               <CalendarDays className="block text-primary mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
@@ -443,7 +445,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               to="/admin?tab=resources"
-              className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
+              className="content-panel p-4 rounded-lg hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block group"
             >
               <BookOpen className="block text-primary mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
@@ -453,7 +455,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               to="/admin?tab=users"
-              className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
+              className="content-panel p-4 rounded-lg hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block group"
             >
               <Users className="block text-primary mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
@@ -463,7 +465,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               to="/announcements?create=true"
-              className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[#c6b4e8] hover:-translate-y-0.5 transition-all block group"
+              className="content-panel p-4 rounded-lg hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block group"
             >
               <Megaphone className="block text-primary mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-foreground group-hover:text-primary">
@@ -477,7 +479,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-4 gap-3">
             <Link
               to="/academic"
-              className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"
+              className="content-panel p-4 rounded-lg hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"
             >
               <FileQuestion className="block text-primary mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-foreground">Past Questions</strong>
@@ -485,7 +487,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               to="/academic"
-              className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"
+              className="content-panel p-4 rounded-lg hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"
             >
               <BookOpen className="block text-primary mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-foreground">Lecture Notes</strong>
@@ -493,7 +495,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               to="/events"
-              className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"
+              className="content-panel p-4 rounded-lg hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"
             >
               <ClipboardCheck className="block text-primary mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-foreground">Department Events</strong>
@@ -501,7 +503,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               to="/directory"
-              className="border border-border p-4 rounded-xl bg-surface-secondary hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"
+              className="content-panel p-4 rounded-lg hover:border-[var(--primary-border)] hover:-translate-y-0.5 transition-all block"
             >
               <Users className="block text-primary mb-2" size={22} aria-hidden="true" />
               <strong className="block text-xs font-bold text-foreground">Department Directory</strong>

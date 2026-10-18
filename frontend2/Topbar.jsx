@@ -27,7 +27,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
     .toUpperCase() || (isAdmin ? 'AD' : 'ST')
 
   return (
-    <header className="min-h-16 bg-[var(--header)] backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8 sticky top-0 z-30 transition-colors duration-200">
+    <header className="topbar min-h-16 bg-[var(--header)] backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8 sticky top-0 z-30 transition-colors duration-200">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           onClick={onOpenSidebar}

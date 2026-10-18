@@ -36,8 +36,16 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <div className="w-full max-w-md">
+    <main className="min-h-[100dvh] bg-background lg:grid lg:grid-cols-[0.9fr_1fr]">
+      <aside className="auth-campus-hero relative hidden min-h-screen items-end overflow-hidden p-10 text-white lg:flex">
+        <div className="relative max-w-md">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#e8c95b]">Chemistry Hub</p>
+          <h2 className="mt-2 font-display text-4xl font-light">Return to your academic workspace.</h2>
+          <p className="mt-3 text-sm leading-6 text-white/70">Secure account recovery keeps your resources, notices, and department access within reach.</p>
+        </div>
+      </aside>
+      <section className="flex min-h-[100dvh] items-center px-5 py-8 sm:px-10 lg:px-16">
+      <div className="mx-auto w-full max-w-md">
         <Link to="/" className="mb-7 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
           <ArrowLeft size={16} aria-hidden="true" /> Back to sign in
         </Link>
@@ -90,6 +98,7 @@ export default function ForgotPasswordPage() {
           </form>
         )}
       </div>
+      </section>
     </main>
   )
 }

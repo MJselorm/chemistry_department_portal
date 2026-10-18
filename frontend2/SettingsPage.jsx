@@ -69,14 +69,14 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
+      <div className="page-intro">
         <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">ACCOUNT & PREFERENCES</span>
         <h1 className="mt-1 text-2xl font-bold text-foreground">Settings</h1>
         <p className="mt-1 text-xs text-muted-foreground">Manage your account shortcuts, privacy choices, and supported device preferences.</p>
       </div>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm" aria-labelledby="account-settings-title">
-        <div className="border-b border-border px-5 py-4"><h2 id="account-settings-title" className="text-sm font-bold text-foreground">Account</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Your email and role are managed by authentication and portal administrators.</p></div>
+      <section className="settings-section overflow-hidden rounded-lg border border-border bg-surface shadow-sm" aria-labelledby="account-settings-title">
+        <header className="border-b border-border px-5 py-4"><h2 id="account-settings-title" className="text-sm font-bold text-foreground">Account</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Your email and role are managed by authentication and portal administrators.</p></header>
         <Link to="/profile" className="flex items-center gap-3 p-5 transition-colors hover:bg-surface-secondary">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--primary-soft)] text-primary"><UserRound size={18} /></span>
           <span className="min-w-0 flex-1"><strong className="block text-xs text-foreground">Profile and display name</strong><small className="block truncate text-[11px] text-muted-foreground">{user?.full_name || user?.email || 'View your portal profile'}</small></span>
@@ -84,8 +84,8 @@ export default function SettingsPage() {
         </Link>
       </section>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm" aria-labelledby="privacy-settings-title">
-        <div className="border-b border-border px-5 py-4"><h2 id="privacy-settings-title" className="text-sm font-bold text-foreground">Privacy & Data</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Review portal policies and available personal-data controls.</p></div>
+      <section className="settings-section overflow-hidden rounded-lg border border-border bg-surface shadow-sm" aria-labelledby="privacy-settings-title">
+        <header className="border-b border-border px-5 py-4"><h2 id="privacy-settings-title" className="text-sm font-bold text-foreground">Privacy & Data</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Review portal policies and available personal-data controls.</p></header>
         <nav aria-label="Privacy policies" className="divide-y divide-border">
           {legalLinks.map((item) => <Link key={item.to} to={item.to} className="flex items-center justify-between gap-3 px-5 py-3.5 text-xs font-semibold text-foreground hover:bg-surface-secondary"><span>{item.label}</span><ChevronRight size={15} className="text-muted-foreground" /></Link>)}
           <button type="button" onClick={openCookiePreferences} className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left text-xs font-semibold text-foreground hover:bg-surface-secondary"><span className="inline-flex items-center gap-2"><Cookie size={15} className="text-primary" />Manage Cookie Preferences</span><ChevronRight size={15} className="text-muted-foreground" /></button>
@@ -100,8 +100,8 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm" aria-labelledby="preference-settings-title">
-        <div className="border-b border-border px-5 py-4"><h2 id="preference-settings-title" className="text-sm font-bold text-foreground">Preferences</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Theme controls remain available in the top navigation.</p></div>
+      <section className="settings-section overflow-hidden rounded-lg border border-border bg-surface shadow-sm" aria-labelledby="preference-settings-title">
+        <header className="border-b border-border px-5 py-4"><h2 id="preference-settings-title" className="text-sm font-bold text-foreground">Preferences</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Theme controls remain available in the top navigation.</p></header>
         <div className="flex items-center justify-between gap-4 p-5">
           <div className="flex min-w-0 gap-3"><BellRing size={18} className="mt-0.5 shrink-0 text-primary" /><div><strong className="block text-xs font-bold text-foreground">Device push notifications</strong><small className="mt-0.5 block text-[11px] text-muted-foreground">Receive a minimal alert on this device for important updates.</small>{pushMessage && <small className="mt-1 block text-[11px] text-muted-foreground" role="status">{pushMessage}</small>}</div></div>
           <button type="button" disabled={pushBusy || !pushSupported()} onClick={togglePush} className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-bold ${pushEnabled ? 'border border-border text-foreground' : 'bg-primary text-white'} disabled:opacity-50`}>{pushBusy && <RefreshCw size={13} className="animate-spin" />}{pushEnabled ? 'Disable' : 'Enable'}</button>

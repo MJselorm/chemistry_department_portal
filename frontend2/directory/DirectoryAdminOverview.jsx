@@ -171,7 +171,7 @@ export default function DirectoryAdminOverview() {
     <div className="space-y-6">
       <div className="space-y-4">
         {/* Top Search & Controls Bar */}
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
+        <div className="page-intro overflow-visible flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
           <div className="min-w-0 max-w-2xl">
             <nav className="text-xs text-[#8fa0a4] mb-1">
               <span>Home</span> / <span className="text-foreground font-semibold">Dashboard</span>
@@ -297,7 +297,7 @@ export default function DirectoryAdminOverview() {
             return (
               <article
                 key={card.key}
-                className="bg-surface border border-border rounded-2xl p-5 shadow-sm hover:border-[var(--primary-border)] transition-all flex flex-col justify-between group"
+                className="dashboard-stat border border-border rounded-lg p-5 shadow-sm hover:-translate-y-0.5 hover:border-[var(--primary-border)] hover:shadow-md transition-all flex flex-col justify-between group"
               >
                 {/* Card Top: Icon & Manage link */}
                 <div className="flex items-start justify-between">
