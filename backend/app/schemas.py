@@ -31,6 +31,10 @@ class UpdateMyProfile(BaseModel):
         return normalized
 
 
+class AdminRoleUpdate(BaseModel):
+    role: Literal["admin", "student"]
+
+
 class AnnouncementCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1, max_length=10000)

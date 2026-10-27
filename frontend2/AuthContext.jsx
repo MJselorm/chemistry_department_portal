@@ -2,7 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import {
   browserLocalPersistence,
   browserSessionPersistence,
+  createUserWithEmailAndPassword,
   onIdTokenChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
@@ -115,6 +117,39 @@ export function AuthProvider({ children }) {
     }
   }, [syncProfile])
 
+  const register = useCallback(async (email, password) => {
+    const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password)
+    try {
+      try {
+        await sendEmailVerification(credential.user)
+      } catch (error) {
+        const verificationError = new Error('Verification email delivery failed.', { cause: error })
+        verificationError.code = error.code
+        verificationError.emailVerificationFailed = true
+        throw verificationError
+      }
+    } finally {
+      if (firebaseAuth.currentUser?.uid === credential.user.uid) {
+        tokenStore.clear()
+        setUser(null)
+        await signOut(firebaseAuth)
+      }
+    }
+  }, [])
+
+  const resendVerificationEmail = useCallback(async (email, password) => {
+    const credential = await signInWithEmailAndPassword(firebaseAuth, email, password)
+    try {
+      await sendEmailVerification(credential.user)
+    } finally {
+      if (firebaseAuth.currentUser?.uid === credential.user.uid) {
+        tokenStore.clear()
+        setUser(null)
+        await signOut(firebaseAuth)
+      }
+    }
+  }, [])
+
   const updateProfile = useCallback(async (fullName) => {
     const updated = await api.patch(ENDPOINTS.me, { full_name: fullName })
     setUser(updated)
@@ -135,8 +170,18 @@ export function AuthProvider({ children }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, booting, login, loginWithGoogle, requestPasswordReset, updateProfile, logout }),
-    [user, booting, login, loginWithGoogle, requestPasswordReset, updateProfile, logout],
+    () => ({
+      user,
+      booting,
+      login,
+      loginWithGoogle,
+      register,
+      resendVerificationEmail,
+      requestPasswordReset,
+      updateProfile,
+      logout,
+    }),
+    [user, booting, login, loginWithGoogle, register, resendVerificationEmail, requestPasswordReset, updateProfile, logout],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

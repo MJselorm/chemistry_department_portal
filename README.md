@@ -87,10 +87,17 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
 
 - `GET /health` verifies that the API is running.
 - `POST /auth/sync` creates or updates the Firebase-linked profile idempotently.
+- New email/password registrations must verify their Firebase email before a
+  profile is created. Google sign-in continues to use Firebase's verified
+  identity claims.
 - `GET /users/me` reads the authenticated profile.
 - `PATCH /users/me` updates the profile's `full_name`.
 - `GET /admin/test` verifies the database-backed admin role check.
-- `GET /admin/users` lists portal accounts for administrators only.
+- `GET /admin/users` lists portal accounts for administrators only; supports
+  `search` by email/name and a bounded `limit`.
+- `PATCH /admin/users/{user_id}/role` promotes an existing user or revokes
+  admin privileges. Only an administrator can use it; self-role changes and
+  demotion of the last administrator are rejected.
 - `/api/resources/*` provides authenticated academic-resource browsing,
   preview, short-lived thumbnail links, and download links; indexing, uploads,
   metadata updates, and removal require an admin.
@@ -115,9 +122,53 @@ The browser authenticates with Firebase and sends a short-lived Firebase ID toke
 FastAPI verifies every ID token with Firebase Admin, including revocation checks, and looks up the corresponding application profile by verified Firebase UID. The database role is the authorization source of truth:
 
 - `student`: may read authenticated portal content and update only their own allowlisted `full_name` field.
-- `admin`: may perform directory and announcement administration.
+- `admin`: may perform directory, content, and user-role administration.
 
-React route guards are user-interface controls only. Admin API routes independently enforce `require_admin`. Roles are not accepted from profile or directory request bodies. Promote administrators only through a controlled database administration process with an audit trail.
+React route guards are user-interface controls only. Admin API routes independently enforce `require_admin`. Roles are not accepted from profile or directory request bodies. Use the admin management API for normal role changes.
+
+The admin management API verifies Firebase ID tokens, derives the actor from
+the database profile associated with the verified Firebase UID, and accepts
+only `admin` or `student` as the requested role. Role changes are serialized
+against concurrent changes, recorded in `admin_role_audit`, and committed
+atomically. The API prevents self-role changes and keeps at least one
+administrator. `public.users` and `public.admin_role_audit` have RLS enabled
+without client-facing policies, and direct `anon`/`authenticated` grants are
+revoked. The backend's `DATABASE_URL` must use its trusted server-side database
+identity (the normal Supabase PostgreSQL owner connection bypasses RLS); never
+use a browser credential for this connection.
+
+If the database has no administrator, establish the first one only from a
+trusted server-side database administration session after identifying an
+existing, verified Firebase account and its exact `firebase_uid`. Review the
+selected account before changing it; do not make a public bootstrap endpoint
+or promote based on browser-supplied data. For example, in a privileged SQL
+session, update exactly one existing student profile:
+
+```sql
+-- First inspect the account and confirm it is the intended verified identity.
+SELECT id, email, firebase_uid, role
+FROM public.users
+WHERE firebase_uid = '<verified Firebase UID>';
+
+BEGIN;
+DO $$
+DECLARE changed_count integer;
+BEGIN
+  UPDATE public.users
+  SET role = 'admin'
+  WHERE firebase_uid = '<verified Firebase UID>'
+    AND role = 'student';
+  GET DIAGNOSTICS changed_count = ROW_COUNT;
+  IF changed_count <> 1 THEN
+    RAISE EXCEPTION 'Expected exactly one existing student account; updated % rows', changed_count;
+  END IF;
+END $$;
+COMMIT;
+```
+
+Keep the privileged database change in the organization's secure operational
+audit record. Subsequent changes made by administrators through the API are
+recorded in `admin_role_audit`.
 
 Authentication uses bearer headers rather than cookies, so the API is not currently dependent on cookie-based CSRF protection. CORS is an additional browser control, not an authorization boundary. Production `CORS_ORIGINS` must contain exact origins and must never use arbitrary shared-hosting wildcards.
 
@@ -129,14 +180,14 @@ Before launch:
 
 1. Set `APP_ENV=production`, exact `CORS_ORIGINS`, `DATABASE_URL`, Firebase Admin credentials, and Supabase Storage values in Render's encrypted environment settings.
 2. Set all Firebase web values and a verified `VITE_SUPPORT_EMAIL` in Vercel. Confirm that the CSP in `frontend2/vercel.json` permits only services actually in use.
-3. Configure Firebase authorized domains, password-reset templates, and provider-level abuse protections. Set `ALLOWED_EMAIL_DOMAINS` and/or `ALLOWED_USER_EMAILS` to the institution-approved account policy; production access fails closed when both are empty. Keep `REQUIRE_VERIFIED_EMAIL=true` unless the institution explicitly approves a different process.
-4. Apply Alembic migrations using a restricted deployment identity. Use a least-privilege runtime database role where practical and confirm backups and restoration procedures.
+3. Configure Firebase authorized website domains, enable the existing Email/Password and Google sign-in providers as required, and configure email-verification and password-reset templates plus provider-level abuse protections. The application does not restrict users to an institutional email domain. New email/password registrations must verify their address before profile provisioning.
+4. Apply Alembic migrations through `20261027_15` using a trusted deployment identity. Confirm the API's server-side `DATABASE_URL` can access the application tables under the users RLS policy, and confirm backups and restoration procedures.
 5. Confirm the `directory-media` bucket's public-read requirement and retention policy. Keep `academic-resources` private and allow the service-role key to read and write it; do not upload sensitive documents through the image endpoint.
 6. Configure platform/WAF rate limits for authentication, password reset, directory search, and uploads. The application does not include a distributed rate limiter.
 7. Confirm that every enabled event, profile, notification, and settings control is backed by the deployed API; unsupported controls remain removed.
 8. Review the Privacy Notice and Terms of Use with the responsible university/society representative. Confirm the public contact, retention schedule, age/audience policy, and asset/logo permissions.
 9. Test sign-in, reset, logout, student/admin authorization, CRUD, uploads, CSP, and error handling against the actual production Firebase, database, storage, and domains.
-10. Apply migrations through `20261018_14`, generate one VAPID key pair, and configure
+10. Apply migrations through `20261027_15`, generate one VAPID key pair, and configure
     `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` in Render. The
     private key must never be added to Vercel or any `VITE_*` variable.
 

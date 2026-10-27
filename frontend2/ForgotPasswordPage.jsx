@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleSubmit} className="mt-7 space-y-4">
             <div>
               <label htmlFor="reset-email" className="mb-2 block text-xs font-bold text-foreground">
-                University email
+                Email address
               </label>
               <div className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3.5 py-3 focus-within:border-primary">
                 <Mail size={16} className="text-muted-foreground" aria-hidden="true" />

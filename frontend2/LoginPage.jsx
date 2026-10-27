@@ -12,6 +12,15 @@ const STATS = [
 
 const signInMessage = (error) => {
   const code = error?.code || ''
+  if (error?.emailVerificationFailed) {
+    return 'Your account was created, but the verification email could not be sent. Try resending it.'
+  }
+  if (error?.status === 403 && error?.payload?.detail?.includes('Verify your email')) {
+    return 'Verify your email address using the link we sent before signing in.'
+  }
+  if (code === 'auth/invalid-email') return 'Enter a valid email address.'
+  if (code === 'auth/email-already-in-use') return 'An account already uses this email. Sign in or reset its password.'
+  if (code === 'auth/weak-password') return 'Choose a stronger password and try again.'
   if (code === 'auth/popup-closed-by-user') return 'Sign-in was cancelled before it finished.'
   if (code === 'auth/popup-blocked') return 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.'
   if (code === 'auth/too-many-requests') return 'Too many attempts were made. Please wait before trying again.'
@@ -23,13 +32,17 @@ const signInMessage = (error) => {
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [mode, setMode] = useState('login')
   const [showPassword, setShowPassword] = useState(false)
   const [keepSignedIn, setKeepSignedIn] = useState(true)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [canResendVerification, setCanResendVerification] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
 
-  const { login, loginWithGoogle } = useAuth()
+  const { login, loginWithGoogle, register, resendVerificationEmail } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const requestedPath = location.state?.from?.pathname
@@ -46,14 +59,45 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    setNotice('')
+    setCanResendVerification(false)
     if (!email.trim() || !password) {
-      setError('Enter both your university email and password.')
+      setError('Enter both your email address and password.')
+      return
+    }
+    if (mode === 'register' && password !== confirmPassword) {
+      setError('The passwords do not match.')
       return
     }
     setSubmitting(true)
     try {
-      await login(email.trim(), password, keepSignedIn)
-      navigate(from, { replace: true })
+      if (mode === 'register') {
+        await register(email.trim(), password)
+        setMode('login')
+        setNotice('Account created. Verify your email using the link we sent, then sign in.')
+        setCanResendVerification(true)
+      } else {
+        await login(email.trim(), password, keepSignedIn)
+        navigate(from, { replace: true })
+      }
+    } catch (err) {
+      setError(signInMessage(err))
+      setCanResendVerification(
+        mode === 'register' && Boolean(err?.emailVerificationFailed) ||
+          mode === 'login' && err?.status === 403 && err?.payload?.detail?.includes('Verify your email')
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleResendVerification() {
+    setError('')
+    setNotice('')
+    setSubmitting(true)
+    try {
+      await resendVerificationEmail(email.trim(), password)
+      setNotice('A new verification link has been sent to your email address.')
     } catch (err) {
       setError(signInMessage(err))
     } finally {
@@ -146,34 +190,38 @@ export default function LoginPage() {
             </div>
           </header>
 
-          <h1 className="font-display text-[2rem] font-light leading-tight sm:text-[2.4rem]">Welcome back</h1>
+          <h1 className="font-display text-[2rem] font-light leading-tight sm:text-[2.4rem]">
+            {mode === 'login' ? 'Welcome back' : 'Create your account'}
+          </h1>
           <p className="mt-2 text-[0.86rem] leading-relaxed text-slate-500 sm:mt-3">
-            Sign in with your university credentials to access the chemical directory, lab
-            schedules, and member forum.
+            {mode === 'login'
+              ? 'Sign in with your email address to access the chemical directory, lab schedules, and member forum.'
+              : 'Register with any valid email address. You will need to verify it before signing in.'}
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-7 space-y-4 sm:mt-9 sm:space-y-5" noValidate>
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4 sm:mt-9 sm:space-y-5">
             <Field
               id="email"
-              label="University email"
+              label="Email address"
               icon={Mail}
               type="email"
               value={email}
               onChange={setEmail}
-              placeholder="student@knust.edu.gh"
-              autoComplete="username"
+              placeholder="you@example.com"
+              autoComplete="email"
               required
             />
 
             <Field
               id="password"
-              label="Secure password"
+              label={mode === 'register' ? 'Create password' : 'Password'}
               icon={Lock}
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={setPassword}
               placeholder="••••••••"
-              autoComplete="current-password"
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              minLength={mode === 'register' ? 6 : undefined}
               required
               trailing={
                 <button
@@ -187,6 +235,22 @@ export default function LoginPage() {
               }
             />
 
+            {mode === 'register' && (
+              <Field
+                id="confirm-password"
+                label="Confirm password"
+                icon={Lock}
+                type="password"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                placeholder="Re-enter your password"
+                autoComplete="new-password"
+                minLength={6}
+                required
+              />
+            )}
+
+            {mode === 'login' && (
             <div className="flex items-center justify-between pt-1">
               <label className="flex cursor-pointer items-center gap-2.5 text-[0.82rem] text-slate-600">
                 <input
@@ -207,6 +271,13 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
+            )}
+
+            {notice && (
+              <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2.5 text-[0.8rem] text-emerald-800">
+                {notice}
+              </p>
+            )}
 
             {error && (
               <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2.5 text-[0.8rem] text-rose-700">
@@ -219,9 +290,36 @@ export default function LoginPage() {
               disabled={submitting || googleSubmitting}
               className="w-full rounded-lg bg-primary py-3.5 font-head text-[0.9rem] font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
-              {submitting ? 'Signing in…' : 'Sign in'}
+              {submitting ? (mode === 'register' ? 'Creating account…' : 'Signing in…') : mode === 'register' ? 'Create account' : 'Sign in'}
             </button>
           </form>
+
+          {canResendVerification && (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={submitting}
+              className="mt-3 w-full rounded-lg border border-slate-200 bg-surface px-4 py-3 text-sm font-semibold text-primary hover:bg-slate-50 disabled:opacity-60"
+            >
+              Resend verification email
+            </button>
+          )}
+
+          <p className="mt-5 text-center text-sm text-slate-500">
+            {mode === 'login' ? 'New to Chemistry Hub?' : 'Already have an account?'}{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === 'login' ? 'register' : 'login')
+                setError('')
+                setNotice('')
+                setCanResendVerification(false)
+              }}
+              className="font-semibold text-primary hover:underline"
+            >
+              {mode === 'login' ? 'Create an account' : 'Sign in'}
+            </button>
+          </p>
 
           <div className="relative my-6 flex items-center justify-center">
             <div className="w-full border-t border-slate-200" />
@@ -237,11 +335,11 @@ export default function LoginPage() {
             className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-surface py-3 px-4 font-head text-[0.88rem] font-medium text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-ink focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:opacity-60"
           >
             <GoogleIcon className="h-4 w-4 shrink-0" />
-            <span>{googleSubmitting ? 'Connecting with Google…' : 'Sign in with Google'}</span>
+            <span>{googleSubmitting ? 'Connecting with Google…' : 'Continue with Google'}</span>
           </button>
 
           <p className="mt-7 text-center text-[0.82rem] text-slate-500">
-            Portal access is limited to authorized Chemistry Hub accounts.
+            Sign-in is available with any valid email address.
           </p>
         </div>
 

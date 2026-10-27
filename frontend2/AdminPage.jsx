@@ -144,6 +144,7 @@ export default function AdminPage() {
   const [usersLoading, setUsersLoading] = useState(false)
   const [usersError, setUsersError] = useState('')
   const [userSearch, setUserSearch] = useState('')
+  const [roleActionId, setRoleActionId] = useState(null)
 
   const showFeedback = (message, type = 'success') => showToast(message, type)
 
@@ -200,18 +201,39 @@ export default function AdminPage() {
     setUsersLoading(true)
     setUsersError('')
     try {
-      const result = await api.get(ENDPOINTS.adminManageUsers)
+      const params = new URLSearchParams({ limit: '250' })
+      if (userSearch.trim()) params.set('search', userSearch.trim())
+      const result = await api.get(`${ENDPOINTS.adminManageUsers}?${params}`)
       setAdminUsers(Array.isArray(result) ? result : [])
     } catch (err) {
       setUsersError(err.message || 'Unable to load portal accounts.')
     } finally {
       setUsersLoading(false)
     }
-  }, [])
+  }, [userSearch])
 
   useEffect(() => {
-    if (activeTab === 'users' || activeTab === 'overview') fetchAdminUsers()
+    if (activeTab !== 'users' && activeTab !== 'overview') return undefined
+    const timer = window.setTimeout(fetchAdminUsers, 250)
+    return () => window.clearTimeout(timer)
   }, [activeTab, fetchAdminUsers])
+
+  const handleUserRoleChange = async (target) => {
+    const role = target.role === 'admin' ? 'student' : 'admin'
+    const action = role === 'admin' ? 'promote' : 'revoke administrator access for'
+    if (!window.confirm(`Are you sure you want to ${action} ${target.full_name || target.email}?`)) return
+
+    setRoleActionId(target.id)
+    try {
+      await api.patch(ENDPOINTS.adminUserRole(target.id), { role })
+      showFeedback(`${target.email} is now ${role === 'admin' ? 'an administrator' : 'a student'}.`)
+      await fetchAdminUsers()
+    } catch (err) {
+      showFeedback(err.message || 'Unable to update this account role.', 'error')
+    } finally {
+      setRoleActionId(null)
+    }
+  }
 
   const createAndPublishEvent = async (event) => {
     event.preventDefault()
@@ -478,7 +500,7 @@ export default function AdminPage() {
           { id: 'resources', label: `Resources (${resourceData.total || adminResources.length})` },
           { id: 'events', label: 'Events' },
           { id: 'announcements', label: `Announcements (${announcements.length})` },
-          { id: 'users', label: 'Students & Users' },
+          { id: 'users', label: 'Admin Management' },
           { id: 'privacy', label: 'Privacy Requests' },
         ].map((tab) => (
           <button
@@ -1707,13 +1729,14 @@ export default function AdminPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                USER MANAGEMENT
+                ADMIN MANAGEMENT
               </span>
-              <h2 className="text-xl font-bold text-foreground">Student accounts</h2>
+              <h2 className="text-xl font-bold text-foreground">Registered users and roles</h2>
+              <p className="mt-1 text-[11px] text-muted-foreground">Role changes are recorded and enforced by the API.</p>
             </div>
             <input
               type="text"
-              placeholder="Search students"
+              placeholder="Search by name or email"
               aria-label="Search portal accounts"
               value={userSearch}
               onChange={(event) => setUserSearch(event.target.value)}
@@ -1732,6 +1755,7 @@ export default function AdminPage() {
                   <th className="py-2.5">Name</th>
                   <th className="py-2.5">Email</th>
                   <th className="py-2.5">Role</th>
+                  <th className="py-2.5">Access</th>
                   <th className="py-2.5 text-right">Joined</th>
                 </tr>
               </thead>
@@ -1746,6 +1770,25 @@ export default function AdminPage() {
                       <span className="rounded-full border border-border bg-surface-secondary px-2 py-0.5 text-[9px] font-extrabold uppercase text-foreground">
                         {usr.role}
                       </span>
+                    </td>
+                    <td className="py-3">
+                      {usr.id === user?.id ? (
+                        <span className="text-[10px] text-muted-foreground">Your account</span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={roleActionId === usr.id}
+                          onClick={() => handleUserRoleChange(usr)}
+                          className="rounded-md border border-border px-2.5 py-1 text-[10px] font-bold text-primary hover:border-primary disabled:cursor-wait disabled:opacity-60"
+                          aria-label={`${usr.role === 'admin' ? 'Revoke administrator access from' : 'Promote'} ${usr.email}`}
+                        >
+                          {roleActionId === usr.id
+                            ? 'Saving…'
+                            : usr.role === 'admin'
+                              ? 'Revoke admin'
+                              : 'Make admin'}
+                        </button>
+                      )}
                     </td>
                     <td className="py-3 text-right text-muted-foreground">
                       {usr.created_at && !isNaN(new Date(usr.created_at).getTime())

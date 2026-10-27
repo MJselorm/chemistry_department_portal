@@ -14,6 +14,7 @@ export const ENDPOINTS = {
   sync: '/auth/sync',              // POST: Sync/provision Firebase profile
   me: '/users/me',                 // GET: Read authenticated profile, PATCH: update full_name
   adminTest: '/admin/test',        // GET: Check admin role requirement
+  adminUserRole: (id) => `/admin/users/${id}/role`, // PATCH: Change an existing user's role
   health: '/health',               // GET: Health check
 
   // Event Management API
