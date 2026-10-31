@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   CalendarDays,
   GraduationCap,
+  Handshake,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -20,7 +21,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
 
   const navLinks = [
     {
@@ -28,6 +29,9 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       label: 'Dashboard',
       icon: LayoutDashboard,
     },
+    ...(!isAdmin
+      ? [{ to: '/mentorship', label: 'Mentorship Programme', icon: Handshake }]
+      : []),
     ...(isAdmin
       ? [
           {

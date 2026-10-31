@@ -3,13 +3,21 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  getMultiFactorResolver,
   onIdTokenChanged,
+  PhoneAuthProvider,
+  PhoneMultiFactorGenerator,
+  RecaptchaVerifier,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  TotpMultiFactorGenerator,
 } from 'firebase/auth'
 import { api, tokenStore } from './client'
 import { ENDPOINTS } from './endpoints'
@@ -150,6 +158,83 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  const reauthenticateForRoleApproval = useCallback(async () => {
+    const firebaseUser = firebaseAuth.currentUser
+    if (!firebaseUser) throw new Error('Your session has expired. Sign in again.')
+
+    const providers = firebaseUser.providerData.map((provider) => provider.providerId)
+    if (providers.includes('password')) {
+      throw new Error('Enter your password in the approval form to continue.')
+    }
+    if (!providers.includes('google.com')) {
+      throw new Error('Re-authentication is not supported for this sign-in provider.')
+    }
+    let mfaError
+    try {
+      await reauthenticateWithPopup(firebaseUser, googleProvider)
+    } catch (error) {
+      if (error?.code !== 'auth/multi-factor-auth-required') throw error
+      mfaError = error
+    }
+    if (!mfaError) {
+      throw new Error('Enroll a Firebase phone or authenticator-app MFA factor before approving role changes.')
+    }
+    const resolver = getMultiFactorResolver(firebaseAuth, mfaError)
+    return { resolver, hints: resolver.hints }
+  }, [])
+
+  const reauthenticateWithPasswordForRoleApproval = useCallback(async (password) => {
+    const firebaseUser = firebaseAuth.currentUser
+    if (!firebaseUser?.email) throw new Error('Your session has expired. Sign in again.')
+    try {
+      await reauthenticateWithCredential(
+        firebaseUser,
+        EmailAuthProvider.credential(firebaseUser.email, password),
+      )
+    } catch (error) {
+      if (error?.code !== 'auth/multi-factor-auth-required') throw error
+      const resolver = getMultiFactorResolver(firebaseAuth, error)
+      return { resolver, hints: resolver.hints }
+    }
+    throw new Error('Enroll a Firebase phone or authenticator-app MFA factor before approving role changes.')
+  }, [])
+
+  const sendRoleApprovalSms = useCallback(async (resolver, factorUid) => {
+    const hint = resolver.hints.find((item) => item.uid === factorUid)
+    if (!hint || hint.factorId !== 'phone') throw new Error('The selected MFA method is unavailable.')
+    const recaptchaContainer = document.createElement('div')
+    document.body.appendChild(recaptchaContainer)
+    const recaptcha = new RecaptchaVerifier(firebaseAuth, recaptchaContainer, { size: 'invisible' })
+    try {
+      return await new PhoneAuthProvider(firebaseAuth).verifyPhoneNumber(
+        { multiFactorHint: hint, session: resolver.session },
+        recaptcha,
+      )
+    } finally {
+      recaptcha.clear()
+      recaptchaContainer.remove()
+    }
+  }, [])
+
+  const completeRoleApprovalMfa = useCallback(async (resolver, factorUid, code, verificationId) => {
+    const hint = resolver.hints.find((item) => item.uid === factorUid)
+    if (!hint) throw new Error('The selected MFA method is unavailable.')
+    let assertion
+    if (hint.factorId === 'totp') {
+      assertion = TotpMultiFactorGenerator.assertionForSignIn(hint.uid, code.trim())
+    } else if (hint.factorId === 'phone' && verificationId) {
+      assertion = PhoneMultiFactorGenerator.assertion(
+        PhoneAuthProvider.credential(verificationId, code.trim()),
+      )
+    } else {
+      throw new Error('The selected MFA method is not supported.')
+    }
+    await resolver.resolveSignIn(assertion)
+    const firebaseUser = firebaseAuth.currentUser
+    if (!firebaseUser) throw new Error('Your session has expired. Sign in again.')
+    tokenStore.set(await firebaseUser.getIdToken(true))
+  }, [])
+
   const updateProfile = useCallback(async (fullName) => {
     const updated = await api.patch(ENDPOINTS.me, { full_name: fullName })
     setUser(updated)
@@ -177,11 +262,15 @@ export function AuthProvider({ children }) {
       loginWithGoogle,
       register,
       resendVerificationEmail,
+      reauthenticateForRoleApproval,
+      reauthenticateWithPasswordForRoleApproval,
+      sendRoleApprovalSms,
+      completeRoleApprovalMfa,
       requestPasswordReset,
       updateProfile,
       logout,
     }),
-    [user, booting, login, loginWithGoogle, register, resendVerificationEmail, requestPasswordReset, updateProfile, logout],
+    [user, booting, login, loginWithGoogle, register, resendVerificationEmail, reauthenticateForRoleApproval, reauthenticateWithPasswordForRoleApproval, sendRoleApprovalSms, completeRoleApprovalMfa, requestPasswordReset, updateProfile, logout],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

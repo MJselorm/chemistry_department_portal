@@ -14,7 +14,10 @@ export const ENDPOINTS = {
   sync: '/auth/sync',              // POST: Sync/provision Firebase profile
   me: '/users/me',                 // GET: Read authenticated profile, PATCH: update full_name
   adminTest: '/admin/test',        // GET: Check admin role requirement
-  adminUserRole: (id) => `/admin/users/${id}/role`, // PATCH: Change an existing user's role
+  adminUserRoleRequests: (id) => `/admin/users/${id}/role-change-requests`,
+  adminRoleChangeRequests: '/admin/role-change-requests',
+  approveAdminRoleChange: (id) => `/admin/role-change-requests/${id}/approve`,
+  rejectAdminRoleChange: (id) => `/admin/role-change-requests/${id}/reject`,
   health: '/health',               // GET: Health check
 
   // Event Management API
@@ -71,6 +74,28 @@ export const ENDPOINTS = {
   privacyDeletion: '/api/privacy/requests/deletion',
   adminPrivacyRequests: '/api/privacy/admin/requests',
   adminPrivacyRequest: (id) => `/api/privacy/admin/requests/${id}`,
+
+  // Mentor–Mentee Programme
+  mentorshipMe: '/api/mentorship/me',
+  mentorshipMentorApplications: '/api/mentorship/mentor-applications',
+  mentorshipMenteeApplications: '/api/mentorship/mentee-applications',
+  mentorshipNotificationPreferences: '/api/mentorship/notification-preferences',
+  mentorshipMatchDecision: (id) => `/api/mentorship/matches/${id}/decision`,
+  mentorshipGoals: (id) => `/api/mentorship/matches/${id}/goals`,
+  mentorshipGoalComplete: (matchId, goalId) => `/api/mentorship/matches/${matchId}/goals/${goalId}/complete`,
+  mentorshipProgressNotes: (id) => `/api/mentorship/matches/${id}/progress-notes`,
+  mentorshipSessions: (id) => `/api/mentorship/matches/${id}/sessions`,
+  mentorshipSessionConfirm: (matchId, sessionId) => `/api/mentorship/matches/${matchId}/sessions/${sessionId}/confirm`,
+  mentorshipCompletion: (id) => `/api/mentorship/matches/${id}/completion`,
+  mentorshipWithdraw: (id) => `/api/mentorship/matches/${id}/withdraw`,
+  mentorshipReassignment: (id) => `/api/mentorship/matches/${id}/reassignment-requests`,
+  mentorshipAdminAnalytics: '/api/mentorship/admin/analytics',
+  mentorshipAdminMentorApplications: '/api/mentorship/admin/mentor-applications',
+  mentorshipAdminMentorDecision: (id) => `/api/mentorship/admin/mentor-applications/${id}/decision`,
+  mentorshipAdminWaitingList: '/api/mentorship/admin/waiting-list',
+  mentorshipAdminMatches: '/api/mentorship/admin/matches',
+  mentorshipAdminReassignments: '/api/mentorship/admin/reassignment-requests',
+  mentorshipAdminReassignmentDecision: (id, decision) => `/api/mentorship/admin/reassignment-requests/${id}/decision?decision=${decision}`,
 }
 
 export const HUB_ENDPOINTS = {

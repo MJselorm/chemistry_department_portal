@@ -32,9 +32,11 @@ import { ENDPOINTS } from './endpoints'
 import AcademicResourceViewer from './AcademicResourceViewer'
 import { downloadAcademicResource } from './resourceDownload'
 import { useAuth } from './AuthContext'
+import AdminApprovalDialog from './AdminApprovalDialog'
 import DeleteConfirmModal from './directory/DeleteConfirmModal'
 import { useToast } from './directory/Toast'
 import AdminPrivacyRequestsPanel from './AdminPrivacyRequestsPanel'
+import MentorshipAdminPanel from './MentorshipAdminPanel'
 
 const CATEGORIES = [
   'All',
@@ -55,18 +57,19 @@ const formatBytes = (value) => {
 
 export default function AdminPage() {
   const { user } = useAuth()
+  const isSuperAdmin = user?.role === 'super_admin'
   const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromQuery = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(
-    tabFromQuery && ['overview', 'events', 'resources', 'users', 'announcements'].includes(tabFromQuery)
+    tabFromQuery && ['overview', 'events', 'resources', 'users', 'announcements', 'mentorship'].includes(tabFromQuery)
       ? tabFromQuery
       : 'overview'
   )
 
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab && ['overview', 'events', 'resources', 'users', 'announcements'].includes(tab)) {
+    if (tab && ['overview', 'events', 'resources', 'users', 'announcements', 'mentorship'].includes(tab)) {
       setActiveTab(tab)
     }
   }, [searchParams])
@@ -145,6 +148,10 @@ export default function AdminPage() {
   const [usersError, setUsersError] = useState('')
   const [userSearch, setUserSearch] = useState('')
   const [roleActionId, setRoleActionId] = useState(null)
+  const [roleChangeRequests, setRoleChangeRequests] = useState([])
+  const [roleRequestsLoading, setRoleRequestsLoading] = useState(false)
+  const [roleRequestsError, setRoleRequestsError] = useState('')
+  const [approvalRequest, setApprovalRequest] = useState(null)
 
   const showFeedback = (message, type = 'success') => showToast(message, type)
 
@@ -212,29 +219,85 @@ export default function AdminPage() {
     }
   }, [userSearch])
 
+  const fetchRoleChangeRequests = useCallback(async () => {
+    setRoleRequestsLoading(true)
+    setRoleRequestsError('')
+    try {
+      const result = await api.get(`${ENDPOINTS.adminRoleChangeRequests}?limit=250`)
+      setRoleChangeRequests(Array.isArray(result) ? result : [])
+    } catch (err) {
+      setRoleRequestsError(err.message || 'Unable to load role-change requests.')
+    } finally {
+      setRoleRequestsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (activeTab !== 'users' && activeTab !== 'overview') return undefined
     const timer = window.setTimeout(fetchAdminUsers, 250)
     return () => window.clearTimeout(timer)
   }, [activeTab, fetchAdminUsers])
 
-  const handleUserRoleChange = async (target) => {
+  useEffect(() => {
+    if (activeTab !== 'users') return
+    fetchRoleChangeRequests()
+  }, [activeTab, fetchRoleChangeRequests])
+
+  const requestUserRoleChange = async (target) => {
     const role = target.role === 'admin' ? 'student' : 'admin'
-    const action = role === 'admin' ? 'promote' : 'revoke administrator access for'
-    if (!window.confirm(`Are you sure you want to ${action} ${target.full_name || target.email}?`)) return
+    const action = role === 'admin' ? 'request promotion of' : 'request revocation of administrator access for'
+    if (!window.confirm(`Submit a pending request to ${action} ${target.full_name || target.email}?`)) return
 
     setRoleActionId(target.id)
     try {
-      await api.patch(ENDPOINTS.adminUserRole(target.id), { role })
-      showFeedback(`${target.email} is now ${role === 'admin' ? 'an administrator' : 'a student'}.`)
-      await fetchAdminUsers()
+      await api.post(ENDPOINTS.adminUserRoleRequests(target.id), { role })
+      showFeedback(`Role-change request submitted for ${target.email}. No role changes until Super Admin approval.`)
+      await Promise.all([fetchAdminUsers(), fetchRoleChangeRequests()])
     } catch (err) {
-      showFeedback(err.message || 'Unable to update this account role.', 'error')
+      showFeedback(err.message || 'Unable to submit this role-change request.', 'error')
     } finally {
       setRoleActionId(null)
     }
   }
 
+  const resolveRoleChangeRequest = async (request, decision) => {
+    const subject = `${request.target.full_name || request.target.email} from ${request.previous_role} to ${request.requested_role}`
+    if (decision === 'approve') {
+      setApprovalRequest(request)
+      return
+    }
+    if (!window.confirm(`Reject this role-change request (${subject})?`)) return
+
+    let resolutionNote
+    if (decision === 'reject') {
+      resolutionNote = window.prompt('Optional reason for rejection:')?.trim() || null
+    }
+    setRoleActionId(request.id)
+    try {
+      await api.post(ENDPOINTS.rejectAdminRoleChange(request.id), { resolution_note: resolutionNote })
+      showFeedback('Role-change request rejected.')
+      await Promise.all([fetchAdminUsers(), fetchRoleChangeRequests()])
+    } catch (err) {
+      showFeedback(err.message || `Unable to ${decision} this request.`, 'error')
+    } finally {
+      setRoleActionId(null)
+    }
+
+    const approveRoleChangeRequest = async (request) => {
+      setRoleActionId(request.id)
+      try {
+        await api.post(ENDPOINTS.approveAdminRoleChange(request.id))
+        setApprovalRequest(null)
+        showFeedback('Role-change request approved.')
+        await Promise.all([fetchAdminUsers(), fetchRoleChangeRequests()])
+      } catch (err) {
+        showFeedback(err.message || 'Unable to approve this request.', 'error')
+        throw err
+      } finally {
+        setRoleActionId(null)
+      }
+    }
+  }
   const createAndPublishEvent = async (event) => {
     event.preventDefault()
     if (publishingEvent) return
@@ -501,6 +564,7 @@ export default function AdminPage() {
           { id: 'events', label: 'Events' },
           { id: 'announcements', label: `Announcements (${announcements.length})` },
           { id: 'users', label: 'Admin Management' },
+          { id: 'mentorship', label: 'Mentorship' },
           { id: 'privacy', label: 'Privacy Requests' },
         ].map((tab) => (
           <button
@@ -1732,7 +1796,9 @@ export default function AdminPage() {
                 ADMIN MANAGEMENT
               </span>
               <h2 className="text-xl font-bold text-foreground">Registered users and roles</h2>
-              <p className="mt-1 text-[11px] text-muted-foreground">Role changes are recorded and enforced by the API.</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Role changes require Super Admin review. Your request will not change access until approved.
+              </p>
             </div>
             <input
               type="text"
@@ -1772,21 +1838,23 @@ export default function AdminPage() {
                       </span>
                     </td>
                     <td className="py-3">
-                      {usr.id === user?.id ? (
-                        <span className="text-[10px] text-muted-foreground">Your account</span>
+                      {usr.id === user?.id || usr.role === 'super_admin' || isSuperAdmin ? (
+                        <span className="text-[10px] text-muted-foreground">
+                          {usr.id === user?.id ? 'Your account' : usr.role === 'super_admin' ? 'Protected' : isSuperAdmin ? 'Review requests below' : 'Protected'}
+                        </span>
                       ) : (
                         <button
                           type="button"
                           disabled={roleActionId === usr.id}
-                          onClick={() => handleUserRoleChange(usr)}
+                          onClick={() => requestUserRoleChange(usr)}
                           className="rounded-md border border-border px-2.5 py-1 text-[10px] font-bold text-primary hover:border-primary disabled:cursor-wait disabled:opacity-60"
-                          aria-label={`${usr.role === 'admin' ? 'Revoke administrator access from' : 'Promote'} ${usr.email}`}
+                          aria-label={`${usr.role === 'admin' ? 'Request revocation for' : 'Request promotion for'} ${usr.email}`}
                         >
                           {roleActionId === usr.id
-                            ? 'Saving…'
+                            ? 'Submitting…'
                             : usr.role === 'admin'
-                              ? 'Revoke admin'
-                              : 'Make admin'}
+                              ? 'Request revocation'
+                              : 'Request promotion'}
                         </button>
                       )}
                     </td>
@@ -1803,7 +1871,115 @@ export default function AdminPage() {
           )}
         </section>
       )}
+      {activeTab === 'users' && (
+        <section className="space-y-5">
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">ROLE WORKFLOW</span>
+                <h2 className="mt-1 text-lg font-bold text-foreground">Pending Requests</h2>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {isSuperAdmin
+                    ? 'Review requests from administrators. Approval requires recent Firebase MFA verification.'
+                    : 'Only your submitted requests are visible here.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fetchRoleChangeRequests}
+                disabled={roleRequestsLoading}
+                className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-primary disabled:opacity-60"
+              >
+                <RefreshCw size={13} className={roleRequestsLoading ? 'animate-spin' : ''} aria-hidden="true" />
+                Refresh
+              </button>
+            </div>
+            {roleRequestsError && <p className="mt-3 text-xs text-destructive" role="alert">{roleRequestsError}</p>}
+            {roleRequestsLoading ? (
+              <p className="py-8 text-center text-xs text-muted-foreground">Loading role-change requests…</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {roleChangeRequests.filter((request) => request.status === 'pending').length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground">No pending role-change requests.</p>
+                ) : roleChangeRequests.filter((request) => request.status === 'pending').map((request) => (
+                  <article key={request.id} className="flex flex-col gap-3 rounded-xl border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 text-xs">
+                      <strong className="block truncate text-foreground">
+                        {request.target.full_name || request.target.email}
+                      </strong>
+                      <span className="text-muted-foreground">{request.target.email} · {request.previous_role} → {request.requested_role}</span>
+                      <small className="mt-1 block text-muted-foreground">
+                        Requested by {request.requester.full_name || request.requester.email} · {new Date(request.requested_at).toLocaleString()}
+                      </small>
+                    </div>
+                    {isSuperAdmin && request.requester_user_id !== user?.id && (
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          disabled={Boolean(roleActionId)}
+                          onClick={() => resolveRoleChangeRequest(request, 'approve')}
+                          className="rounded-md bg-primary px-3 py-2 text-[10px] font-bold text-white disabled:opacity-60"
+                        >
+                          {roleActionId === request.id ? 'Verifying…' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={Boolean(roleActionId)}
+                          onClick={() => resolveRoleChangeRequest(request, 'reject')}
+                          className="rounded-md border border-border px-3 py-2 text-[10px] font-bold text-foreground disabled:opacity-60"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-foreground">Approval History</h2>
+            {roleRequestsLoading ? (
+              <p className="py-8 text-center text-xs text-muted-foreground">Loading approval history…</p>
+            ) : roleChangeRequests.filter((request) => request.status !== 'pending').length === 0 ? (
+              <p className="py-6 text-center text-xs text-muted-foreground">No resolved role-change requests.</p>
+            ) : (
+              <div className="mt-3 divide-y divide-border">
+                {roleChangeRequests.filter((request) => request.status !== 'pending').map((request) => (
+                  <article key={request.id} className="flex flex-col gap-1 py-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <strong className="text-foreground">{request.target.full_name || request.target.email}</strong>
+                      <span className="ml-2 text-muted-foreground">{request.previous_role} → {request.requested_role}</span>
+                      <small className="block text-muted-foreground">
+                        Requested by {request.requester.full_name || request.requester.email}
+                        {request.approver && ` · ${request.status} by ${request.approver.full_name || request.approver.email}`}
+                      </small>
+                      {request.resolution_note && <small className="block text-muted-foreground">{request.resolution_note}</small>}
+                    </div>
+                    <span className={`self-start rounded-full border px-2 py-1 text-[9px] font-extrabold uppercase ${
+                      request.status === 'approved'
+                        ? 'border-[var(--success-border)] bg-[var(--success-soft)] text-success'
+                        : 'border-[var(--destructive-border)] bg-[var(--destructive-soft)] text-destructive'
+                    }`}>
+                      {request.status}
+                    </span>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
       {activeTab === 'privacy' && <AdminPrivacyRequestsPanel />}
+      {activeTab === 'mentorship' && <MentorshipAdminPanel />}
+      {approvalRequest && (
+        <AdminApprovalDialog
+          request={approvalRequest}
+          onClose={() => setApprovalRequest(null)}
+          onApprove={approveRoleChangeRequest}
+        />
+      )}
       {previewResource && <AcademicResourceViewer resource={previewResource} onClose={() => setPreviewResource(null)} />}
       <DeleteConfirmModal
         isOpen={Boolean(pendingDelete)}

@@ -53,7 +53,7 @@ export default function AnnouncementsPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
   const [searchParams] = useSearchParams()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
   const targetAnnouncementId = searchParams.get('announcement')
 
   const [announcements, setAnnouncements] = useState([])

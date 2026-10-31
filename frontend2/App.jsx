@@ -18,6 +18,7 @@ const AcademicHubPage = lazy(() => import('./AcademicHubPage'))
 const DirectoryPage = lazy(() => import('./DirectoryPage'))
 const ProfilePage = lazy(() => import('./ProfilePage'))
 const SettingsPage = lazy(() => import('./SettingsPage'))
+const MentorshipPage = lazy(() => import('./MentorshipPage'))
 const AdminPage = lazy(() => import('./AdminPage'))
 const AnnouncementsPage = lazy(() => import('./AnnouncementsPage'))
 const DirectoryAdminOverview = lazy(() => import('./directory/DirectoryAdminOverview'))
@@ -121,6 +122,17 @@ export default function App() {
               <ProtectedRoute>
                 <PortalLayout title="Settings" subtitle="Preferences">
                   <SettingsPage />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/mentorship"
+            element={
+              <ProtectedRoute>
+                <PortalLayout title="Mentorship Programme" subtitle="Student Support">
+                  <MentorshipPage />
                 </PortalLayout>
               </ProtectedRoute>
             }

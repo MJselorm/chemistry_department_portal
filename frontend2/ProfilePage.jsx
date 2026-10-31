@@ -66,7 +66,7 @@ export default function ProfilePage() {
             <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">{displayName}</h2>
             <p className="text-xs text-muted-foreground mt-0.5 mb-2 inline-flex items-center gap-1.5">
               <ShieldCheck size={13} aria-hidden="true" />
-              {user?.role === 'admin' ? 'Administrator' : 'Student'} · Chemistry Hub
+              {user?.role === 'super_admin' ? 'Super Administrator' : user?.role === 'admin' ? 'Administrator' : 'Student'} · Chemistry Hub
             </p>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[var(--success-soft)] text-success">

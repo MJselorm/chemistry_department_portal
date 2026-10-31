@@ -1,16 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
 
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = (CheckConstraint("role IN ('student', 'admin')", name="users_role_check"),)
+    __table_args__ = (CheckConstraint("role IN ('student', 'admin', 'super_admin')", name="users_role_check"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     firebase_uid: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
@@ -27,9 +27,39 @@ class AdminRoleAudit(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     actor_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     target_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    request_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("admin_role_change_requests.id", ondelete="RESTRICT"), nullable=True)
     previous_role: Mapped[str] = mapped_column(String(20), nullable=False)
     new_role: Mapped[str] = mapped_column(String(20), nullable=False)
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class AdminRoleChangeRequest(Base):
+    __tablename__ = "admin_role_change_requests"
+    __table_args__ = (
+        CheckConstraint("previous_role IN ('student', 'admin')", name="admin_role_request_previous_role_check"),
+        CheckConstraint("requested_role IN ('student', 'admin')", name="admin_role_request_requested_role_check"),
+        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="admin_role_request_status_check"),
+        Index(
+            "uq_admin_role_request_pending_target",
+            "target_user_id",
+            unique=True,
+            postgresql_where=text("status = 'pending'"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    requester_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    target_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    approver_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    previous_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    requested_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", server_default="pending")
+    resolution_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    requester: Mapped[User] = relationship(foreign_keys=[requester_user_id], lazy="selectin")
+    target: Mapped[User] = relationship(foreign_keys=[target_user_id], lazy="selectin")
+    approver: Mapped[User | None] = relationship(foreign_keys=[approver_user_id], lazy="selectin")
 
 
 class Announcement(Base):

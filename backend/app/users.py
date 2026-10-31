@@ -1,11 +1,12 @@
 import uuid
+from datetime import datetime, timezone
 
-from sqlalchemy import func, select, text
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from pydantic import EmailStr, TypeAdapter
 
-from .models import AdminRoleAudit, User
+from .models import AdminRoleAudit, AdminRoleChangeRequest, User
 
 
 def find_by_firebase_uid(session: Session, firebase_uid: str) -> User | None:
@@ -45,41 +46,148 @@ def sync_user(session: Session, claims: dict) -> User:
         raise
 
 
-def change_user_role(
+def request_role_change(
     session: Session,
-    actor: User,
+    requester: User,
     target_id: uuid.UUID,
-    new_role: str,
-) -> User:
-    if target_id == actor.id:
-        raise ValueError("You cannot change your own administrator role.")
+    requested_role: str,
+) -> AdminRoleChangeRequest:
+    if target_id == requester.id:
+        raise ValueError("You cannot request a change to your own role.")
+    if requested_role not in {"admin", "student"}:
+        raise ValueError("Only administrator or student roles can be requested.")
 
-    # Serialize role changes so concurrent demotions cannot remove every admin.
+    # Serialize request creation and approvals so role snapshots cannot race.
     session.execute(text("LOCK TABLE public.users IN SHARE ROW EXCLUSIVE MODE"))
-    current_actor = session.scalar(select(User).where(User.id == actor.id).with_for_update())
-    if not current_actor or current_actor.role != "admin":
-        raise PermissionError("Admin access is required.")
+    session.execute(text("LOCK TABLE public.admin_role_change_requests IN SHARE ROW EXCLUSIVE MODE"))
+    current_requester = session.scalar(
+        select(User).where(User.id == requester.id).with_for_update()
+    )
+    if not current_requester or current_requester.role != "admin":
+        raise PermissionError("Only a regular administrator can request a role change.")
     target = session.scalar(select(User).where(User.id == target_id).with_for_update())
     if not target:
         raise LookupError("User account not found.")
-    if target.role == new_role:
-        return target
+    if target.role == "super_admin":
+        raise ValueError("Super Admin roles cannot be changed through administrator requests.")
+    if target.role == requested_role:
+        raise ValueError("The user already has the requested role.")
+    pending = session.scalar(
+        select(AdminRoleChangeRequest.id).where(
+            AdminRoleChangeRequest.target_user_id == target.id,
+            AdminRoleChangeRequest.status == "pending",
+        )
+    )
+    if pending:
+        raise ValueError("A role-change request for this user is already pending.")
 
-    if target.role == "admin" and new_role == "student":
-        admin_count = session.scalar(select(func.count(User.id)).where(User.role == "admin"))
-        if admin_count <= 1:
-            raise ValueError("The last administrator cannot be demoted.")
-
-    session.add(AdminRoleAudit(
-        actor_user_id=current_actor.id,
+    request = AdminRoleChangeRequest(
+        requester_user_id=current_requester.id,
         target_user_id=target.id,
         previous_role=target.role,
-        new_role=new_role,
-    ))
-    target.role = new_role
+        requested_role=requested_role,
+        status="pending",
+    )
+    session.add(request)
     session.commit()
-    session.refresh(target)
-    return target
+    session.refresh(request)
+    return request
+
+
+def list_role_change_requests(
+    session: Session,
+    viewer: User,
+    request_status: str | None,
+    limit: int,
+) -> list[AdminRoleChangeRequest]:
+    query = select(AdminRoleChangeRequest)
+    if viewer.role != "super_admin":
+        query = query.where(AdminRoleChangeRequest.requester_user_id == viewer.id)
+    if request_status:
+        query = query.where(AdminRoleChangeRequest.status == request_status)
+    return list(
+        session.scalars(
+            query.order_by(AdminRoleChangeRequest.requested_at.desc()).limit(limit)
+        ).unique().all()
+    )
+
+
+def _lock_role_change(
+    session: Session,
+    approver: User,
+    request_id: uuid.UUID,
+) -> tuple[User, AdminRoleChangeRequest]:
+    session.execute(text("LOCK TABLE public.users IN SHARE ROW EXCLUSIVE MODE"))
+    session.execute(text("LOCK TABLE public.admin_role_change_requests IN SHARE ROW EXCLUSIVE MODE"))
+    current_approver = session.scalar(
+        select(User).where(User.id == approver.id).with_for_update()
+    )
+    if not current_approver or current_approver.role != "super_admin":
+        raise PermissionError("Super Admin authorization is required.")
+    request = session.scalar(
+        select(AdminRoleChangeRequest)
+        .where(AdminRoleChangeRequest.id == request_id)
+        .with_for_update()
+    )
+    if not request:
+        raise LookupError("Role-change request not found.")
+    if request.requester_user_id == current_approver.id:
+        raise PermissionError("You cannot review your own role-change request.")
+    if request.status != "pending":
+        raise ValueError("This role-change request has already been resolved.")
+    return current_approver, request
+
+
+def approve_role_change(
+    session: Session,
+    approver: User,
+    request_id: uuid.UUID,
+) -> AdminRoleChangeRequest:
+    current_approver, request = _lock_role_change(session, approver, request_id)
+    target = session.scalar(
+        select(User).where(User.id == request.target_user_id).with_for_update()
+    )
+    if not target:
+        raise LookupError("User account not found.")
+    if target.role != request.previous_role or target.role == "super_admin":
+        request.status = "rejected"
+        request.approver_user_id = current_approver.id
+        request.resolution_note = "The user's role changed before this request was approved."
+        request.resolved_at = datetime.now(timezone.utc)
+        session.commit()
+        raise ValueError("The user's role changed after this request was submitted. The request was closed.")
+
+    session.add(AdminRoleAudit(
+        actor_user_id=current_approver.id,
+        target_user_id=target.id,
+        request_id=request.id,
+        previous_role=target.role,
+        new_role=request.requested_role,
+    ))
+    target.role = request.requested_role
+    request.approver_user_id = current_approver.id
+    request.status = "approved"
+    request.resolved_at = datetime.now(timezone.utc)
+    request.resolution_note = None
+    session.commit()
+    session.refresh(request)
+    return request
+
+
+def reject_role_change(
+    session: Session,
+    approver: User,
+    request_id: uuid.UUID,
+    resolution_note: str | None,
+) -> AdminRoleChangeRequest:
+    current_approver, request = _lock_role_change(session, approver, request_id)
+    request.approver_user_id = current_approver.id
+    request.status = "rejected"
+    request.resolution_note = resolution_note
+    request.resolved_at = datetime.now(timezone.utc)
+    session.commit()
+    session.refresh(request)
+    return request
 
 
 def update_profile(session: Session, firebase_uid: str, full_name: str | None) -> User | None:

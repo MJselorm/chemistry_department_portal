@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .routers import admin, announcements, auth, users, directory, resources, events, notifications, privacy
+from .routers import admin, announcements, auth, users, directory, resources, events, notifications, privacy, mentorship
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ app.include_router(resources.router)
 app.include_router(events.router)
 app.include_router(notifications.router)
 app.include_router(privacy.router)
+app.include_router(mentorship.router)
 
 
 @app.exception_handler(Exception)

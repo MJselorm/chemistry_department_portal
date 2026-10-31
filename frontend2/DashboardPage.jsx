@@ -8,6 +8,7 @@ import {
   FileQuestion,
   FolderOpen,
   GraduationCap,
+  Handshake,
   MapPin,
   Megaphone,
   Plus,
@@ -59,7 +60,7 @@ const formatEventTime = (isoStr) => {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const isActualAdmin = user?.role === 'admin'
+  const isActualAdmin = user?.role === 'admin' || user?.role === 'super_admin'
   const firstName = user?.full_name?.trim().split(/\s+/)[0] || (isActualAdmin ? 'Administrator' : 'Student')
 
   // Allow admins to preview student dashboard if desired
@@ -315,6 +316,26 @@ export default function DashboardPage() {
           )
         })}
       </div>
+
+      {!isDisplayingAdmin && (
+        <Link
+          to="/mentorship"
+          className="content-panel group flex flex-col gap-4 rounded-lg p-5 transition-colors hover:border-[var(--primary-border)] sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--primary-soft)] text-primary">
+              <Handshake size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="font-bold text-foreground group-hover:text-primary">Mentorship Programme</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Become a mentor, find support in your courses, and track your study progress.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-primary">Explore programme →</span>
+        </Link>
+      )}
 
       {/* ── 2-COLUMN GRID ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

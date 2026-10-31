@@ -6,7 +6,7 @@ import NotificationCenter from './NotificationCenter'
 
 export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onToggleTheme }) {
   const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
   
   // Dynamically designate Student vs Admin on dashboard
   const displayTitle = title === 'Dashboard'
@@ -48,7 +48,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar, isDarkMode, onT
                   : 'bg-[var(--primary-soft)] text-[var(--primary)] border border-[var(--primary-border)]'
               }`}
             >
-              {isAdmin ? 'Admin' : 'Student'}
+              {user?.role === 'super_admin' ? 'Super Admin' : isAdmin ? 'Admin' : 'Student'}
             </span>
           </div>
           <small className="hidden min-[430px]:block text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-0.5 truncate">
