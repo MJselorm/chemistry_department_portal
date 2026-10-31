@@ -29,9 +29,11 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       label: 'Dashboard',
       icon: LayoutDashboard,
     },
-    ...(!isAdmin
-      ? [{ to: '/mentorship', label: 'Mentorship Programme', icon: Handshake }]
-      : []),
+    {
+      to: isAdmin ? '/admin?tab=mentorship' : '/mentorship',
+      label: 'Mentorship Programme',
+      icon: Handshake,
+    },
     ...(isAdmin
       ? [
           {
