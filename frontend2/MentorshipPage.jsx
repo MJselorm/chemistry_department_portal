@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { BookOpen, Check, Clock3, GraduationCap, Handshake, RefreshCw } from 'lucide-react'
+import { Bell, BookOpen, Check, Clock3, GraduationCap, Handshake, RefreshCw } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useAuth } from './AuthContext'
@@ -36,6 +36,7 @@ export default function MentorshipPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [activeSection, setActiveSection] = useState('applications')
   const [mentorForm, setMentorForm] = useState({
     academic_level: '100',
     subjects: '',
@@ -215,6 +216,29 @@ export default function MentorshipPage() {
         </div>
       )}
 
+      <nav className="content-panel flex gap-1 overflow-x-auto rounded-lg p-1.5" aria-label="Mentorship sections">
+        {[
+          ['applications', 'Applications', GraduationCap],
+          ['programme', 'My Mentorship', Handshake],
+          ['preferences', 'Notifications', Bell],
+        ].map(([id, label, Icon]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveSection(id)}
+            className={`inline-flex min-h-10 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-xs font-bold ${
+              activeSection === id
+                ? 'bg-primary text-[var(--primary-foreground)] shadow-xs'
+                : 'text-muted-foreground hover:bg-surface-secondary hover:text-foreground'
+            }`}
+            aria-current={activeSection === id ? 'page' : undefined}
+          >
+            <Icon size={14} aria-hidden="true" /> {label}
+          </button>
+        ))}
+      </nav>
+
+      {activeSection === 'applications' && <>
       <section className="grid gap-4 lg:grid-cols-2">
         <article className="content-panel rounded-xl p-5">
           <div className="mb-4 flex items-center gap-3">
@@ -297,6 +321,15 @@ export default function MentorshipPage() {
         </p>
       )}
 
+      {menteeApplication?.status === 'waiting' && (
+        <p className="flex items-center gap-2 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-soft)] p-3 text-sm text-[var(--warning)]">
+          <Clock3 size={16} aria-hidden="true" /> You are on the matching waiting list. We will notify you when an eligible mentor with capacity is available.
+        </p>
+      )}
+      {!mentorCanApply && mentorApplication?.status === 'pending' && <p className="text-xs text-muted-foreground">Mentor applications are reviewed by the programme administrators before matching.</p>}
+      </>}
+
+      {activeSection === 'programme' && (
       <section className="space-y-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">YOUR PROGRAMME</span>
@@ -414,7 +447,9 @@ export default function MentorshipPage() {
           </section>
         )}
       </section>
+      )}
 
+      {activeSection === 'preferences' && (
       <section className="content-panel flex flex-col gap-3 rounded-xl p-4 sm:flex-row sm:items-center sm:justify-between">
         <div><h2 className="text-sm font-bold text-foreground">Mentorship notifications</h2><p className="text-xs text-muted-foreground">Control in-app updates about applications and matches.</p></div>
         <label className="inline-flex items-center gap-2 text-xs font-semibold text-foreground">
@@ -422,13 +457,7 @@ export default function MentorshipPage() {
           In-app notifications
         </label>
       </section>
-
-      {menteeApplication?.status === 'waiting' && (
-        <p className="flex items-center gap-2 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-soft)] p-3 text-sm text-[var(--warning)]">
-          <Clock3 size={16} aria-hidden="true" /> You are on the matching waiting list. We will notify you when an eligible mentor with capacity is available.
-        </p>
       )}
-      {!mentorCanApply && mentorApplication?.status === 'pending' && <p className="text-xs text-muted-foreground">Mentor applications are reviewed by the programme administrators before matching.</p>}
     </div>
   )
 }

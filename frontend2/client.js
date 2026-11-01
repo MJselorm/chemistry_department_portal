@@ -72,6 +72,7 @@ async function parseBody(res) {
 function messageFromDetail(payload, status) {
   if (status === 401) return 'Your session has expired. Please sign in again.'
   if (status === 403) return 'You do not have permission to perform this action.'
+  if (status === 429) return payload?.detail || 'Too many requests. Please wait and try again.'
   if (status >= 500) return 'Something went wrong. Please try again.'
   const detail = payload?.detail
   if (!detail) return status === 404 ? 'The requested item could not be found.' : 'Unable to complete this request. Please try again.'
@@ -150,7 +151,9 @@ async function request(path, { method = 'GET', body, form, auth = true, signal, 
     window.dispatchEvent(new CustomEvent('chemhub:session-expired'))
   }
   if (!res.ok) {
-    throw new ApiError(messageFromDetail(data, res.status), res.status, data)
+    const error = new ApiError(messageFromDetail(data, res.status), res.status, data)
+    error.retryAfter = res.headers.get('retry-after')
+    throw error
   }
   return data
 }

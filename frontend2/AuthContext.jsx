@@ -83,6 +83,27 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('chemhub:session-expired', expireSession)
   }, [])
 
+  const refreshProfile = useCallback(async () => {
+    const firebaseUser = firebaseAuth.currentUser
+    if (!firebaseUser) return null
+    tokenStore.set(await firebaseUser.getIdToken())
+    const profile = await api.get(ENDPOINTS.me)
+    setUser(profile)
+    return profile
+  }, [])
+
+  useEffect(() => {
+    const refreshWhenActive = () => {
+      if (!document.hidden && firebaseAuth.currentUser) refreshProfile().catch(() => {})
+    }
+    window.addEventListener('focus', refreshWhenActive)
+    document.addEventListener('visibilitychange', refreshWhenActive)
+    return () => {
+      window.removeEventListener('focus', refreshWhenActive)
+      document.removeEventListener('visibilitychange', refreshWhenActive)
+    }
+  }, [refreshProfile])
+
   const login = useCallback(async (email, password, keepSignedIn = true) => {
     await setPersistence(
       firebaseAuth,
@@ -268,9 +289,10 @@ export function AuthProvider({ children }) {
       completeRoleApprovalMfa,
       requestPasswordReset,
       updateProfile,
+      refreshProfile,
       logout,
     }),
-    [user, booting, login, loginWithGoogle, register, resendVerificationEmail, reauthenticateForRoleApproval, reauthenticateWithPasswordForRoleApproval, sendRoleApprovalSms, completeRoleApprovalMfa, requestPasswordReset, updateProfile, logout],
+    [user, booting, login, loginWithGoogle, register, resendVerificationEmail, reauthenticateForRoleApproval, reauthenticateWithPasswordForRoleApproval, sendRoleApprovalSms, completeRoleApprovalMfa, requestPasswordReset, updateProfile, refreshProfile, logout],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

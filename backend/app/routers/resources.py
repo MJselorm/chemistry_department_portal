@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..database import get_db
 from ..models import Resource, ResourceFolder, User
+from ..rate_limit import STORAGE_INDEX_LIMIT, UPLOAD_LIMIT
 from ..resource_schemas import FolderOut, ResourceOut, ResourcePage, ResourceUpdate, StorageIndexSummary
 from ..security import get_current_user, require_admin
 from ..services.storage_index import StorageResourceIndexer
@@ -68,13 +69,13 @@ def search_resources(session: DB, user: Authenticated, q: str = Query(min_length
     return list_resources(session, user, page, page_size, search=q)
 
 
-@router.post("/storage-index", response_model=StorageIndexSummary, summary="Admin-only Academic Storage indexing")
+@router.post("/storage-index", response_model=StorageIndexSummary, summary="Admin-only Academic Storage indexing", dependencies=[Depends(STORAGE_INDEX_LIMIT)])
 def index_migrated_storage(session: DB, _: Admin):
     """Index files already present in Academic Storage; no uploads or deletes occur."""
     return StorageResourceIndexer().index(session)
 
 
-@router.post("/upload", response_model=ResourceOut, summary="Admin-only academic file upload")
+@router.post("/upload", response_model=ResourceOut, summary="Admin-only academic file upload", dependencies=[Depends(UPLOAD_LIMIT)])
 async def upload_resource(file: Annotated[UploadFile, File(...)], _: Admin, session: DB, name: Annotated[str | None, Form()] = None, folder_path: Annotated[str, Form()] = "admin-uploads", category: Annotated[str | None, Form()] = None, course_code: Annotated[str | None, Form()] = None, level: Annotated[str | None, Form()] = None):
     filename = re.sub(r"[\\/:*?\"<>|\r\n]+", "_", file.filename or "resource").strip(". ")
     if not filename:

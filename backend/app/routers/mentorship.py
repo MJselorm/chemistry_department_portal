@@ -36,6 +36,7 @@ from ..mentorship_schemas import (
     SessionCreate,
 )
 from ..models import User
+from ..rate_limit import MENTORSHIP_ACTION_LIMIT, MENTORSHIP_APPLICATION_LIMIT
 from ..security import get_current_user, require_admin
 from ..services.mentorship import (
     audit,
@@ -203,7 +204,7 @@ def my_mentorship(session: DB, user: Auth):
     }
 
 
-@router.post("/mentor-applications", status_code=status.HTTP_201_CREATED)
+@router.post("/mentor-applications", status_code=status.HTTP_201_CREATED, dependencies=[Depends(MENTORSHIP_APPLICATION_LIMIT)])
 def create_mentor_application(payload: MentorApplicationCreate, session: DB, user: Auth):
     _require_student(user)
     application = session.query(MentorApplication).filter_by(user_id=user.id).with_for_update().first()
@@ -226,7 +227,7 @@ def create_mentor_application(payload: MentorApplicationCreate, session: DB, use
     return {"application_id": application.id, "status": application.status}
 
 
-@router.post("/mentee-applications", status_code=status.HTTP_201_CREATED)
+@router.post("/mentee-applications", status_code=status.HTTP_201_CREATED, dependencies=[Depends(MENTORSHIP_APPLICATION_LIMIT)])
 def create_mentee_application(payload: MenteeApplicationCreate, session: DB, user: Auth):
     _require_student(user)
     existing = (
@@ -249,7 +250,7 @@ def create_mentee_application(payload: MenteeApplicationCreate, session: DB, use
     return {"application_id": application.id, "status": application.status}
 
 
-@router.patch("/notification-preferences")
+@router.patch("/notification-preferences", dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def update_notification_preferences(payload: NotificationPreferenceUpdate, session: DB, user: Auth):
     preference = session.get(MentorshipNotificationPreference, user.id)
     if not preference:
@@ -261,7 +262,7 @@ def update_notification_preferences(payload: NotificationPreferenceUpdate, sessi
     return {"in_app_enabled": preference.in_app_enabled}
 
 
-@router.post("/matches/{match_id}/decision")
+@router.post("/matches/{match_id}/decision", dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def decide_match(match_id: UUID, payload: MatchDecision, session: DB, user: Auth):
     match = session.query(MentorshipMatch).filter_by(id=match_id).with_for_update().first()
     if not match or user.id not in {match.mentor_user_id, match.mentee_user_id}:
@@ -328,7 +329,7 @@ def decide_match(match_id: UUID, payload: MatchDecision, session: DB, user: Auth
     return {"status": match.status}
 
 
-@router.post("/matches/{match_id}/goals", status_code=status.HTTP_201_CREATED)
+@router.post("/matches/{match_id}/goals", status_code=status.HTTP_201_CREATED, dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def create_goal(match_id: UUID, payload: GoalCreate, session: DB, user: Auth):
     match = _lock_participant_match(session, match_id, user.id)
     if match.status != "active":
@@ -343,7 +344,7 @@ def create_goal(match_id: UUID, payload: GoalCreate, session: DB, user: Auth):
     return MentorshipGoalOut.model_validate(goal)
 
 
-@router.post("/matches/{match_id}/goals/{goal_id}/complete")
+@router.post("/matches/{match_id}/goals/{goal_id}/complete", dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def complete_goal(match_id: UUID, goal_id: UUID, session: DB, user: Auth):
     match = _lock_participant_match(session, match_id, user.id)
     if match.status != "active":
@@ -362,7 +363,7 @@ def complete_goal(match_id: UUID, goal_id: UUID, session: DB, user: Auth):
     return {"status": "completed"}
 
 
-@router.post("/matches/{match_id}/progress-notes", status_code=status.HTTP_201_CREATED)
+@router.post("/matches/{match_id}/progress-notes", status_code=status.HTTP_201_CREATED, dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def create_progress_note(match_id: UUID, payload: ProgressNoteCreate, session: DB, user: Auth):
     match = _lock_participant_match(session, match_id, user.id)
     if match.status != "active":
@@ -377,7 +378,7 @@ def create_progress_note(match_id: UUID, payload: ProgressNoteCreate, session: D
     return {"id": note.id, "body": note.body, "created_at": note.created_at}
 
 
-@router.post("/matches/{match_id}/sessions", status_code=status.HTTP_201_CREATED)
+@router.post("/matches/{match_id}/sessions", status_code=status.HTTP_201_CREATED, dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def create_session(match_id: UUID, payload: SessionCreate, session: DB, user: Auth):
     match = _lock_participant_match(session, match_id, user.id)
     if match.status != "active":
@@ -413,7 +414,7 @@ def create_session(match_id: UUID, payload: SessionCreate, session: DB, user: Au
     return MentorshipSessionOut.model_validate(study_session)
 
 
-@router.post("/matches/{match_id}/sessions/{session_id}/confirm")
+@router.post("/matches/{match_id}/sessions/{session_id}/confirm", dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def confirm_session(match_id: UUID, session_id: UUID, session: DB, user: Auth):
     match = _lock_participant_match(session, match_id, user.id)
     if match.status != "active":
@@ -457,7 +458,7 @@ def confirm_session(match_id: UUID, session_id: UUID, session: DB, user: Auth):
     return {"status": study_session.status}
 
 
-@router.post("/matches/{match_id}/completion")
+@router.post("/matches/{match_id}/completion", dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def confirm_completion(match_id: UUID, payload: CompletionCreate, session: DB, user: Auth):
     match = session.query(MentorshipMatch).filter_by(id=match_id).with_for_update().first()
     if not match or user.id not in {match.mentor_user_id, match.mentee_user_id}:
@@ -504,7 +505,7 @@ def confirm_completion(match_id: UUID, payload: CompletionCreate, session: DB, u
     return {"status": match.status, "completion_pending": match.status == "active"}
 
 
-@router.post("/matches/{match_id}/withdraw")
+@router.post("/matches/{match_id}/withdraw", dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def withdraw_match(match_id: UUID, session: DB, user: Auth):
     match = session.query(MentorshipMatch).filter_by(id=match_id).with_for_update().first()
     if not match or user.id not in {match.mentor_user_id, match.mentee_user_id}:
@@ -528,7 +529,7 @@ def withdraw_match(match_id: UUID, session: DB, user: Auth):
     return {"status": "withdrawn"}
 
 
-@router.post("/matches/{match_id}/reassignment-requests", status_code=status.HTTP_201_CREATED)
+@router.post("/matches/{match_id}/reassignment-requests", status_code=status.HTTP_201_CREATED, dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def request_reassignment(match_id: UUID, payload: ReassignmentCreate, session: DB, user: Auth):
     match = _lock_participant_match(session, match_id, user.id)
     if match.status != "active":
@@ -638,7 +639,7 @@ def admin_waiting_list(session: DB, _: Admin):
     ]
 
 
-@router.post("/admin/mentor-applications/{application_id}/decision")
+@router.post("/admin/mentor-applications/{application_id}/decision", dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def review_mentor_application(
     application_id: UUID,
     payload: MentorApplicationDecision,
@@ -732,7 +733,7 @@ def admin_reassignment_requests(
     return result
 
 
-@router.post("/admin/reassignment-requests/{request_id}/decision")
+@router.post("/admin/reassignment-requests/{request_id}/decision", dependencies=[Depends(MENTORSHIP_ACTION_LIMIT)])
 def review_reassignment_request(
     request_id: UUID,
     payload: ReassignmentDecision,

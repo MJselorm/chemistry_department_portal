@@ -30,7 +30,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       icon: LayoutDashboard,
     },
     {
-      to: isAdmin ? '/admin?tab=mentorship' : '/mentorship',
+      to: '/mentorship',
       label: 'Mentorship Programme',
       icon: Handshake,
     },
@@ -128,7 +128,8 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
             const isAdminConsoleActive =
               item.label === 'Admin Console' &&
               location.pathname.startsWith('/admin') &&
-              !location.pathname.startsWith('/admin/directory')
+              !location.pathname.startsWith('/admin/directory') &&
+              item.label !== 'Mentorship Programme'
 
             return (
               <NavLink

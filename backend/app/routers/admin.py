@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import User
+from ..rate_limit import ROLE_DECISION_LIMIT, ROLE_REQUEST_LIMIT
 from ..schemas import AdminRoleChangeReject, AdminRoleChangeRequestCreate, AdminRoleChangeRequestOut, UserProfile
 from ..security import require_admin, require_super_admin, require_super_admin_mfa
 from ..users import approve_role_change, list_role_change_requests, reject_role_change, request_role_change
@@ -37,6 +38,7 @@ def list_users(
     "/users/{user_id}/role-change-requests",
     response_model=AdminRoleChangeRequestOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(ROLE_REQUEST_LIMIT)],
 )
 def create_role_change_request(
     user_id: UUID,
@@ -67,6 +69,7 @@ def get_role_change_requests(
 @router.post(
     "/role-change-requests/{request_id}/approve",
     response_model=AdminRoleChangeRequestOut,
+    dependencies=[Depends(ROLE_DECISION_LIMIT)],
 )
 def approve_admin_role_change(
     request_id: UUID,
@@ -86,6 +89,7 @@ def approve_admin_role_change(
 @router.post(
     "/role-change-requests/{request_id}/reject",
     response_model=AdminRoleChangeRequestOut,
+    dependencies=[Depends(ROLE_DECISION_LIMIT)],
 )
 def reject_admin_role_change(
     request_id: UUID,

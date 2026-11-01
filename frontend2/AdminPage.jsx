@@ -62,14 +62,14 @@ export default function AdminPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromQuery = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(
-    tabFromQuery && ['overview', 'events', 'resources', 'users', 'announcements', 'mentorship'].includes(tabFromQuery)
+    tabFromQuery && ['overview', 'events', 'resources', 'users', 'announcements', 'mentorship', 'privacy'].includes(tabFromQuery)
       ? tabFromQuery
       : 'overview'
   )
 
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab && ['overview', 'events', 'resources', 'users', 'announcements', 'mentorship'].includes(tab)) {
+    if (tab && ['overview', 'events', 'resources', 'users', 'announcements', 'mentorship', 'privacy'].includes(tab)) {
       setActiveTab(tab)
     }
   }, [searchParams])
@@ -226,6 +226,7 @@ export default function AdminPage() {
       const result = await api.get(`${ENDPOINTS.adminRoleChangeRequests}?limit=250`)
       setRoleChangeRequests(Array.isArray(result) ? result : [])
     } catch (err) {
+      setRoleChangeRequests([])
       setRoleRequestsError(err.message || 'Unable to load role-change requests.')
     } finally {
       setRoleRequestsLoading(false)
@@ -283,19 +284,20 @@ export default function AdminPage() {
       setRoleActionId(null)
     }
 
-    const approveRoleChangeRequest = async (request) => {
-      setRoleActionId(request.id)
-      try {
-        await api.post(ENDPOINTS.approveAdminRoleChange(request.id))
-        setApprovalRequest(null)
-        showFeedback('Role-change request approved.')
-        await Promise.all([fetchAdminUsers(), fetchRoleChangeRequests()])
-      } catch (err) {
-        showFeedback(err.message || 'Unable to approve this request.', 'error')
-        throw err
-      } finally {
-        setRoleActionId(null)
-      }
+  }
+
+  const approveRoleChangeRequest = async (request) => {
+    setRoleActionId(request.id)
+    try {
+      await api.post(ENDPOINTS.approveAdminRoleChange(request.id))
+      setApprovalRequest(null)
+      showFeedback('Role-change request approved.')
+      await Promise.all([fetchAdminUsers(), fetchRoleChangeRequests()])
+    } catch (err) {
+      showFeedback(err.message || 'Unable to approve this request.', 'error')
+      throw err
+    } finally {
+      setRoleActionId(null)
     }
   }
   const createAndPublishEvent = async (event) => {
@@ -1894,10 +1896,15 @@ export default function AdminPage() {
                 Refresh
               </button>
             </div>
-            {roleRequestsError && <p className="mt-3 text-xs text-destructive" role="alert">{roleRequestsError}</p>}
+            {roleRequestsError && (
+              <div className="mt-4 rounded-lg border border-[var(--destructive-border)] bg-[var(--destructive-soft)] p-3 text-xs text-destructive" role="alert">
+                <p>{roleRequestsError}</p>
+                <button type="button" onClick={fetchRoleChangeRequests} className="mt-2 font-bold underline">Try again</button>
+              </div>
+            )}
             {roleRequestsLoading ? (
               <p className="py-8 text-center text-xs text-muted-foreground">Loading role-change requests…</p>
-            ) : (
+            ) : !roleRequestsError ? (
               <div className="mt-4 space-y-3">
                 {roleChangeRequests.filter((request) => request.status === 'pending').length === 0 ? (
                   <p className="py-6 text-center text-xs text-muted-foreground">No pending role-change requests.</p>
@@ -1935,13 +1942,15 @@ export default function AdminPage() {
                   </article>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
 
           <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
             <h2 className="text-lg font-bold text-foreground">Approval History</h2>
             {roleRequestsLoading ? (
               <p className="py-8 text-center text-xs text-muted-foreground">Loading approval history…</p>
+            ) : roleRequestsError ? (
+              <p className="py-6 text-center text-xs text-muted-foreground">Approval history is unavailable until the request succeeds.</p>
             ) : roleChangeRequests.filter((request) => request.status !== 'pending').length === 0 ? (
               <p className="py-6 text-center text-xs text-muted-foreground">No resolved role-change requests.</p>
             ) : (

@@ -4,6 +4,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ..database import get_db
+from ..rate_limit import UPLOAD_LIMIT
 from ..security import require_admin
 from .. import directory_models as m
 from .. import directory_schemas as s
@@ -28,7 +29,7 @@ def patch(session,obj,payload):
     return save(session,obj)
 def remove(session,obj): obj.is_active=False; save(session,obj)
 
-@router.post('/uploads/images', status_code=201)
+@router.post('/uploads/images', status_code=201, dependencies=[Depends(UPLOAD_LIMIT)])
 async def upload_image(file: UploadFile = File(...), _: Admin = None):
     """Upload an image once, then use its returned URL in a directory create/update payload."""
     return {"url": await upload_directory_image(file)}

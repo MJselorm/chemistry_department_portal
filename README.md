@@ -231,10 +231,10 @@ Before launch:
 1. Set `APP_ENV=production`, exact `CORS_ORIGINS`, `DATABASE_URL`, Firebase Admin credentials, and Supabase Storage values in Render's encrypted environment settings.
 2. Set all Firebase web values and a verified `VITE_SUPPORT_EMAIL` in Vercel. Confirm that the CSP in `frontend2/vercel.json` permits only services actually in use.
 3. Configure Firebase authorized website domains, enable the existing Email/Password and Google sign-in providers as required, and configure email-verification and password-reset templates plus provider-level abuse protections. The application does not restrict users to an institutional email domain. New email/password registrations must verify their address before profile provisioning.
-4. Apply Alembic migrations through `20261031_17` using a trusted deployment identity. Confirm the API's server-side `DATABASE_URL` can access the application tables under the RLS configuration, and confirm backups and restoration procedures.
+4. Apply Alembic migrations through `20261101_18` using a trusted deployment identity. Confirm the API's server-side `DATABASE_URL` can access the application tables under the RLS configuration, and confirm backups and restoration procedures.
 5. Explicitly bootstrap one verified, MFA-enrolled Super Admin using the documented database procedure before accepting role-change requests. Confirm the Firebase project has MFA enabled and supports the enrolled phone/TOTP factors.
 6. Confirm the `directory-media` bucket's public-read requirement and retention policy. Keep `academic-resources` private and allow the service-role key to read and write it; do not upload sensitive documents through the image endpoint.
-7. Configure platform/WAF rate limits for authentication, password reset, directory search, and uploads. The application does not include a distributed rate limiter.
+7. Keep `RATE_LIMIT_ENABLED=true` after migration `20261101_18`. Set `TRUSTED_PROXY_CIDRS` only to verified Render ingress proxy networks; leave it blank rather than trusting arbitrary forwarded headers. Firebase-hosted login, registration, verification, and password reset remain subject to Firebase quotas and should also use Firebase App Check/provider abuse protections where supported.
 8. Confirm that every enabled event, profile, notification, and settings control is backed by the deployed API; unsupported controls remain removed.
 9. Review the Privacy Notice and Terms of Use with the responsible university/society representative. Confirm the public contact, retention schedule, age/audience policy, and asset/logo permissions.
 10. Test sign-in, reset, logout, student/admin authorization, role request/approval with MFA, CRUD, uploads, CSP, and error handling against the actual production Firebase, database, storage, and domains.
@@ -243,6 +243,14 @@ Before launch:
     private key must never be added to Vercel or any `VITE_*` variable.
 
 Vercel supplies CSP, clickjacking, referrer, permissions, MIME-sniffing, and HSTS headers from `frontend2/vercel.json`. Academic preview streams and signed-link responses use `Cache-Control: private, no-store`.
+
+Vercel and Render already provide managed ingress routing for the current single
+frontend and single backend service, so a separate load balancer is not
+justified. The API runs one Uvicorn worker on the current free Render service
+and uses the Supabase pooler with bounded SQLAlchemy pooling, connection
+timeouts, pre-ping, and recycling. Reassess the Render plan, worker count, and
+database pool budget from observed concurrency before adding instances; no
+Redis, Nginx, or Kubernetes layer is required for the present deployment.
 
 ## Privacy and legal routes
 
@@ -305,6 +313,13 @@ reassignment, preferences, and audit tables, and enables RLS with no direct
 client grants. Review the generated SQL and apply migrations through this
 revision in the intended environment before enabling the frontend feature. No
 live database migration is applied by the code change.
+
+The shared rate-limit migration is
+`backend/alembic/versions/20261101_18_api_rate_limits.py`. It follows the
+mentorship migration, creates hashed PostgreSQL-backed counters for sensitive
+API operations, enables RLS, and revokes browser-role access. The migration is
+applied by Render's existing build command on deployment; it was not applied to
+any live database during development.
 
 ## Development notes
 
