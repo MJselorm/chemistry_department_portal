@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import { firebaseAuth } from './firebase'
+import SelectField from './SelectField'
 
 export default function AdminApprovalDialog({ request, onClose, onApprove }) {
   const {
@@ -127,21 +128,21 @@ export default function AdminApprovalDialog({ request, onClose, onApprove }) {
           <form onSubmit={approve} className="mt-5 space-y-4">
             <label className="block text-xs font-semibold text-foreground">
               Verification method
-              <select
+              <SelectField
                 value={factorUid}
                 onChange={(event) => {
                   setFactorUid(event.target.value)
                   setVerificationId('')
                   setCode('')
                 }}
-                className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+                className="mt-1.5 text-sm"
               >
                 {hints.map((hint) => (
                   <option key={hint.uid} value={hint.uid}>
                     {hint.factorId === 'phone' ? `Phone ending ${hint.phoneNumber.slice(-4)}` : 'Authenticator app'}
                   </option>
                 ))}
-              </select>
+              </SelectField>
             </label>
 
             {hints.find((hint) => hint.uid === factorUid)?.factorId === 'phone' && !verificationId ? (

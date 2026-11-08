@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { BookOpen, Check, Clock3, GraduationCap, Handshake, RefreshCw } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useAuth } from './AuthContext'
 import { useToast } from './directory/Toast'
+import SelectField from './SelectField'
 
 const LEVELS = [
   ['100', 'Level 100'],
@@ -11,6 +12,20 @@ const LEVELS = [
   ['300', 'Level 300'],
   ['400', 'Level 400'],
   ['postgraduate', 'Postgraduate'],
+]
+const STYLES = [
+  ['guided_practice', 'Guided practice'],
+  ['discussion', 'Discussion'],
+  ['examples', 'Worked examples'],
+  ['independent_study', 'Independent study'],
+  ['flexible', 'Flexible'],
+]
+const COMMUNICATION_METHODS = [
+  ['in_person', 'In person'],
+  ['video_call', 'Video call'],
+  ['messaging', 'Messaging'],
+  ['email', 'Email'],
+  ['flexible', 'Flexible'],
 ]
 
 const splitItems = (value) => value.split(/\n|,/).map((part) => part.trim()).filter(Boolean)
@@ -38,26 +53,40 @@ export default function MentorshipPage() {
   const [busy, setBusy] = useState(false)
   const [mentorForm, setMentorForm] = useState({
     academic_level: '100',
+    programme: '',
     subjects: '',
+    areas_of_expertise: '',
+    mentorship_goals: '',
     availability: '',
+    teaching_style: 'flexible',
+    communication_method: 'flexible',
+    experience: '',
     preferred_capacity: '1',
     introduction: '',
   })
   const [menteeForm, setMenteeForm] = useState({
     academic_level: '100',
+    programme: '',
     subjects: '',
+    interests: '',
+    learning_difficulties: '',
     learning_goals: '',
     availability: '',
+    learning_style: 'flexible',
+    communication_method: 'flexible',
     preferences: '',
   })
   const [goalTitle, setGoalTitle] = useState({})
   const [progressText, setProgressText] = useState({})
   const [sessionForm, setSessionForm] = useState({})
+  const loadedData = useRef(null)
 
   const refresh = useCallback(async () => {
+    if (!loadedData.current) setLoading(true)
     setLoadError('')
     try {
       const result = await api.get(ENDPOINTS.mentorshipMe)
+      loadedData.current = result
       setData(result)
     } catch (error) {
       setLoadError(error.message || 'Mentorship details could not be loaded.')
@@ -89,6 +118,8 @@ export default function MentorshipPage() {
       ...mentorForm,
       preferred_capacity: Number(mentorForm.preferred_capacity),
       subjects: splitItems(mentorForm.subjects),
+      areas_of_expertise: splitItems(mentorForm.areas_of_expertise),
+      mentorship_goals: splitItems(mentorForm.mentorship_goals),
       availability: splitItems(mentorForm.availability),
     }), 'Mentor application submitted for review.')
   }
@@ -98,6 +129,8 @@ export default function MentorshipPage() {
     runAction(() => api.post(ENDPOINTS.mentorshipMenteeApplications, {
       ...menteeForm,
       subjects: splitItems(menteeForm.subjects),
+      interests: splitItems(menteeForm.interests),
+      learning_difficulties: splitItems(menteeForm.learning_difficulties),
       learning_goals: splitItems(menteeForm.learning_goals),
       availability: splitItems(menteeForm.availability),
     }), 'Mentee application submitted.')
@@ -192,6 +225,23 @@ export default function MentorshipPage() {
     return <p className="content-panel rounded-xl p-8 text-center text-sm text-muted-foreground" role="status">Loading Mentorship Programme…</p>
   }
 
+  if (!data) {
+    return (
+      <section className="content-panel rounded-xl p-6 sm:p-8" aria-labelledby="mentorship-load-error-title">
+        <h1 id="mentorship-load-error-title" className="text-xl font-bold text-foreground">Mentorship Programme</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We could not verify your application or matching status. Try again before submitting so we do not create a duplicate application.
+        </p>
+        <div className="mt-4 rounded-lg border border-[var(--destructive-border)] bg-[var(--destructive-soft)] p-3 text-sm text-destructive" role="alert">
+          {loadError || 'Mentorship details could not be loaded.'}
+        </div>
+        <button type="button" className={`${secondaryButton} mt-4`} onClick={refresh}>
+          <RefreshCw size={14} aria-hidden="true" /> Try again
+        </button>
+      </section>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <header className="content-panel flex flex-col gap-3 rounded-xl p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -230,26 +280,50 @@ export default function MentorshipPage() {
           ) : (
             <form onSubmit={submitMentor} className="space-y-3">
               <Field label="Academic level">
-                <select className={inputClass} value={mentorForm.academic_level} onChange={(event) => setMentorForm({ ...mentorForm, academic_level: event.target.value })}>
+                <SelectField className="text-sm" value={mentorForm.academic_level} onChange={(event) => setMentorForm({ ...mentorForm, academic_level: event.target.value })}>
                   {LEVELS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-                </select>
+                </SelectField>
+              </Field>
+              <Field label="Programme (optional)">
+                <input className={inputClass} maxLength={120} placeholder="e.g. BSc Chemistry" value={mentorForm.programme} onChange={(event) => setMentorForm({ ...mentorForm, programme: event.target.value })} />
               </Field>
               <Field label="Courses / subjects of expertise" hint="Separate subjects with commas or new lines.">
                 <textarea className={inputClass} rows={2} required value={mentorForm.subjects} onChange={(event) => setMentorForm({ ...mentorForm, subjects: event.target.value })} />
+              </Field>
+              <Field label="Other areas of expertise (optional)" hint="Topics you can confidently support.">
+                <textarea className={inputClass} rows={2} value={mentorForm.areas_of_expertise} onChange={(event) => setMentorForm({ ...mentorForm, areas_of_expertise: event.target.value })} />
+              </Field>
+              <Field label="Mentorship goals (optional)" hint="What would you like your mentee to achieve?">
+                <textarea className={inputClass} rows={2} value={mentorForm.mentorship_goals} onChange={(event) => setMentorForm({ ...mentorForm, mentorship_goals: event.target.value })} />
               </Field>
               <Field label="Availability" hint="For example: weekday evenings, Saturday mornings.">
                 <textarea className={inputClass} rows={2} required value={mentorForm.availability} onChange={(event) => setMentorForm({ ...mentorForm, availability: event.target.value })} />
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Teaching style">
+                  <SelectField className="text-sm" value={mentorForm.teaching_style} onChange={(event) => setMentorForm({ ...mentorForm, teaching_style: event.target.value })}>
+                    {STYLES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+                  </SelectField>
+                </Field>
+                <Field label="Preferred communication">
+                  <SelectField className="text-sm" value={mentorForm.communication_method} onChange={(event) => setMentorForm({ ...mentorForm, communication_method: event.target.value })}>
+                    {COMMUNICATION_METHODS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+                  </SelectField>
+                </Field>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Preferred mentee capacity">
-                  <select className={inputClass} value={mentorForm.preferred_capacity} onChange={(event) => setMentorForm({ ...mentorForm, preferred_capacity: event.target.value })}>
+                  <SelectField className="text-sm" value={mentorForm.preferred_capacity} onChange={(event) => setMentorForm({ ...mentorForm, preferred_capacity: event.target.value })}>
                     {[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value}</option>)}
-                  </select>
+                  </SelectField>
                 </Field>
                 <Field label="Short introduction (optional)">
                   <input className={inputClass} maxLength={500} value={mentorForm.introduction} onChange={(event) => setMentorForm({ ...mentorForm, introduction: event.target.value })} />
                 </Field>
               </div>
+              <Field label="Relevant mentoring or tutoring experience (optional)" hint="Keep this focused on experience relevant to mentoring.">
+                <textarea className={inputClass} rows={3} maxLength={1000} value={mentorForm.experience} onChange={(event) => setMentorForm({ ...mentorForm, experience: event.target.value })} />
+              </Field>
               <button className={primaryButton} disabled={busy}>{busy ? 'Submitting…' : 'Apply to mentor'}</button>
             </form>
           )}
@@ -269,12 +343,21 @@ export default function MentorshipPage() {
           ) : (
             <form onSubmit={submitMentee} className="space-y-3">
               <Field label="Academic level">
-                <select className={inputClass} value={menteeForm.academic_level} onChange={(event) => setMenteeForm({ ...menteeForm, academic_level: event.target.value })}>
+                <SelectField className="text-sm" value={menteeForm.academic_level} onChange={(event) => setMenteeForm({ ...menteeForm, academic_level: event.target.value })}>
                   {LEVELS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-                </select>
+                </SelectField>
+              </Field>
+              <Field label="Programme (optional)">
+                <input className={inputClass} maxLength={120} placeholder="e.g. BSc Chemistry" value={menteeForm.programme} onChange={(event) => setMenteeForm({ ...menteeForm, programme: event.target.value })} />
               </Field>
               <Field label="Courses needing support">
                 <textarea className={inputClass} rows={2} required value={menteeForm.subjects} onChange={(event) => setMenteeForm({ ...menteeForm, subjects: event.target.value })} />
+              </Field>
+              <Field label="Other chemistry interests (optional)">
+                <textarea className={inputClass} rows={2} value={menteeForm.interests} onChange={(event) => setMenteeForm({ ...menteeForm, interests: event.target.value })} />
+              </Field>
+              <Field label="Topics you find challenging (optional)">
+                <textarea className={inputClass} rows={2} value={menteeForm.learning_difficulties} onChange={(event) => setMenteeForm({ ...menteeForm, learning_difficulties: event.target.value })} />
               </Field>
               <Field label="Learning goals" hint="Add one goal per line or separate with commas.">
                 <textarea className={inputClass} rows={2} required value={menteeForm.learning_goals} onChange={(event) => setMenteeForm({ ...menteeForm, learning_goals: event.target.value })} />
@@ -282,6 +365,18 @@ export default function MentorshipPage() {
               <Field label="Availability">
                 <textarea className={inputClass} rows={2} required value={menteeForm.availability} onChange={(event) => setMenteeForm({ ...menteeForm, availability: event.target.value })} />
               </Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Preferred learning style">
+                  <SelectField className="text-sm" value={menteeForm.learning_style} onChange={(event) => setMenteeForm({ ...menteeForm, learning_style: event.target.value })}>
+                    {STYLES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+                  </SelectField>
+                </Field>
+                <Field label="Preferred communication">
+                  <SelectField className="text-sm" value={menteeForm.communication_method} onChange={(event) => setMenteeForm({ ...menteeForm, communication_method: event.target.value })}>
+                    {COMMUNICATION_METHODS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+                  </SelectField>
+                </Field>
+              </div>
               <Field label="Preferences (optional)">
                 <input className={inputClass} maxLength={500} value={menteeForm.preferences} onChange={(event) => setMenteeForm({ ...menteeForm, preferences: event.target.value })} />
               </Field>
@@ -305,8 +400,14 @@ export default function MentorshipPage() {
         {proposals.length === 0 && activeMatches.length === 0 && history.length === 0 && (
           <div className="content-panel rounded-xl p-8 text-center">
             <Handshake size={26} className="mx-auto text-muted-foreground" aria-hidden="true" />
-            <p className="mt-2 text-sm font-semibold text-foreground">No match yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">Submit an application to get started. Suitable mentees are automatically matched with eligible mentors.</p>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              {menteeApplication?.status === 'waiting' ? 'You are on the matching list' : 'No match yet'}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {menteeApplication?.status === 'waiting'
+                ? 'We could not assign an available compatible mentor yet. Your request stays active and matching runs again as eligible mentors become available.'
+                : 'Submit an application to get started. The programme recommends the highest-scoring eligible mentor when one is available.'}
+            </p>
           </div>
         )}
         {proposals.map((match) => (
@@ -316,6 +417,14 @@ export default function MentorshipPage() {
                 <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[var(--warning)]"><Clock3 size={12} /> Match proposal</span>
                 <h3 className="mt-2 font-bold text-foreground">{match.partner.name}</h3>
                 <p className="text-xs text-muted-foreground">{match.partner_role} · shared subjects: {match.shared_subjects.join(', ')}</p>
+                <p className="mt-1 text-xs font-semibold tabular-nums text-primary">Compatibility: {match.match_score}%</p>
+                {match.score_breakdown?.length > 0 && (
+                  <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground" aria-label="Compatibility factors">
+                    {match.score_breakdown.map((factor) => (
+                      <li key={factor.factor}>{factor.label}: {factor.score}%</li>
+                    ))}
+                  </ul>
+                )}
                 <p className="mt-1 text-xs text-muted-foreground">
                   {match.my_accepted_at ? 'You accepted' : 'Your response needed'} · {match.partner_accepted_at ? 'the other participant accepted' : 'waiting for the other participant'}
                 </p>

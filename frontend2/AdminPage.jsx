@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Archive,
   Bell,
@@ -36,6 +36,7 @@ import AdminApprovalDialog from './AdminApprovalDialog'
 import DeleteConfirmModal from './directory/DeleteConfirmModal'
 import { useToast } from './directory/Toast'
 import AdminPrivacyRequestsPanel from './AdminPrivacyRequestsPanel'
+import SelectField from './SelectField'
 
 const CATEGORIES = [
   'All',
@@ -580,6 +581,12 @@ export default function AdminPage() {
             {tab.label}
           </button>
         ))}
+        <Link
+          to="/admin/mentorship"
+          className="inline-flex min-h-9 items-center whitespace-nowrap rounded-md border border-border bg-surface px-3.5 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-[var(--primary-border)] hover:text-primary"
+        >
+          Mentorship management
+        </Link>
       </div>
 
       {/* ── Tab: OVERVIEW ────────────────────────────────────────── */}
@@ -792,34 +799,34 @@ export default function AdminPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Category</label>
-                    <select
+                    <SelectField
                       aria-label="Resource category"
                       value={resourceForm.category}
                       onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                      className="min-h-10 rounded-xl py-2 text-xs"
                     >
                       <option value="Past Questions">Past Questions</option>
                       <option value="Lecture Notes">Lecture Notes</option>
                       <option value="Textbooks">Textbooks</option>
                       <option value="Lab Manuals">Lab Manuals</option>
                       <option value="Course Outlines">Course Outlines</option>
-                    </select>
+                    </SelectField>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Level</label>
-                    <select
+                    <SelectField
                       aria-label="Resource level"
                       value={resourceForm.level}
                       onChange={(e) => setResourceForm({ ...resourceForm, level: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                      className="min-h-10 rounded-xl py-2 text-xs"
                     >
                       <option value="100">Level 100</option>
                       <option value="200">Level 200</option>
                       <option value="300">Level 300</option>
                       <option value="400">Level 400</option>
                       <option value="Postgraduate">Postgraduate</option>
-                    </select>
+                    </SelectField>
                   </div>
 
                   <div>
@@ -935,20 +942,21 @@ export default function AdminPage() {
                   <Filter size={13} className="text-primary" />
                   <span className="font-semibold">Level:</span>
                 </div>
-                <select
+                <SelectField
                   value={resourceLevelFilter}
                   onChange={(e) => {
                     setResourceLevelFilter(e.target.value)
                     setResourcePage(1)
                   }}
-                  className="px-2.5 py-1.5 rounded-xl border border-border bg-surface text-xs font-medium focus:outline-none focus:border-primary shadow-xs"
+                  wrapperClassName="w-auto"
+                  className="min-h-9 rounded-xl py-1.5 pl-2.5 text-xs font-medium"
                 >
                   {LEVELS.map((lvl) => (
                     <option key={lvl} value={lvl}>
                       {lvl}
                     </option>
                   ))}
-                </select>
+                </SelectField>
 
                 <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer ml-2">
                   <input
@@ -1235,10 +1243,10 @@ export default function AdminPage() {
 
                     <div>
                       <label className="block text-xs font-bold text-foreground mb-1">Level</label>
-                      <select
+                      <SelectField
                         value={editResourceForm.level}
                         onChange={(e) => setEditResourceForm({ ...editResourceForm, level: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
+                        className="min-h-10 rounded-xl py-2 text-xs"
                       >
                         <option value="">None / Unassigned</option>
                         <option value="100">Level 100</option>
@@ -1246,22 +1254,22 @@ export default function AdminPage() {
                         <option value="300">Level 300</option>
                         <option value="400">Level 400</option>
                         <option value="Postgraduate">Postgraduate</option>
-                      </select>
+                      </SelectField>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-foreground mb-1">Category</label>
-                      <select
+                      <SelectField
                         value={editResourceForm.category}
                         onChange={(e) => setEditResourceForm({ ...editResourceForm, category: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
+                        className="min-h-10 rounded-xl py-2 text-xs"
                       >
                         <option value="Past Questions">Past Questions</option>
                         <option value="Lecture Notes">Lecture Notes</option>
                         <option value="Textbooks">Textbooks</option>
                         <option value="Lab Manuals">Lab Manuals</option>
                         <option value="Course Outlines">Course Outlines</option>
-                      </select>
+                      </SelectField>
                     </div>
 
                     <div>
@@ -1367,17 +1375,17 @@ export default function AdminPage() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Event type</label>
-                <select
+                <SelectField
                   aria-label="Event type"
                   value={eventForm.type}
                   onChange={(e) => setEventForm({ ...eventForm, type: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
+                  className="min-h-10 rounded-xl py-2.5 text-xs"
                 >
                   <option value="Seminar">Seminar</option>
                   <option value="Workshop">Workshop</option>
                   <option value="Conference">Conference</option>
                   <option value="Social">Social</option>
-                </select>
+                </SelectField>
               </div>
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Date & time</label>
@@ -1530,28 +1538,28 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Category</label>
-                    <select
+                    <SelectField
                       aria-label="Announcement category"
                       value={announcementForm.category}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, category: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                      className="min-h-10 rounded-xl py-2.5 text-xs"
                     >
                       <option value="Academic">Academic</option>
                       <option value="Department">Department</option>
                       <option value="Urgent">Urgent</option>
-                    </select>
+                    </SelectField>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Audience</label>
-                    <select
+                    <SelectField
                       aria-label="Announcement audience"
                       value={announcementForm.audience}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, audience: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                      className="min-h-10 rounded-xl py-2.5 text-xs"
                     >
                       <option value="All students">All students</option>
-                    </select>
+                    </SelectField>
                   </div>
 
                   <div>

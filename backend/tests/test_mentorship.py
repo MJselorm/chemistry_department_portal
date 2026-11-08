@@ -27,7 +27,7 @@ from app.mentorship_schemas import (
 from app.models import Notification, User
 from app.routers import mentorship as mentorship_router
 from app.security import get_current_user
-from app.services.mentorship import compatibility_score, notify_user, participant_match
+from app.services.mentorship import compatibility_details, compatibility_score, notify_user, participant_match, rank_mentor_candidates
 
 
 def _mentor(level="200", capacity=1):
@@ -70,6 +70,88 @@ def test_subject_overlap_is_mandatory_and_postgraduate_peers_are_eligible():
     assert compatibility_score(mentor, mentee, active_capacity=0) is not None
 
 
+def test_compatibility_ranks_preferences_and_explains_score():
+    preferred_mentor = _mentor(capacity=2)
+    preferred_mentor.programme = "BSc Chemistry"
+    preferred_mentor.areas_of_expertise = ["reaction mechanisms", "organic chemistry"]
+    preferred_mentor.mentorship_goals = ["understand reaction mechanisms"]
+    preferred_mentor.teaching_style = "guided_practice"
+    preferred_mentor.communication_method = "video_call"
+    preferred_mentee = _mentee()
+    preferred_mentee.programme = "BSc Chemistry"
+    preferred_mentee.interests = ["reaction mechanisms"]
+    preferred_mentee.learning_difficulties = ["reaction mechanisms"]
+    preferred_mentee.learning_style = "guided_practice"
+    preferred_mentee.communication_method = "video_call"
+
+    alternate_mentor = _mentor(capacity=2)
+    alternate_mentor.programme = "BSc Biochemistry"
+    alternate_mentor.areas_of_expertise = ["spectroscopy"]
+    alternate_mentor.mentorship_goals = ["laboratory safety"]
+    alternate_mentor.teaching_style = "discussion"
+    alternate_mentor.communication_method = "email"
+
+    preferred = compatibility_details(preferred_mentor, preferred_mentee, active_capacity=0)
+    alternate = compatibility_details(alternate_mentor, preferred_mentee, active_capacity=0)
+    assert preferred is not None and alternate is not None
+    assert preferred["score"] > alternate["score"]
+    assert {factor["factor"] for factor in preferred["score_breakdown"]} >= {
+        "subjects", "expertise_and_interests", "goals", "availability", "programme", "learning_style", "communication",
+    }
+
+
+def test_compatibility_weights_are_configurable():
+    result = compatibility_details(
+        _mentor(),
+        _mentee(),
+        active_capacity=0,
+        weights={
+            "subjects": 100,
+            "expertise_and_interests": 0,
+            "goals": 0,
+            "availability": 0,
+            "programme": 0,
+            "learning_style": 0,
+            "communication": 0,
+            "preferences": 0,
+            "capacity": 0,
+        },
+    )
+    assert result is not None
+    assert result["score"] == 100
+    assert [factor["factor"] for factor in result["score_breakdown"]] == ["subjects"]
+
+
+def test_candidate_ranking_prioritizes_fit_and_excludes_full_capacity():
+    mentee = _mentee()
+    mentee.programme = "BSc Chemistry"
+    mentee.learning_style = "guided_practice"
+    mentee.communication_method = "video_call"
+    mentee.interests = ["reaction mechanisms"]
+    mentee.learning_difficulties = ["reaction mechanisms"]
+
+    weaker = _mentor(capacity=2)
+    weaker.programme = "BSc Biochemistry"
+    weaker.areas_of_expertise = ["spectroscopy"]
+    weaker.mentorship_goals = ["laboratory safety"]
+    weaker.teaching_style = "discussion"
+    weaker.communication_method = "email"
+    stronger = _mentor(capacity=2)
+    stronger.programme = "BSc Chemistry"
+    stronger.areas_of_expertise = ["reaction mechanisms"]
+    stronger.mentorship_goals = ["reaction mechanisms"]
+    stronger.teaching_style = "guided_practice"
+    stronger.communication_method = "video_call"
+    full = _mentor(capacity=1)
+
+    ranked = rank_mentor_candidates(
+        [weaker, full, stronger],
+        mentee,
+        {weaker.user_id: 0, full.user_id: 1, stronger.user_id: 0},
+    )
+    assert [item[0] for item in ranked] == [stronger, weaker]
+
+
 def test_application_schemas_normalize_and_validate_inputs():
     mentor = MentorApplicationCreate(
         academic_level="300",
@@ -84,6 +166,33 @@ def test_application_schemas_normalize_and_validate_inputs():
         topic="  Organic   Chemistry ",
     )
     assert session.topic == "organic chemistry"
+    mentor = MentorApplicationCreate(
+        academic_level="300",
+        programme="  BSc   Chemistry ",
+        subjects=["Organic Chemistry"],
+        areas_of_expertise=["  Reaction mechanisms "],
+        mentorship_goals=["Help students build confidence"],
+        availability=["Saturday mornings"],
+        teaching_style="guided_practice",
+        communication_method="video_call",
+        experience="  Peer tutor ",
+    )
+    assert mentor.programme == "BSc Chemistry"
+    assert mentor.areas_of_expertise == ["Reaction mechanisms"]
+    assert mentor.experience == "Peer tutor"
+    mentee = MenteeApplicationCreate(
+        academic_level="100",
+        programme="BSc Chemistry",
+        subjects=["Organic Chemistry"],
+        interests=[],
+        learning_difficulties=["Reaction mechanisms"],
+        learning_goals=["Understand reaction mechanisms"],
+        availability=["Saturday mornings"],
+        learning_style="guided_practice",
+        communication_method="video_call",
+    )
+    assert mentee.interests == []
+    assert mentee.learning_difficulties == ["Reaction mechanisms"]
     with pytest.raises(ValueError):
         MenteeApplicationCreate(
             academic_level="100",
@@ -188,6 +297,14 @@ class _FakeQuery:
             for record in records
         )
 
+    def all(self):
+        records = self.session.records.get(self.model, [])
+        return [
+            record
+            for record in records
+            if all(getattr(record, key) == value for key, value in self.filters.items())
+        ]
+
 
 class _WorkflowSession:
     def __init__(self, *records):
@@ -273,6 +390,60 @@ def test_participants_complete_session_and_duplicate_confirmation_is_rejected():
     assert getattr(error.value, "status_code", None) == 409
 
 
+def test_match_proposal_requires_both_acceptances_and_can_be_declined():
+    mentor_id, mentee_id = uuid4(), uuid4()
+    match = _active_match(mentor_id, mentee_id)
+    match.status = "proposed"
+    match.mentor_accepted_at = None
+    match.mentee_accepted_at = None
+    application = MenteeApplication(id=match.mentee_application_id, user_id=mentee_id, status="matched")
+    session = _WorkflowSession(match, application)
+
+    mentor_response = mentorship_router.decide_match(
+        match.id,
+        mentorship_router.MatchDecision(decision="accept"),
+        session,
+        User(id=mentor_id, role="student"),
+    )
+    assert mentor_response == {"status": "proposed"}
+    assert match.mentor_accepted_at is not None
+    assert match.mentee_accepted_at is None
+
+    mentee_response = mentorship_router.decide_match(
+        match.id,
+        mentorship_router.MatchDecision(decision="accept"),
+        session,
+        User(id=mentee_id, role="student"),
+    )
+    assert mentee_response == {"status": "active"}
+    assert match.status == "active"
+    with pytest.raises(Exception) as duplicate:
+        mentorship_router.decide_match(
+            match.id,
+            mentorship_router.MatchDecision(decision="accept"),
+            session,
+            User(id=mentee_id, role="student"),
+        )
+    assert getattr(duplicate.value, "status_code", None) == 409
+
+    declined_match = _active_match(uuid4(), uuid4())
+    declined_match.status = "proposed"
+    declined_application = MenteeApplication(
+        id=declined_match.mentee_application_id,
+        user_id=declined_match.mentee_user_id,
+        status="matched",
+    )
+    declined_session = _WorkflowSession(declined_match, declined_application)
+    declined = mentorship_router.decide_match(
+        declined_match.id,
+        mentorship_router.MatchDecision(decision="decline"),
+        declined_session,
+        User(id=declined_match.mentor_user_id, role="student"),
+    )
+    assert declined == {"status": "declined"}
+    assert declined_application.status == "waiting"
+
+
 def test_goal_creation_and_completion_are_audited_and_idempotent():
     mentor_id, mentee_id = uuid4(), uuid4()
     match = _active_match(mentor_id, mentee_id)
@@ -339,6 +510,55 @@ def test_completion_requires_both_participants_and_keeps_history():
     assert getattr(error.value, "status_code", None) == 409
 
 
+def test_application_routes_persist_preferences_and_trigger_matching(monkeypatch):
+    user = User(id=uuid4(), firebase_uid="preferences-test", email="student@example.net", role="student")
+    mentor_payload = MentorApplicationCreate(
+        academic_level="300",
+        programme="BSc Chemistry",
+        subjects=["Organic Chemistry"],
+        areas_of_expertise=["Reaction mechanisms"],
+        mentorship_goals=["Build confidence in organic chemistry"],
+        availability=["Saturday mornings"],
+        teaching_style="guided_practice",
+        communication_method="video_call",
+        experience="Peer tutoring",
+    )
+    mentor_session = _WorkflowSession()
+    mentor_result = mentorship_router.create_mentor_application(mentor_payload, mentor_session, user)
+    mentor = mentor_session.records[MentorApplication][0]
+    assert mentor_result["status"] == "pending"
+    assert mentor.programme == "BSc Chemistry"
+    assert mentor.areas_of_expertise == ["Reaction mechanisms"]
+    assert mentor.teaching_style == "guided_practice"
+    assert mentor.communication_method == "video_call"
+    assert mentor.experience == "Peer tutoring"
+
+    mentee_payload = MenteeApplicationCreate(
+        academic_level="100",
+        programme="BSc Chemistry",
+        subjects=["Organic Chemistry"],
+        interests=["Reaction mechanisms"],
+        learning_difficulties=["Reaction mechanisms"],
+        learning_goals=["Build confidence in organic chemistry"],
+        availability=["Saturday mornings"],
+        learning_style="guided_practice",
+        communication_method="video_call",
+        preferences="Worked examples",
+    )
+    mentee_session = _WorkflowSession()
+    matched = []
+    monkeypatch.setattr(mentorship_router, "match_waiting_mentees", lambda session, actor_id: matched.append((session, actor_id)))
+    mentee_result = mentorship_router.create_mentee_application(mentee_payload, mentee_session, user)
+    mentee = mentee_session.records[MenteeApplication][0]
+    assert mentee_result["status"] == "waiting"
+    assert mentee.programme == "BSc Chemistry"
+    assert mentee.interests == ["Reaction mechanisms"]
+    assert mentee.learning_difficulties == ["Reaction mechanisms"]
+    assert mentee.learning_style == "guided_practice"
+    assert mentee.communication_method == "video_call"
+    assert matched == [(mentee_session, user.id)]
+
+
 def test_approved_reassignment_archives_match_and_requeues_mentee(monkeypatch):
     mentor_id, mentee_id, admin_id = uuid4(), uuid4(), uuid4()
     match = _active_match(mentor_id, mentee_id)
@@ -368,6 +588,7 @@ def test_approved_reassignment_archives_match_and_requeues_mentee(monkeypatch):
 def test_analytics_returns_programme_counts_and_twelve_month_trend():
     now = datetime.now(timezone.utc)
     this_month = now.replace(day=1)
+    mentor_ids = [uuid4(), uuid4(), uuid4()]
 
     class _AnalyticsQuery:
         def __init__(self, entity, ordinal):
@@ -379,19 +600,30 @@ def test_analytics_returns_programme_counts_and_twelve_month_trend():
 
         def scalar(self):
             return {
-                ("count(mentor_applications.id)", 0): 3,
+                ("count(mentor_applications.id)", 0): 5,
+                ("count(mentor_applications.id)", 1): 3,
                 ("count(distinct(mentee_applications.user_id))", 0): 11,
-                ("count(mentor_applications.id)", 1): 2,
-                ("count(mentorship_matches.id)", 0): 4,
+                ("count(mentor_applications.id)", 2): 2,
+                ("count(mentorship_matches.id)", 0): 3,
                 ("count(mentee_applications.id)", 0): 5,
-                ("count(mentorship_matches.id)", 1): 2,
+                ("count(mentorship_matches.id)", 1): 4,
+                ("count(mentorship_matches.id)", 2): 2,
+                ("count(mentorship_matches.id)", 3): 10,
                 ("count(mentorship_sessions.id)", 0): 17,
+                ("count(mentorship_reassignment_requests.id)", 0): 2,
             }[(self.entity, self.ordinal)]
 
         def order_by(self, *_expressions):
             return self
 
+        def distinct(self):
+            return self
+
         def all(self):
+            if self.entity == "MentorApplication.user_id":
+                return [(mentor_id,) for mentor_id in mentor_ids]
+            if self.entity == "MentorshipMatch.mentor_user_id":
+                return [(mentor_ids[0],), (mentor_ids[1],)]
             return [(this_month,)]
 
     class _AnalyticsSession:
@@ -405,12 +637,19 @@ def test_analytics_returns_programme_counts_and_twelve_month_trend():
             return _AnalyticsQuery(entity, ordinal)
 
     result = mentorship_router.mentorship_analytics(_AnalyticsSession(), User(id=uuid4(), role="admin"))
-    assert result["total_mentors"] == 3
+    assert result["total_mentors"] == 5
+    assert result["approved_mentors"] == 3
     assert result["total_mentees"] == 11
     assert result["pending_applications"] == 2
+    assert result["pending_mentors"] == 2
+    assert result["pending_match_requests"] == 3
     assert result["active_matches"] == 4
     assert result["waiting_list"] == 5
     assert result["completed_mentorships"] == 2
     assert result["completed_sessions"] == 17
+    assert result["pending_reassignment_requests"] == 2
+    assert result["unmatched_mentors"] == 1
+    assert result["unmatched_participants"] == 6
+    assert result["successful_match_rate"] == 60
     assert len(result["trends"]) == 12
     assert result["trends"][-1]["matches"] == 1

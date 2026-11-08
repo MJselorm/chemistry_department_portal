@@ -120,6 +120,7 @@ def _serialize_match(session: Session, match: MentorshipMatch, viewer_id: UUID) 
         "id": match.id,
         "status": match.status,
         "match_score": match.match_score,
+        "score_breakdown": match.score_breakdown,
         "shared_subjects": match.shared_subjects,
         "partner_role": "mentee" if is_mentor else "mentor",
         "partner": _user_summary(session, partner_id, include_email=reveal_contact),
@@ -175,8 +176,14 @@ def my_mentorship(session: DB, user: Auth):
         "mentor_application": (
             {
                 "academic_level": mentor_application.academic_level,
+                "programme": mentor_application.programme,
                 "subjects": mentor_application.subjects,
+                "areas_of_expertise": mentor_application.areas_of_expertise,
+                "mentorship_goals": mentor_application.mentorship_goals,
                 "availability": mentor_application.availability,
+                "teaching_style": mentor_application.teaching_style,
+                "communication_method": mentor_application.communication_method,
+                "experience": mentor_application.experience,
                 "preferred_capacity": mentor_application.preferred_capacity,
                 "introduction": mentor_application.introduction,
                 "status": mentor_application.status,
@@ -188,9 +195,14 @@ def my_mentorship(session: DB, user: Auth):
         "mentee_application": (
             {
                 "academic_level": mentee_application.academic_level,
+                "programme": mentee_application.programme,
                 "subjects": mentee_application.subjects,
+                "interests": mentee_application.interests,
+                "learning_difficulties": mentee_application.learning_difficulties,
                 "learning_goals": mentee_application.learning_goals,
                 "availability": mentee_application.availability,
+                "learning_style": mentee_application.learning_style,
+                "communication_method": mentee_application.communication_method,
                 "preferences": mentee_application.preferences,
                 "status": mentee_application.status,
                 "created_at": mentee_application.created_at,
@@ -211,15 +223,21 @@ def create_mentor_application(payload: MentorApplicationCreate, session: DB, use
         raise HTTPException(status.HTTP_409_CONFLICT, "You already have an active mentor application.")
     if application:
         application.academic_level = payload.academic_level
+        application.programme = payload.programme
         application.subjects = payload.subjects
+        application.areas_of_expertise = payload.areas_of_expertise
+        application.mentorship_goals = payload.mentorship_goals
         application.availability = payload.availability
+        application.teaching_style = payload.teaching_style
+        application.communication_method = payload.communication_method
+        application.experience = payload.experience
         application.preferred_capacity = payload.preferred_capacity
         application.introduction = payload.introduction
         application.review_note = None
         application.reviewed_by_id = None
         application.status = "pending"
     else:
-        application = MentorApplication(user_id=user.id, **payload.model_dump())
+        application = MentorApplication(user_id=user.id, status="pending", **payload.model_dump())
         session.add(application)
     audit(session, actor_id=user.id, subject_id=user.id, event_type="mentor_application", outcome="pending")
     _commit(session, "A mentor application already exists.")
@@ -550,13 +568,31 @@ def request_reassignment(match_id: UUID, payload: ReassignmentCreate, session: D
 def mentorship_analytics(session: DB, _: Admin):
     now = datetime.now(timezone.utc)
     period_start = (now.replace(day=1) - timedelta(days=365)).replace(day=1)
-    total_mentors = session.query(func.count(MentorApplication.id)).filter(MentorApplication.status == "approved").scalar() or 0
+    total_mentors = session.query(func.count(MentorApplication.id)).scalar() or 0
+    approved_mentors = session.query(func.count(MentorApplication.id)).filter(MentorApplication.status == "approved").scalar() or 0
     total_mentees = session.query(func.count(func.distinct(MenteeApplication.user_id))).scalar() or 0
     pending = session.query(func.count(MentorApplication.id)).filter(MentorApplication.status == "pending").scalar() or 0
+    pending_matches = session.query(func.count(MentorshipMatch.id)).filter(MentorshipMatch.status == "proposed").scalar() or 0
     active = session.query(func.count(MentorshipMatch.id)).filter(MentorshipMatch.status == "active").scalar() or 0
     waiting = session.query(func.count(MenteeApplication.id)).filter(MenteeApplication.status == "waiting").scalar() or 0
     completed = session.query(func.count(MentorshipMatch.id)).filter(MentorshipMatch.status == "completed").scalar() or 0
+    total_matches = session.query(func.count(MentorshipMatch.id)).scalar() or 0
     sessions_completed = session.query(func.count(MentorshipSession.id)).filter(MentorshipSession.status == "completed").scalar() or 0
+    pending_reassignments = session.query(func.count(MentorshipReassignmentRequest.id)).filter(
+        MentorshipReassignmentRequest.status == "pending"
+    ).scalar() or 0
+    approved_mentor_ids = {
+        mentor_id for (mentor_id,) in session.query(MentorApplication.user_id)
+        .filter(MentorApplication.status == "approved")
+        .all()
+    }
+    matched_mentor_ids = {
+        mentor_id for (mentor_id,) in session.query(MentorshipMatch.mentor_user_id)
+        .filter(MentorshipMatch.status.in_(ACTIVE_MATCHES))
+        .distinct()
+        .all()
+    }
+    unmatched_mentors = len(approved_mentor_ids - matched_mentor_ids)
     month_rows = (
         session.query(MentorshipMatch.created_at)
         .filter(MentorshipMatch.created_at >= period_start)
@@ -576,12 +612,20 @@ def mentorship_analytics(session: DB, _: Admin):
         trends.append({"month": f"{month_abbr[month_date.month]} {month_date.year}", "matches": trend_counts.get(key, 0)})
     return {
         "total_mentors": total_mentors,
+        "approved_mentors": approved_mentors,
+        "pending_mentors": pending,
         "total_mentees": total_mentees,
         "pending_applications": pending,
+        "pending_match_requests": pending_matches,
         "active_matches": active,
         "waiting_list": waiting,
+        "unmatched_mentees": waiting,
+        "unmatched_mentors": unmatched_mentors,
+        "unmatched_participants": waiting + unmatched_mentors,
+        "successful_match_rate": round(((active + completed) / total_matches) * 100) if total_matches else 0,
         "completed_mentorships": completed,
         "completed_sessions": sessions_completed,
+        "pending_reassignment_requests": pending_reassignments,
         "trends": trends,
     }
 
@@ -604,8 +648,14 @@ def admin_mentor_applications(
             "id": item.id,
             "user": _user_summary(session, item.user_id, include_email=True),
             "academic_level": item.academic_level,
+            "programme": item.programme,
             "subjects": item.subjects,
+            "areas_of_expertise": item.areas_of_expertise,
+            "mentorship_goals": item.mentorship_goals,
             "availability": item.availability,
+            "teaching_style": item.teaching_style,
+            "communication_method": item.communication_method,
+            "experience": item.experience,
             "preferred_capacity": item.preferred_capacity,
             "introduction": item.introduction,
             "status": item.status,
@@ -630,8 +680,14 @@ def admin_waiting_list(session: DB, _: Admin):
             "id": item.id,
             "user": _user_summary(session, item.user_id),
             "academic_level": item.academic_level,
+            "programme": item.programme,
             "subjects": item.subjects,
+            "interests": item.interests,
+            "learning_difficulties": item.learning_difficulties,
+            "learning_goals": item.learning_goals,
             "availability": item.availability,
+            "learning_style": item.learning_style,
+            "communication_method": item.communication_method,
             "created_at": item.created_at,
         }
         for item in applications
@@ -678,25 +734,37 @@ def admin_matches(
     _: Admin,
     match_status: str | None = Query(default=None, alias="status", pattern="^(proposed|active|completed|declined|withdrawn|reassigned|expired)$"),
     limit: int = Query(default=100, ge=1, le=250),
+    search: str | None = Query(default=None, max_length=120),
 ):
     query = session.query(MentorshipMatch)
     if match_status:
         query = query.filter(MentorshipMatch.status == match_status)
     matches = query.order_by(MentorshipMatch.created_at.desc()).limit(limit).all()
+    search_term = search.casefold().strip() if search else ""
     inactive_before = datetime.now(timezone.utc) - timedelta(days=30)
-    return [
+    result = [
         {
             "id": match.id,
             "status": match.status,
             "mentor": _user_summary(session, match.mentor_user_id),
             "mentee": _user_summary(session, match.mentee_user_id),
             "shared_subjects": match.shared_subjects,
+            "match_score": match.match_score,
+            "score_breakdown": match.score_breakdown,
             "created_at": match.created_at,
             "updated_at": match.updated_at,
             "inactive": match.status == "active" and match.updated_at < inactive_before,
         }
         for match in matches
     ]
+    if search_term:
+        result = [
+            item for item in result
+            if search_term in item["mentor"]["name"].casefold()
+            or search_term in item["mentee"]["name"].casefold()
+            or any(search_term in subject.casefold() for subject in item["shared_subjects"])
+        ]
+    return result
 
 
 @router.get("/admin/reassignment-requests")

@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 AcademicLevel = Literal["100", "200", "300", "400", "postgraduate"]
+MentorshipStyle = Literal["guided_practice", "discussion", "examples", "independent_study", "flexible"]
+CommunicationMethod = Literal["in_person", "video_call", "messaging", "email", "flexible"]
 
 
 def normalize_list(values: list[str]) -> list[str]:
@@ -17,10 +19,23 @@ def normalize_list(values: list[str]) -> list[str]:
     return cleaned
 
 
+def normalize_optional_list(values: list[str]) -> list[str]:
+    cleaned = list(dict.fromkeys(" ".join(value.split()) for value in values if value.strip()))
+    if any(len(value) > 100 for value in cleaned):
+        raise ValueError("Each item must be no longer than 100 characters.")
+    return cleaned
+
+
 class MentorApplicationCreate(BaseModel):
     academic_level: AcademicLevel
+    programme: str | None = Field(default=None, max_length=120)
     subjects: list[str] = Field(min_length=1, max_length=20)
+    areas_of_expertise: list[str] = Field(default_factory=list, max_length=20)
+    mentorship_goals: list[str] = Field(default_factory=list, max_length=10)
     availability: list[str] = Field(min_length=1, max_length=14)
+    teaching_style: MentorshipStyle | None = None
+    communication_method: CommunicationMethod | None = None
+    experience: str | None = Field(default=None, max_length=1000)
     preferred_capacity: int = Field(default=1, ge=1, le=5)
     introduction: str | None = Field(default=None, max_length=500)
 
@@ -29,17 +44,32 @@ class MentorApplicationCreate(BaseModel):
     def normalize_entries(cls, values: list[str]) -> list[str]:
         return normalize_list(values)
 
+    @field_validator("areas_of_expertise", "mentorship_goals")
+    @classmethod
+    def normalize_optional_entries(cls, values: list[str]) -> list[str]:
+        return normalize_optional_list(values)
+
     @field_validator("introduction")
     @classmethod
     def clean_introduction(cls, value: str | None) -> str | None:
         return value.strip() or None if value else None
 
+    @field_validator("programme", "experience")
+    @classmethod
+    def clean_optional_text(cls, value: str | None) -> str | None:
+        return " ".join(value.split()) or None if value else None
+
 
 class MenteeApplicationCreate(BaseModel):
     academic_level: AcademicLevel
+    programme: str | None = Field(default=None, max_length=120)
     subjects: list[str] = Field(min_length=1, max_length=20)
+    interests: list[str] = Field(default_factory=list, max_length=20)
+    learning_difficulties: list[str] = Field(default_factory=list, max_length=10)
     learning_goals: list[str] = Field(min_length=1, max_length=10)
     availability: list[str] = Field(min_length=1, max_length=14)
+    learning_style: MentorshipStyle | None = None
+    communication_method: CommunicationMethod | None = None
     preferences: str | None = Field(default=None, max_length=500)
 
     @field_validator("subjects", "learning_goals", "availability")
@@ -47,10 +77,20 @@ class MenteeApplicationCreate(BaseModel):
     def normalize_entries(cls, values: list[str]) -> list[str]:
         return normalize_list(values)
 
+    @field_validator("interests", "learning_difficulties")
+    @classmethod
+    def normalize_optional_entries(cls, values: list[str]) -> list[str]:
+        return normalize_optional_list(values)
+
     @field_validator("preferences")
     @classmethod
     def clean_preferences(cls, value: str | None) -> str | None:
         return value.strip() or None if value else None
+
+    @field_validator("programme")
+    @classmethod
+    def clean_programme(cls, value: str | None) -> str | None:
+        return " ".join(value.split()) or None if value else None
 
 
 class MentorApplicationDecision(BaseModel):

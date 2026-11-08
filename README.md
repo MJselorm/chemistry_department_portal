@@ -114,10 +114,13 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
   unread counts, and push subscriptions. `/api/notifications/admin/*` requires
   the database-backed `admin` role.
 - `/api/mentorship/*` provides student mentor/mentee applications, eligible
-  rules-based match proposals, participant acceptance, study goals, session
-  confirmation, completion, withdrawal, reassignment, and notification
-  preferences. Match administration and programme analytics require `admin`
-  or `super_admin`.
+  preference-aware match proposals, participant acceptance, study goals,
+  session confirmation, completion, withdrawal, reassignment, and notification
+  preferences. Mentor/mentee applications include programme, subject interests,
+  goals, learning/teaching style, availability, and communication preferences.
+  Match proposals include an explainable compatibility breakdown.
+  Match administration and programme analytics require `admin` or
+  `super_admin`.
 - `/api/privacy/requests/me` returns only the authenticated user's request
   history. `/api/privacy/requests/export` creates an audit record and returns an
   ownership-scoped JSON export. `/api/privacy/requests/deletion` creates one
@@ -173,15 +176,22 @@ profile and restrict match progress, notes, sessions, and feedback to the two
 participants. Contact email is returned only after both participants accept a
 match. Administrative mentorship views expose programme status and application
 details, not private progress notes or participant feedback. The matching
-service requires subject overlap and a mentor at an eligible academic level,
-then scores subject fit (40%), academic-level fit (25%), availability (20%),
-and remaining capacity (15%). Proposals expire after 14 days without both
-responses and are expired/re-matched on the next participant programme access
-or response. Database row locks, unique session submission keys, and partial
-unique indexes protect open matches and mentor capacity; the backend-only
-mentorship tables have RLS enabled and client-role grants revoked. In-app
-mentorship notifications use the existing notification and read/unread system;
-no separate delivery service is required.
+service requires subject overlap, an approved mentor with available capacity,
+and an eligible academic level. It ranks candidates by subject coverage,
+expertise/interests, goal similarity, availability, programme, teaching/learning
+style, communication method, and remaining capacity. Weights are centralized
+in `backend/app/services/mentorship.py` as `MATCH_SCORE_WEIGHTS`; the scorer
+accepts an explicit weight map for controlled tuning and records the applicable
+factor scores with each proposal. Missing optional preferences are omitted from
+the denominator rather than treated as mismatches. Proposals expire after 14
+days without both responses and are expired/re-matched on the next participant
+programme access or response. Database row locks, unique session submission
+keys, and partial unique indexes protect open matches and mentor capacity; the
+backend-only mentorship tables have RLS enabled and client-role grants revoked.
+Run `python -m alembic upgrade head` to apply migration `20261108_20` before
+deploying the expanded matching workflow. In-app mentorship notifications use
+the existing notification and read/unread system; no separate delivery service
+is required.
 
 Migration `20260920_02` previously collapsed legacy `SUPER_ADMIN` values into
 `admin`; the current database cannot identify those former Super Admins from

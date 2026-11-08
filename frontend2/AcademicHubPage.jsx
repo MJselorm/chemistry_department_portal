@@ -163,6 +163,7 @@ export default function AcademicHubPage() {
             </div>
             <SelectField
               aria-label="Filter by academic level"
+              wrapperClassName="w-auto"
               value={selectedLevel}
               onChange={(e) => {
                 setSelectedLevel(e.target.value)
@@ -182,6 +183,7 @@ export default function AcademicHubPage() {
             </div>
             <SelectField
               aria-label="Filter by semester"
+              wrapperClassName="w-auto"
               value={selectedSemester}
               onChange={(e) => {
                 setSelectedSemester(e.target.value)
@@ -199,6 +201,7 @@ export default function AcademicHubPage() {
             </div>
             <SelectField
               aria-label="Sort academic materials"
+              wrapperClassName="w-auto"
               value={sortBy}
               onChange={(e) => {
                 setSortBy(e.target.value)

@@ -128,8 +128,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
             const isAdminConsoleActive =
               item.label === 'Admin Console' &&
               location.pathname.startsWith('/admin') &&
-              !location.pathname.startsWith('/admin/directory') &&
-              !location.pathname.startsWith('/admin/mentorship')
+              !location.pathname.startsWith('/admin/directory')
 
             return (
               <NavLink

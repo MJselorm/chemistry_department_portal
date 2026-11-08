@@ -3,6 +3,7 @@ import { Activity, Check, Clock3, RefreshCw, Users } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import { useToast } from './directory/Toast'
+import SelectField from './SelectField'
 
 const cardClass = 'rounded-xl border border-border bg-surface p-4 shadow-sm'
 const buttonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-foreground hover:bg-surface-secondary disabled:opacity-60'
@@ -24,6 +25,7 @@ export default function MentorshipAdminPanel() {
   const [matches, setMatches] = useState([])
   const [reassignments, setReassignments] = useState([])
   const [query, setQuery] = useState('')
+  const [matchStatus, setMatchStatus] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionId, setActionId] = useState('')
@@ -104,6 +106,16 @@ export default function MentorshipAdminPanel() {
       || item.subjects.some((subject) => subject.toLowerCase().includes(term)),
     )
   }, [waitingList, query])
+  const filteredMatches = useMemo(() => {
+    const term = query.trim().toLowerCase()
+    return matches.filter((match) =>
+      (matchStatus === 'all' || match.status === matchStatus)
+      && (!term
+        || match.mentor.name?.toLowerCase().includes(term)
+        || match.mentee.name?.toLowerCase().includes(term)
+        || match.shared_subjects.some((subject) => subject.toLowerCase().includes(term))),
+    )
+  }, [matches, matchStatus, query])
   const maxTrend = Math.max(1, ...(analytics?.trends || []).map((item) => item.matches))
 
   if (loading && !analytics) {
@@ -126,14 +138,18 @@ export default function MentorshipAdminPanel() {
       {error && <p className="rounded-lg border border-[var(--destructive-border)] bg-[var(--destructive-soft)] p-3 text-sm text-destructive" role="alert">{error}</p>}
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-        <Stat label="Approved mentors" value={analytics?.total_mentors} />
+        <Stat label="Registered mentors" value={analytics?.total_mentors} />
+        <Stat label="Approved mentors" value={analytics?.approved_mentors} />
+        <Stat label="Pending mentors" value={analytics?.pending_mentors} />
         <Stat label="Registered mentees" value={analytics?.total_mentees} />
-        <Stat label="Pending applications" value={analytics?.pending_applications} />
         <Stat label="Active matches" value={analytics?.active_matches} />
+        <Stat label="Pending match requests" value={analytics?.pending_match_requests} />
         <Stat label="Waiting-list participants" value={analytics?.waiting_list} />
+        <Stat label="Unmatched participants" value={analytics?.unmatched_participants} />
         <Stat label="Completed mentorships" value={analytics?.completed_mentorships} />
+        <Stat label="Successful match rate" value={`${analytics?.successful_match_rate ?? 0}%`} />
         <Stat label="Completed sessions" value={analytics?.completed_sessions} />
-        <Stat label="Reassignment requests" value={reassignments.length} />
+        <Stat label="Reassignment requests" value={analytics?.pending_reassignment_requests ?? reassignments.length} />
       </section>
 
       <section className={`${cardClass} space-y-3`}>
@@ -167,10 +183,14 @@ export default function MentorshipAdminPanel() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 text-xs">
                       <strong className="block text-foreground">{application.user.name}</strong>
-                      <span className="text-muted-foreground">{application.user.email} · Level {application.academic_level}</span>
+                      <span className="text-muted-foreground">{application.user.email} · Level {application.academic_level}{application.programme ? ` · ${application.programme}` : ''}</span>
                       <p className="mt-1 text-foreground">Subjects: {application.subjects.join(', ')}</p>
+                      {application.areas_of_expertise?.length > 0 && <p className="text-muted-foreground">Expertise: {application.areas_of_expertise.join(', ')}</p>}
+                      {application.mentorship_goals?.length > 0 && <p className="text-muted-foreground">Mentorship goals: {application.mentorship_goals.join(', ')}</p>}
                       <p className="text-muted-foreground">Availability: {application.availability.join(', ')} · capacity {application.preferred_capacity}</p>
+                      {application.teaching_style && <p className="text-muted-foreground">Teaching style: {application.teaching_style.replaceAll('_', ' ')} · communication: {application.communication_method?.replaceAll('_', ' ') || 'not specified'}</p>}
                       {application.introduction && <p className="mt-1 text-muted-foreground">{application.introduction}</p>}
+                      {application.experience && <p className="mt-1 text-muted-foreground">Experience: {application.experience}</p>}
                     </div>
                     <div className="flex shrink-0 gap-2">
                       <button className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-[10px] font-bold text-white disabled:opacity-60" disabled={Boolean(actionId)} onClick={() => decideApplication(application, 'approved')}>
@@ -193,7 +213,10 @@ export default function MentorshipAdminPanel() {
                 <article key={item.id} className="py-3 text-xs">
                   <strong className="text-foreground">{item.user.name}</strong>
                   <span className="ml-2 text-muted-foreground">Level {item.academic_level}</span>
+                  {item.programme && <span className="ml-2 text-muted-foreground">{item.programme}</span>}
                   <p className="mt-1 text-muted-foreground">Needs help with: {item.subjects.join(', ')}</p>
+                  {item.interests?.length > 0 && <p className="mt-1 text-muted-foreground">Interests: {item.interests.join(', ')}</p>}
+                  {item.learning_goals?.length > 0 && <p className="mt-1 text-muted-foreground">Goals: {item.learning_goals.join(', ')}</p>}
                   <p className="mt-1 text-[10px] text-muted-foreground">Waiting since {new Date(item.created_at).toLocaleDateString()}</p>
                 </article>
               ))}
@@ -227,14 +250,26 @@ export default function MentorshipAdminPanel() {
       </section>
 
       <section className={`${cardClass} space-y-3`}>
-        <div className="flex items-center gap-2"><Clock3 size={16} className="text-primary" /><h3 className="font-bold text-foreground">Match oversight</h3></div>
-        {matches.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">No mentorship matches yet.</p> : (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2"><Clock3 size={16} className="text-primary" /><h3 className="font-bold text-foreground">Matching history</h3></div>
+          <SelectField aria-label="Filter matching history by status" value={matchStatus} onChange={(event) => setMatchStatus(event.target.value)} wrapperClassName="w-full sm:w-auto" className="min-h-9 rounded-lg py-2 text-xs">
+            <option value="all">All statuses</option>
+            {['proposed', 'active', 'completed', 'declined', 'withdrawn', 'reassigned', 'expired'].map((status) => <option key={status} value={status}>{status.replaceAll('_', ' ')}</option>)}
+          </SelectField>
+        </div>
+        {filteredMatches.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">No matching records for this filter.</p> : (
           <div className="max-h-96 divide-y divide-border overflow-auto">
-            {matches.map((match) => (
+            {filteredMatches.map((match) => (
               <article key={match.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-xs">
                 <div>
                   <strong className="text-foreground">{match.mentor.name} ↔ {match.mentee.name}</strong>
                   <p className="mt-1 text-muted-foreground">{match.shared_subjects.join(', ')} · updated {new Date(match.updated_at).toLocaleDateString()}</p>
+                  <p className="mt-1 font-semibold tabular-nums text-primary">Compatibility score: {match.match_score}%</p>
+                  {Array.isArray(match.score_breakdown) && match.score_breakdown.length > 0 && (
+                    <p className="mt-1 text-muted-foreground">
+                      {match.score_breakdown.map((factor) => `${factor.label} ${factor.score}%`).join(' · ')}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {match.inactive && <span className="rounded-full bg-[var(--warning-soft)] px-2 py-1 text-[9px] font-bold uppercase text-[var(--warning)]">Inactive 30+ days</span>}

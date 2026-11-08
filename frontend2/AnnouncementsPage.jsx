@@ -8,6 +8,7 @@ import AdminNotificationsPanel from './AdminNotificationsPanel'
 import DeleteConfirmModal from './directory/DeleteConfirmModal'
 import { useToast } from './directory/Toast'
 import ErrorBoundary from './ErrorBoundary'
+import SelectField from './SelectField'
 
 const badgeClass = (category) => {
   const value = (category || '').toLowerCase()
@@ -287,28 +288,28 @@ export default function AnnouncementsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Category</label>
-                <select
+                <SelectField
                   aria-label="Announcement category"
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                  className="min-h-10 rounded-xl py-2.5 text-xs"
                 >
                   <option value="Academic">Academic</option>
                   <option value="Department">Department</option>
                   <option value="Urgent">Urgent</option>
-                </select>
+                </SelectField>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Target Audience</label>
-                <select
+                <SelectField
                   aria-label="Announcement target audience"
                   value={form.audience}
                   onChange={(e) => setForm({ ...form, audience: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                  className="min-h-10 rounded-xl py-2.5 text-xs"
                 >
                   <option value="All students">All students</option>
-                </select>
+                </SelectField>
               </div>
 
               <div>
