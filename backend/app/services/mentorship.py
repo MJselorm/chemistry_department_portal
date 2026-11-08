@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy import func, or_
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from ..models import Notification
@@ -47,24 +48,28 @@ def notify_user(
     actor_id: UUID,
     title: str,
     message: str,
+    event_key: str | None = None,
 ) -> None:
     preferences = session.get(MentorshipNotificationPreference, recipient_id)
     if preferences and not preferences.in_app_enabled:
         return
-    session.add(
-        Notification(
-            title=title,
-            message=message,
-            category="mentorship",
-            priority="normal",
-            audience_type="individual",
-            target_user_id=recipient_id,
-            destination_path="/mentorship",
-            status="published",
-            published_at=datetime.now(timezone.utc),
-            created_by_id=actor_id,
-        )
+    values = dict(
+        title=title,
+        message=message,
+        category="mentorship",
+        priority="normal",
+        audience_type="individual",
+        target_user_id=recipient_id,
+        destination_path="/mentorship",
+        status="published",
+        published_at=datetime.now(timezone.utc),
+        created_by_id=actor_id,
+        event_key=event_key,
     )
+    if event_key:
+        session.execute(pg_insert(Notification).values(**values).on_conflict_do_nothing(index_elements=[Notification.event_key]))
+    else:
+        session.add(Notification(**values))
 
 
 def compatibility_score(

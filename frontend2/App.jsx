@@ -19,6 +19,7 @@ const DirectoryPage = lazy(() => import('./DirectoryPage'))
 const ProfilePage = lazy(() => import('./ProfilePage'))
 const SettingsPage = lazy(() => import('./SettingsPage'))
 const MentorshipPage = lazy(() => import('./MentorshipPage'))
+const MentorshipAdminPanel = lazy(() => import('./MentorshipAdminPanel'))
 const AdminPage = lazy(() => import('./AdminPage'))
 const AnnouncementsPage = lazy(() => import('./AnnouncementsPage'))
 const DirectoryAdminOverview = lazy(() => import('./directory/DirectoryAdminOverview'))
@@ -144,6 +145,17 @@ export default function App() {
               <ProtectedRoute adminOnly>
                 <PortalLayout title="Admin Dashboard" subtitle="Administration Console">
                   <AdminPage />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/mentorship"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Mentorship Management" subtitle="Administration Console">
+                  <MentorshipAdminPanel />
                 </PortalLayout>
               </ProtectedRoute>
             }

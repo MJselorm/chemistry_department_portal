@@ -664,6 +664,7 @@ def review_mentor_application(
         actor_id=admin.id,
         title=f"Mentor application {payload.decision}",
         message="Your mentor application was approved." if payload.decision == "approved" else "Your mentor application was not approved.",
+        event_key=f"mentor-review:{application.id}:{payload.decision}",
     )
     if payload.decision == "approved":
         match_waiting_mentees(session, admin.id)

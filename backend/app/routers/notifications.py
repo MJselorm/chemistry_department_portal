@@ -22,12 +22,6 @@ def visible_query(session: Session, user: User):
     return session.query(Notification).filter(Notification.status == "published", Notification.published_at <= now, eligible_clause(user))
 
 
-def output(session: Session, item: Notification, user: User) -> NotificationOut:
-    read = session.query(NotificationRead).filter_by(notification_id=item.id, user_id=user.id).first()
-    data = NotificationOut.model_validate(item)
-    return data.model_copy(update={"is_read": bool(read and read.read_at)})
-
-
 def require_visible(session: Session, user: User, notification_id: UUID) -> Notification:
     item = visible_query(session, user).filter(Notification.id == notification_id).first()
     if not item: raise HTTPException(status.HTTP_404_NOT_FOUND, "Notification not found.")
@@ -37,8 +31,12 @@ def require_visible(session: Session, user: User, notification_id: UUID) -> Noti
 @router.get("", response_model=list[NotificationOut])
 def list_notifications(session: DB, user: Auth, limit: int = 20, offset: int = 0):
     publish_due(session)
-    items = visible_query(session, user).outerjoin(NotificationRead, and_(NotificationRead.notification_id == Notification.id, NotificationRead.user_id == user.id)).filter(or_(NotificationRead.dismissed_at.is_(None), NotificationRead.user_id.is_(None))).order_by(Notification.published_at.desc()).offset(max(0, offset)).limit(min(max(limit, 1), 100)).all()
-    return [output(session, item, user) for item in items]
+    items = (visible_query(session, user)
+        .outerjoin(NotificationRead, and_(NotificationRead.notification_id == Notification.id, NotificationRead.user_id == user.id))
+        .filter(or_(NotificationRead.dismissed_at.is_(None), NotificationRead.user_id.is_(None)))
+        .order_by(Notification.published_at.desc()).offset(max(0, offset)).limit(min(max(limit, 1), 100)).all())
+    reads = {row.notification_id: row.read_at for row in session.query(NotificationRead.notification_id, NotificationRead.read_at).filter(NotificationRead.user_id == user.id, NotificationRead.notification_id.in_([item.id for item in items])).all()} if items else {}
+    return [NotificationOut.model_validate(item).model_copy(update={"is_read": reads.get(item.id) is not None}) for item in items]
 
 
 @router.get("/unread-count")
@@ -135,7 +133,8 @@ def resend(notification_id: UUID, session: DB, _: Admin):
 def mark_read(notification_id: UUID, session: DB, user: Auth):
     item = require_visible(session, user, notification_id); read = session.query(NotificationRead).filter_by(notification_id=item.id, user_id=user.id).first()
     if not read: read = NotificationRead(notification_id=item.id, user_id=user.id); session.add(read)
-    read.read_at = datetime.now(timezone.utc); session.commit(); return output(session, item, user)
+    read.read_at = datetime.now(timezone.utc); session.commit()
+    return NotificationOut.model_validate(item).model_copy(update={"is_read": True})
 
 
 @router.post("/{notification_id}/dismiss")

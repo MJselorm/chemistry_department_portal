@@ -94,6 +94,7 @@ class Notification(Base):
     target_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     destination_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     announcement_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("announcements.id", ondelete="CASCADE"), nullable=True, unique=True)
+    event_key: Mapped[str | None] = mapped_column(String(180), nullable=True, unique=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="published", server_default="published", index=True)
     scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)

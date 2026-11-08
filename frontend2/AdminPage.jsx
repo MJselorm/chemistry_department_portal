@@ -36,7 +36,6 @@ import AdminApprovalDialog from './AdminApprovalDialog'
 import DeleteConfirmModal from './directory/DeleteConfirmModal'
 import { useToast } from './directory/Toast'
 import AdminPrivacyRequestsPanel from './AdminPrivacyRequestsPanel'
-import MentorshipAdminPanel from './MentorshipAdminPanel'
 
 const CATEGORIES = [
   'All',
@@ -62,17 +61,20 @@ export default function AdminPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromQuery = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(
-    tabFromQuery && ['overview', 'events', 'resources', 'users', 'announcements', 'mentorship'].includes(tabFromQuery)
+    tabFromQuery && ['overview', 'events', 'resources', 'users', 'announcements', 'privacy'].includes(tabFromQuery)
       ? tabFromQuery
       : 'overview'
   )
 
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab && ['overview', 'events', 'resources', 'users', 'announcements', 'mentorship'].includes(tab)) {
+    if (tab && ['overview', 'events', 'resources', 'users', 'announcements', 'privacy'].includes(tab)) {
       setActiveTab(tab)
+    } else if (tab) {
+      setActiveTab('overview')
+      setSearchParams({}, { replace: true })
     }
-  }, [searchParams])
+  }, [searchParams, setSearchParams])
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId)
@@ -195,8 +197,8 @@ export default function AdminPage() {
   }, [resourcePage, resourceSearch, resourceCategoryFilter, resourceLevelFilter, includeInactive])
 
   useEffect(() => {
-    fetchAnnouncements()
-  }, [])
+    if (activeTab === 'announcements' || activeTab === 'overview') fetchAnnouncements()
+  }, [activeTab])
 
   useEffect(() => {
     if (activeTab === 'resources' || activeTab === 'overview') {
@@ -564,7 +566,6 @@ export default function AdminPage() {
           { id: 'events', label: 'Events' },
           { id: 'announcements', label: `Announcements (${announcements.length})` },
           { id: 'users', label: 'Admin Management' },
-          { id: 'mentorship', label: 'Mentorship' },
           { id: 'privacy', label: 'Privacy Requests' },
         ].map((tab) => (
           <button
@@ -1972,7 +1973,6 @@ export default function AdminPage() {
         </section>
       )}
       {activeTab === 'privacy' && <AdminPrivacyRequestsPanel />}
-      {activeTab === 'mentorship' && <MentorshipAdminPanel />}
       {approvalRequest && (
         <AdminApprovalDialog
           request={approvalRequest}
