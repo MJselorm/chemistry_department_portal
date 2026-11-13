@@ -23,7 +23,7 @@ services:
       - key: REQUIRE_VERIFIED_EMAIL
         value: "true"
       - key: CORS_ORIGINS
-        value: https://chemistry-department-portal.vercel.app
+        value: https://ggg.vercel.app
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
