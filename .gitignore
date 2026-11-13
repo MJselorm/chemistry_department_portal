@@ -45,3 +45,4 @@ Thumbs.db
 *.zip
 *.log
 *.tmp
+backend/chemistry_hub.db

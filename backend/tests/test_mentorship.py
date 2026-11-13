@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.database import get_db
+from app.config import Settings
 from app.main import app
 from app.mentorship_models import (
     MentorApplication,
@@ -243,6 +244,85 @@ def test_match_access_is_limited_to_participants():
     assert participant_match(_Session(), match.id, mentee_id) is match
     with pytest.raises(LookupError):
         participant_match(_Session(), match.id, uuid4())
+
+
+def test_match_serialization_batches_lookups_for_multiple_matches():
+    mentee_id = uuid4()
+    mentors = [
+        MentorApplication(
+            id=uuid4(), user_id=uuid4(), academic_level="200", subjects=["Chemistry"],
+            availability=["Weekends"], status="approved",
+        )
+        for _ in range(2)
+    ]
+    applications = [
+        MenteeApplication(
+            id=uuid4(), user_id=mentee_id, academic_level="100", subjects=["Chemistry"],
+            learning_goals=["Build confidence"], availability=["Weekends"], status="matched",
+        )
+        for _ in range(2)
+    ]
+    users = [
+        User(id=mentee_id, firebase_uid="serialization-mentee", email="mentee@example.net", full_name="Mentee", role="student"),
+        *[
+            User(
+                id=mentor.user_id,
+                firebase_uid=f"serialization-mentor-{index}",
+                email=f"mentor-{index}@example.net",
+                full_name=f"Mentor {index}",
+                role="student",
+            )
+            for index, mentor in enumerate(mentors)
+        ],
+    ]
+    matches = [
+        MentorshipMatch(
+            id=uuid4(), mentor_user_id=mentor.user_id, mentee_user_id=mentee_id,
+            mentee_application_id=application.id, status="proposed", match_score=80,
+            score_breakdown={}, shared_subjects=["Chemistry"],
+        )
+        for mentor, application in zip(mentors, applications)
+    ]
+
+    class _Query:
+        def __init__(self, session, model):
+            self.session = session
+            self.model = model
+
+        def filter(self, *_expressions):
+            return self
+
+        def all(self):
+            return self.session.records.get(self.model, [])
+
+    class _Session:
+        def __init__(self):
+            self.records = {User: users, MentorApplication: mentors, MenteeApplication: applications}
+            self.queries = []
+
+        def query(self, model):
+            self.queries.append(model)
+            return _Query(self, model)
+
+    session = _Session()
+    serialized = mentorship_router._serialize_matches(session, matches, mentee_id)
+
+    assert len(serialized) == 2
+    assert [item["partner"]["name"] for item in serialized] == ["Mentor 0", "Mentor 1"]
+    assert session.queries == [User, MentorApplication, MenteeApplication]
+
+
+@pytest.mark.parametrize("database_url", [
+    "postgres://user:password@db.example.test:5432/chemistry",
+    "postgresql://user:password@db.example.test:5432/chemistry",
+])
+def test_postgres_urls_use_installed_psycopg_driver(database_url):
+    assert Settings(database_url=database_url).database_url.startswith("postgresql+psycopg://")
+
+
+def test_production_settings_reject_sqlite_fallback():
+    with pytest.raises(ValueError, match="Production requires DATABASE_URL"):
+        Settings(app_env="production", database_url="sqlite:///./chemistry_hub.db")
 
 
 def test_student_cannot_access_mentorship_admin_endpoints():

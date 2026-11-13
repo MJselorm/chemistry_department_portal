@@ -34,18 +34,29 @@ export default function MentorshipAdminPanel() {
     setLoading(true)
     setError('')
     try {
-      const [summary, pendingApps, waiting, programmeMatches, reassignmentRequests] = await Promise.all([
+      const [summaryResult, pendingAppsResult, waitingResult, programmeMatchesResult, reassignmentRequestsResult] = await Promise.allSettled([
         api.get(ENDPOINTS.mentorshipAdminAnalytics),
         api.get(ENDPOINTS.mentorshipAdminMentorApplications),
         api.get(ENDPOINTS.mentorshipAdminWaitingList),
         api.get(ENDPOINTS.mentorshipAdminMatches),
         api.get(ENDPOINTS.mentorshipAdminReassignments),
       ])
-      setAnalytics(summary)
-      setApplications(Array.isArray(pendingApps) ? pendingApps : [])
-      setWaitingList(Array.isArray(waiting) ? waiting : [])
-      setMatches(Array.isArray(programmeMatches) ? programmeMatches : [])
-      setReassignments(Array.isArray(reassignmentRequests) ? reassignmentRequests : [])
+
+      const failedRequest = [summaryResult, pendingAppsResult, waitingResult, programmeMatchesResult, reassignmentRequestsResult]
+        .find((result) => result.status === 'rejected')
+      if (summaryResult.status === 'fulfilled') setAnalytics(summaryResult.value)
+      if (pendingAppsResult.status === 'fulfilled' && Array.isArray(pendingAppsResult.value)) setApplications(pendingAppsResult.value)
+      if (waitingResult.status === 'fulfilled' && Array.isArray(waitingResult.value)) setWaitingList(waitingResult.value)
+      if (programmeMatchesResult.status === 'fulfilled' && Array.isArray(programmeMatchesResult.value)) setMatches(programmeMatchesResult.value)
+      if (reassignmentRequestsResult.status === 'fulfilled' && Array.isArray(reassignmentRequestsResult.value)) setReassignments(reassignmentRequestsResult.value)
+
+      if (failedRequest) {
+        const message = failedRequest.reason?.message || 'Mentorship programme information could not be loaded.'
+        setError(message)
+        if (summaryResult.status === 'rejected') {
+          throw failedRequest.reason
+        }
+      }
     } catch (requestError) {
       setError(requestError.message || 'Mentorship programme information could not be loaded.')
     } finally {
@@ -120,6 +131,23 @@ export default function MentorshipAdminPanel() {
 
   if (loading && !analytics) {
     return <p className="content-panel rounded-xl p-8 text-center text-sm text-muted-foreground" role="status">Loading mentorship analytics…</p>
+  }
+
+  if (!analytics && error) {
+    return (
+      <section className="content-panel rounded-xl p-6 sm:p-8" aria-labelledby="mentorship-admin-error-title">
+        <h2 id="mentorship-admin-error-title" className="text-xl font-bold text-foreground">Mentorship Management</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We could not retrieve the programme analytics and live requests right now. Retry once the backend is available again.
+        </p>
+        <div className="mt-4 rounded-lg border border-[var(--destructive-border)] bg-[var(--destructive-soft)] p-3 text-sm text-destructive" role="alert">
+          {error}
+        </div>
+        <button type="button" className={`${buttonClass} mt-4`} onClick={refresh} disabled={loading}>
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Try again
+        </button>
+      </section>
+    )
   }
 
   return (

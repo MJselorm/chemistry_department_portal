@@ -88,68 +88,152 @@ def _user_summary(session: Session, user_id: UUID, *, include_email: bool = Fals
     return result
 
 
-def _serialize_match(session: Session, match: MentorshipMatch, viewer_id: UUID) -> dict:
-    is_mentor = match.mentor_user_id == viewer_id
-    partner_id = match.mentee_user_id if is_mentor else match.mentor_user_id
-    reveal_contact = match.status in {"active", "completed"}
-    reveal_progress = match.status in {"active", "completed", "withdrawn", "reassigned"}
-    mentor = session.query(MentorApplication).filter_by(user_id=match.mentor_user_id).first()
-    mentee_application = session.get(MenteeApplication, match.mentee_application_id)
-    goals = []
-    notes = []
-    sessions = []
-    feedback = None
-    if reveal_progress:
-        goals = session.query(MentorshipGoal).filter_by(match_id=match.id).order_by(MentorshipGoal.created_at.asc()).all()
-        notes = (
-            session.query(MentorshipProgressNote)
-            .filter_by(match_id=match.id)
-            .order_by(MentorshipProgressNote.created_at.desc())
-            .limit(50)
-            .all()
+def _recent_match_records(session: Session, model, match_ids: set[UUID], order_by: tuple, limit: int) -> list:
+    ranked_records = (
+        session.query(
+            model.id.label("record_id"),
+            func.row_number().over(partition_by=model.match_id, order_by=order_by).label("position"),
         )
-        sessions = (
-            session.query(MentorshipSession)
-            .filter_by(match_id=match.id)
-            .order_by(MentorshipSession.session_date.desc(), MentorshipSession.created_at.desc())
-            .limit(100)
-            .all()
-        )
-        feedback = session.query(MentorshipFeedback).filter_by(match_id=match.id, author_user_id=viewer_id).first()
-    return {
-        "id": match.id,
-        "status": match.status,
-        "match_score": match.match_score,
-        "score_breakdown": match.score_breakdown,
-        "shared_subjects": match.shared_subjects,
-        "partner_role": "mentee" if is_mentor else "mentor",
-        "partner": _user_summary(session, partner_id, include_email=reveal_contact),
-        "partner_introduction": mentor.introduction if reveal_progress and not is_mentor and mentor else None,
-        "learning_goals": mentee_application.learning_goals if reveal_progress and mentee_application else [],
-        "availability": (
-            {
-                "mentor": mentor.availability if mentor else [],
-                "mentee": mentee_application.availability if mentee_application else [],
-            }
-            if reveal_progress
-            else None
-        ),
-        "mentor_accepted_at": match.mentor_accepted_at,
-        "mentee_accepted_at": match.mentee_accepted_at,
-        "my_accepted_at": match.mentor_accepted_at if is_mentor else match.mentee_accepted_at,
-        "partner_accepted_at": match.mentee_accepted_at if is_mentor else match.mentor_accepted_at,
-        "mentor_completed_at": match.mentor_completed_at,
-        "mentee_completed_at": match.mentee_completed_at,
-        "created_at": match.created_at,
-        "updated_at": match.updated_at,
-        "goals": [MentorshipGoalOut.model_validate(goal).model_dump(mode="json") for goal in goals],
-        "progress_notes": [
-            {"id": note.id, "author": _user_summary(session, note.author_user_id)["name"], "body": note.body, "created_at": note.created_at}
-            for note in notes
-        ],
-        "sessions": [MentorshipSessionOut.model_validate(item).model_dump(mode="json") for item in sessions],
-        "my_feedback": feedback.feedback if feedback else None,
+        .filter(model.match_id.in_(match_ids))
+        .subquery()
+    )
+    return (
+        session.query(model)
+        .join(ranked_records, ranked_records.c.record_id == model.id)
+        .filter(ranked_records.c.position <= limit)
+        .order_by(model.match_id.asc(), *order_by)
+        .all()
+    )
+
+
+def _serialize_matches(session: Session, matches: list[MentorshipMatch], viewer_id: UUID) -> list[dict]:
+    if not matches:
+        return []
+
+    mentor_ids = {match.mentor_user_id for match in matches}
+    mentee_ids = {match.mentee_user_id for match in matches}
+    participant_ids = mentor_ids | mentee_ids
+    users = {item.id: item for item in session.query(User).filter(User.id.in_(participant_ids)).all()}
+    mentors = {
+        item.user_id: item
+        for item in session.query(MentorApplication).filter(MentorApplication.user_id.in_(mentor_ids)).all()
     }
+    mentee_applications = {
+        item.id: item
+        for item in session.query(MenteeApplication)
+        .filter(MenteeApplication.id.in_({match.mentee_application_id for match in matches}))
+        .all()
+    }
+
+    progress_ids = {
+        match.id
+        for match in matches
+        if match.status in {"active", "completed", "withdrawn", "reassigned"}
+    }
+    goals_by_match: dict[UUID, list[MentorshipGoal]] = {}
+    notes_by_match: dict[UUID, list[MentorshipProgressNote]] = {}
+    sessions_by_match: dict[UUID, list[MentorshipSession]] = {}
+    feedback_by_match: dict[UUID, MentorshipFeedback] = {}
+    if progress_ids:
+        goals = (
+            session.query(MentorshipGoal)
+            .filter(MentorshipGoal.match_id.in_(progress_ids))
+            .order_by(MentorshipGoal.match_id.asc(), MentorshipGoal.created_at.asc())
+            .all()
+        )
+        notes = _recent_match_records(
+            session,
+            MentorshipProgressNote,
+            progress_ids,
+            (MentorshipProgressNote.created_at.desc(), MentorshipProgressNote.id.desc()),
+            50,
+        )
+        sessions = _recent_match_records(
+            session,
+            MentorshipSession,
+            progress_ids,
+            (MentorshipSession.session_date.desc(), MentorshipSession.created_at.desc(), MentorshipSession.id.desc()),
+            100,
+        )
+        feedback = (
+            session.query(MentorshipFeedback)
+            .filter(
+                MentorshipFeedback.match_id.in_(progress_ids),
+                MentorshipFeedback.author_user_id == viewer_id,
+            )
+            .all()
+        )
+        for goal in goals:
+            goals_by_match.setdefault(goal.match_id, []).append(goal)
+        for note in notes:
+            notes_by_match.setdefault(note.match_id, []).append(note)
+        for item in sessions:
+            sessions_by_match.setdefault(item.match_id, []).append(item)
+        feedback_by_match = {item.match_id: item for item in feedback}
+
+    def user_summary(user_id: UUID, include_email: bool = False) -> dict:
+        user = users.get(user_id)
+        if not user:
+            return {"id": user_id, "name": "Participant"}
+        result = {"id": user.id, "name": user.full_name or "Chemistry student"}
+        if include_email:
+            result["email"] = user.email
+        return result
+
+    serialized = []
+    for match in matches:
+        is_mentor = match.mentor_user_id == viewer_id
+        reveal_contact = match.status in {"active", "completed"}
+        reveal_progress = match.id in progress_ids
+        mentor = mentors.get(match.mentor_user_id)
+        mentee_application = mentee_applications.get(match.mentee_application_id)
+        feedback = feedback_by_match.get(match.id)
+        serialized.append({
+            "id": match.id,
+            "status": match.status,
+            "match_score": match.match_score,
+            "score_breakdown": match.score_breakdown,
+            "shared_subjects": match.shared_subjects,
+            "partner_role": "mentee" if is_mentor else "mentor",
+            "partner": user_summary(match.mentee_user_id if is_mentor else match.mentor_user_id, include_email=reveal_contact),
+            "partner_introduction": mentor.introduction if reveal_progress and not is_mentor and mentor else None,
+            "learning_goals": mentee_application.learning_goals if reveal_progress and mentee_application else [],
+            "availability": (
+                {
+                    "mentor": mentor.availability if mentor else [],
+                    "mentee": mentee_application.availability if mentee_application else [],
+                }
+                if reveal_progress
+                else None
+            ),
+            "mentor_accepted_at": match.mentor_accepted_at,
+            "mentee_accepted_at": match.mentee_accepted_at,
+            "my_accepted_at": match.mentor_accepted_at if is_mentor else match.mentee_accepted_at,
+            "partner_accepted_at": match.mentee_accepted_at if is_mentor else match.mentor_accepted_at,
+            "mentor_completed_at": match.mentor_completed_at,
+            "mentee_completed_at": match.mentee_completed_at,
+            "created_at": match.created_at,
+            "updated_at": match.updated_at,
+            "goals": [
+                MentorshipGoalOut.model_validate(goal).model_dump(mode="json")
+                for goal in goals_by_match.get(match.id, [])
+            ],
+            "progress_notes": [
+                {
+                    "id": note.id,
+                    "author": user_summary(note.author_user_id)["name"],
+                    "body": note.body,
+                    "created_at": note.created_at,
+                }
+                for note in notes_by_match.get(match.id, [])
+            ],
+            "sessions": [
+                MentorshipSessionOut.model_validate(item).model_dump(mode="json")
+                for item in sessions_by_match.get(match.id, [])
+            ],
+            "my_feedback": feedback.feedback if feedback else None,
+        })
+    return serialized
 
 
 @router.get("/me")
@@ -210,7 +294,7 @@ def my_mentorship(session: DB, user: Auth):
             if mentee_application
             else None
         ),
-        "matches": [_serialize_match(session, match, user.id) for match in matches],
+        "matches": _serialize_matches(session, matches, user.id),
         "notification_preferences": {"in_app_enabled": preference.in_app_enabled if preference else True},
     }
 

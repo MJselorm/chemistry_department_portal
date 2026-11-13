@@ -3,8 +3,10 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 from .config import get_settings
+from .database import engine
 from .routers import admin, announcements, auth, users, directory, resources, events, notifications, privacy, mentorship
 
 settings = get_settings()
@@ -37,4 +39,13 @@ async def unexpected_error(request: Request, exc: Exception):
 
 @app.get("/health", tags=["system"])
 def health():
-    return {"status": "ok"}
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "ok"}
+    except Exception:
+        logger.exception("Database health check failed")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "database": "error"},
+        )
