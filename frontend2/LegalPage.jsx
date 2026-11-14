@@ -2,7 +2,9 @@ import { useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { GscsLogo } from './Logos'
-const UPDATED_DATE = 'October 17, 2026'
+import { useAuth } from './AuthContext'
+
+const UPDATED_DATE = 'October 18, 2026'
 const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL?.trim()
 
 const privacySections = [

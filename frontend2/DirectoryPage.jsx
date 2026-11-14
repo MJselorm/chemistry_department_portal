@@ -22,6 +22,7 @@ import {
 import { DIRECTORY_CATEGORIES } from './directory/directoryConfig'
 import { directoryApi } from './directory/directoryApi'
 import StudentDirectoryModal from './directory/StudentDirectoryModal'
+import SafeImage from './SafeImage'
 
 const TABS = [
   { key: 'executives', label: 'GSCS Executives', icon: Users, summaryKey: 'executives' },
@@ -207,7 +208,7 @@ export default function DirectoryPage() {
   return (
     <div className="space-y-6">
       {/* ── PAGE HEADER ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="page-intro flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
             PEOPLE & DIRECTORY
@@ -253,7 +254,7 @@ export default function DirectoryPage() {
       </div>
 
       {/* ── CATEGORY TABS ───────────────────────────────────────── */}
-      <div className="flex gap-2 overflow-x-auto pb-1 border-b border-border scrollbar-none">
+      <div className="content-panel flex gap-1 overflow-x-auto rounded-lg p-1.5 scrollbar-none">
         {TABS.map((tab) => {
           const isActive = activeTabKey === tab.key
           const Icon = tab.icon
@@ -409,19 +410,16 @@ export default function DirectoryPage() {
                   className="bg-surface border border-border rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:border-[var(--primary-border)] transition-all group"
                 >
                   <div className="text-center">
-                    {photoUrl ? (
-                      <img
+                    <SafeImage
                         src={photoUrl}
                         alt={displayName}
                         loading="lazy"
                         decoding="async"
                         className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border border-border"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-[#dceff0] text-primary font-black text-lg grid place-items-center mx-auto mb-3">
+                        fallback={<div className="w-16 h-16 rounded-full bg-[var(--primary-soft)] text-primary font-black text-lg grid place-items-center mx-auto mb-3">
                         {getInitials(item.name) || 'DR'}
-                      </div>
-                    )}
+                      </div>}
+                    />
 
                     <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
                       {displayName}
@@ -525,19 +523,16 @@ export default function DirectoryPage() {
                 >
                   <div>
                     <div className="flex items-start gap-3">
-                      {photoUrl ? (
-                        <img
+                      <SafeImage
                           src={photoUrl}
                           alt={item.name}
                           loading="lazy"
                           decoding="async"
                           className="w-12 h-12 rounded-xl object-cover border border-border flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-[#eef7f8] text-primary font-black text-sm grid place-items-center flex-shrink-0">
+                          fallback={<div className="w-12 h-12 rounded-xl bg-[var(--primary-soft)] text-primary font-black text-sm grid place-items-center flex-shrink-0">
                           {item.acronym || getInitials(item.name) || 'CS'}
-                        </div>
-                      )}
+                        </div>}
+                      />
                       <div>
                         <span className="text-[10px] font-extrabold uppercase text-primary bg-[#e7f5f7] px-2 py-0.5 rounded">
                           {item.category || 'Society'}
@@ -727,19 +722,16 @@ export default function DirectoryPage() {
                 className="bg-surface border border-border rounded-2xl p-6 text-center shadow-xs flex flex-col items-center justify-between hover:border-[var(--primary-border)] transition-all group"
               >
                 <div className="w-full">
-                  {photoUrl ? (
-                    <img
+                  <SafeImage
                       src={photoUrl}
                       alt={item.name}
                       loading="lazy"
                       decoding="async"
                       className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border border-border"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-[#dceff0] text-primary font-black text-lg grid place-items-center mx-auto mb-3 shadow-2xs">
+                      fallback={<div className="w-16 h-16 rounded-full bg-[var(--primary-soft)] text-primary font-black text-lg grid place-items-center mx-auto mb-3 shadow-2xs">
                       {getInitials(item.name)}
-                    </div>
-                  )}
+                    </div>}
+                  />
 
                   <h3 className="text-base font-bold text-foreground mb-0.5 group-hover:text-primary transition-colors break-words">
                     {item.name}

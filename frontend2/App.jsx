@@ -9,8 +9,6 @@ import CookieConsent from './CookieConsent'
 
 import { ToastProvider } from './directory/Toast'
 
-import AnnouncementsPage from './AnnouncementsPage'
-
 const LoginPage = lazy(() => import('./LoginPage'))
 const ForgotPasswordPage = lazy(() => import('./ForgotPasswordPage'))
 const LegalPage = lazy(() => import('./LegalPage'))
@@ -21,7 +19,10 @@ const AcademicHubPage = lazy(() => import('./AcademicHubPage'))
 const DirectoryPage = lazy(() => import('./DirectoryPage'))
 const ProfilePage = lazy(() => import('./ProfilePage'))
 const SettingsPage = lazy(() => import('./SettingsPage'))
+const MentorshipPage = lazy(() => import('./MentorshipPage'))
+const MentorshipAdminPanel = lazy(() => import('./MentorshipAdminPanel'))
 const AdminPage = lazy(() => import('./AdminPage'))
+const AnnouncementsPage = lazy(() => import('./AnnouncementsPage'))
 const DirectoryAdminOverview = lazy(() => import('./directory/DirectoryAdminOverview'))
 const DirectoryEntityManager = lazy(() => import('./directory/DirectoryEntityManager'))
 
@@ -129,11 +130,33 @@ export default function App() {
           />
 
           <Route
+            path="/mentorship"
+            element={
+              <ProtectedRoute>
+                <PortalLayout title="Mentorship Programme" subtitle="Student Support">
+                  <MentorshipPage />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/admin"
             element={
               <ProtectedRoute adminOnly>
                 <PortalLayout title="Admin Dashboard" subtitle="Administration Console">
                   <AdminPage />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/mentorship"
+            element={
+              <ProtectedRoute adminOnly>
+                <PortalLayout title="Mentorship Management" subtitle="Administration Console">
+                  <MentorshipAdminPanel />
                 </PortalLayout>
               </ProtectedRoute>
             }

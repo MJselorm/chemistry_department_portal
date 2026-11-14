@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { X, Loader2, Check, AlertCircle } from 'lucide-react'
 import ImageUpload from './ImageUpload'
 import useDialogAccessibility from '../useDialogAccessibility'
+import SelectField from '../SelectField'
 
 export default function DirectoryFormModal({
   isOpen,
@@ -210,7 +211,7 @@ export default function DirectoryFormModal({
                     <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                       {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
-                    <select
+                    <SelectField
                       id={fieldId}
                       aria-invalid={hasError}
                       aria-describedby={hasError ? errorId : undefined}
@@ -218,7 +219,7 @@ export default function DirectoryFormModal({
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
                       }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-surface focus:outline-none transition-colors ${
+                      className={`min-h-10 rounded-xl py-2.5 text-xs transition-colors ${
                         hasError
                           ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
                           : 'border-border focus:border-primary'
@@ -230,7 +231,7 @@ export default function DirectoryFormModal({
                           {opt}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                     {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
@@ -242,7 +243,7 @@ export default function DirectoryFormModal({
                     <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                       {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
-                    <select
+                    <SelectField
                       id={fieldId}
                       aria-invalid={hasError}
                       aria-describedby={hasError ? errorId : undefined}
@@ -250,7 +251,7 @@ export default function DirectoryFormModal({
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
                       }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-surface focus:outline-none transition-colors ${
+                      className={`min-h-10 rounded-xl py-2.5 text-xs transition-colors ${
                         hasError
                           ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
                           : 'border-border focus:border-primary'
@@ -262,7 +263,7 @@ export default function DirectoryFormModal({
                           {d.name} ({d.code})
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                     {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
@@ -274,7 +275,7 @@ export default function DirectoryFormModal({
                     <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                       {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
-                    <select
+                    <SelectField
                       id={fieldId}
                       aria-invalid={hasError}
                       aria-describedby={hasError ? errorId : undefined}
@@ -282,7 +283,7 @@ export default function DirectoryFormModal({
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
                       }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-surface focus:outline-none transition-colors ${
+                      className={`min-h-10 rounded-xl py-2.5 text-xs transition-colors ${
                         hasError
                           ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
                           : 'border-border focus:border-primary'
@@ -294,7 +295,7 @@ export default function DirectoryFormModal({
                           {c.course_code} - {c.course_name}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                     {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )
@@ -306,7 +307,7 @@ export default function DirectoryFormModal({
                     <label htmlFor={fieldId} className="block text-xs font-bold text-foreground mb-1">
                       {field.label} {field.required && <span className="text-destructive">*</span>}
                     </label>
-                    <select
+                    <SelectField
                       id={fieldId}
                       aria-invalid={hasError}
                       aria-describedby={hasError ? errorId : undefined}
@@ -314,7 +315,7 @@ export default function DirectoryFormModal({
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))
                       }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-surface focus:outline-none transition-colors ${
+                      className={`min-h-10 rounded-xl py-2.5 text-xs transition-colors ${
                         hasError
                           ? 'border-[var(--destructive-border)] bg-[var(--destructive-soft)]/30 focus:border-[#c84b4b]'
                           : 'border-border focus:border-primary'
@@ -326,7 +327,7 @@ export default function DirectoryFormModal({
                           {l.title ? `${l.title} ` : ''}{l.name}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                     {hasError && <p id={errorId} className="text-[10px] text-destructive mt-1">{errors[field.name]}</p>}
                   </div>
                 )

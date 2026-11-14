@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react'
+import SafeImage from '../SafeImage'
+import SelectField from '../SelectField'
 
 export default function DirectoryTable({
   categoryConfig,
@@ -74,19 +76,16 @@ export default function DirectoryTable({
 
     return (
       <div className="flex items-center gap-3">
-        {image ? (
-          <img
+        <SafeImage
             src={image}
             alt={title}
             loading="lazy"
             decoding="async"
             className="w-9 h-9 rounded-xl object-cover border border-border flex-shrink-0"
-          />
-        ) : (
-          <div className="w-9 h-9 rounded-xl bg-[var(--primary-soft)] text-primary font-black text-xs grid place-items-center flex-shrink-0">
+            fallback={<div className="w-9 h-9 rounded-xl bg-[var(--primary-soft)] text-primary font-black text-xs grid place-items-center flex-shrink-0">
             {(title || '?')[0].toUpperCase()}
-          </div>
-        )}
+          </div>}
+        />
         <div className="min-w-0">
           <strong className="block text-xs font-bold text-foreground truncate hover:text-primary">
             {item.title ? `${item.title} ` : ''}
@@ -227,26 +226,28 @@ export default function DirectoryTable({
           {/* Status Filter */}
           <div className="flex items-center gap-1.5 bg-surface-secondary border border-border rounded-xl px-2.5 py-1 text-xs">
             <Filter size={13} className="text-[#728388]" />
-            <select
+            <SelectField
               aria-label="Filter by status"
               value={statusFilter}
               onChange={(e) => onStatusFilterChange(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer"
+              wrapperClassName="w-auto"
+              className="min-h-8 rounded-md border-0 bg-transparent py-1 text-xs font-semibold shadow-none focus:border-transparent"
             >
               <option value="all">All Statuses</option>
               <option value="active">Active Only</option>
               <option value="inactive">Inactive Only</option>
-            </select>
+            </SelectField>
           </div>
 
           {/* Department Filter (if applicable) */}
           {departments.length > 0 && categoryConfig.key !== 'departments' && (
             <div className="flex items-center gap-1.5 bg-surface-secondary border border-border rounded-xl px-2.5 py-1 text-xs">
-              <select
+              <SelectField
                 aria-label="Filter by department"
                 value={departmentFilter}
                 onChange={(e) => onDepartmentFilterChange(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer max-w-[150px] truncate"
+                wrapperClassName="w-auto max-w-[150px]"
+                className="min-h-8 max-w-[150px] rounded-md border-0 bg-transparent py-1 text-xs font-semibold shadow-none focus:border-transparent"
               >
                 <option value="all">All Departments</option>
                 {departments.map((d) => (
@@ -254,7 +255,7 @@ export default function DirectoryTable({
                     {d.code}
                   </option>
                 ))}
-              </select>
+              </SelectField>
             </div>
           )}
 

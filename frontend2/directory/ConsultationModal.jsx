@@ -4,6 +4,7 @@ import { directoryApi } from './directoryApi'
 import { useToast } from './Toast'
 import useDialogAccessibility from '../useDialogAccessibility'
 import DeleteConfirmModal from './DeleteConfirmModal'
+import SelectField from '../SelectField'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MODES = ['In-Person', 'Online', 'Hybrid']
@@ -179,28 +180,28 @@ export default function ConsultationModal({ lecturer, isOpen, onClose }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="block font-bold text-foreground mb-1">Day of Week</label>
-                  <select
+                  <SelectField
                     value={formData.day_of_week}
                     onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary"
+                    className="min-h-10 rounded-xl py-2 text-xs"
                   >
                     {DAYS.map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
 
                 <div>
                   <label className="block font-bold text-foreground mb-1">Mode</label>
-                  <select
+                  <SelectField
                     value={formData.mode}
                     onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary"
+                    className="min-h-10 rounded-xl py-2 text-xs"
                   >
                     {MODES.map((m) => (
                       <option key={m} value={m}>{m}</option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
 
                 <div>

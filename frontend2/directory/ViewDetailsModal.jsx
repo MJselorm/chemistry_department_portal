@@ -1,6 +1,7 @@
 import React from 'react'
 import { X, Edit3, Trash2, Power, Clock, Users, ExternalLink } from 'lucide-react'
 import useDialogAccessibility from '../useDialogAccessibility'
+import SafeImage from '../SafeImage'
 
 export default function ViewDetailsModal({
   isOpen,
@@ -102,17 +103,16 @@ export default function ViewDetailsModal({
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-border">
           <div className="flex min-w-0 items-center gap-3">
-            {imageSrc ? (
-              <img
+            <SafeImage
                 src={imageSrc}
                 alt={record.name || record.course_name}
+                loading="lazy"
+                decoding="async"
                 className="w-14 h-14 rounded-2xl object-cover border border-border shadow-xs"
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-2xl bg-[var(--primary-soft)] text-primary grid place-items-center font-black text-xl shadow-xs">
+                fallback={<div className="w-14 h-14 rounded-2xl bg-[var(--primary-soft)] text-primary grid place-items-center font-black text-xl shadow-xs">
                 {(record.name || record.course_name || record.code || '?')[0].toUpperCase()}
-              </div>
-            )}
+              </div>}
+            />
             <div className="min-w-0">
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
                 {categoryConfig.singular} Profile

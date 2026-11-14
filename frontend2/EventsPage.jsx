@@ -60,7 +60,7 @@ export default function EventsPage() {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="page-intro flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
             DEPARTMENT CALENDAR
@@ -84,7 +84,7 @@ export default function EventsPage() {
       </div>
 
       {/* Filter and Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+      <div className="content-panel flex flex-wrap items-center justify-between gap-3 rounded-lg p-3">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           {EVENT_TYPES.map((type) => (
             <button
@@ -152,7 +152,7 @@ export default function EventsPage() {
             return (
               <article
                 key={event.id}
-                className="bg-surface border border-border rounded-2xl overflow-hidden flex flex-col sm:flex-row shadow-sm hover:border-[var(--primary-border)] hover:shadow-md transition-all group"
+                className="content-panel overflow-hidden rounded-lg flex flex-col sm:flex-row hover:border-[var(--primary-border)] hover:-translate-y-0.5 hover:shadow-md transition-all group"
               >
                 {/* Date Badge */}
                 <div className="w-full sm:w-24 bg-primary text-white flex sm:flex-col items-center justify-between sm:justify-center p-3 text-center shrink-0">

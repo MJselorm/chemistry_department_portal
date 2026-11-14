@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
     )
   }
   if (!user) return <Navigate to="/" replace state={{ from: location }} />
-  if (adminOnly && user.role !== 'admin') {
+  if (adminOnly && !['admin', 'super_admin'].includes(user.role)) {
     return <StatusPage status={403} />
   }
   return children

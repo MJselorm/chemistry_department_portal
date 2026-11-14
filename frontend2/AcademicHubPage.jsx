@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { CalendarDays, Download, Eye, Filter, FolderOpen, RefreshCw, Search } from 'lucide-react'
+import { BookOpen, CalendarDays, Download, Eye, Filter, FolderOpen, RefreshCw, Search } from 'lucide-react'
 import { api } from './client'
 import { ENDPOINTS } from './endpoints'
 import AcademicResourceViewer from './AcademicResourceViewer'
@@ -103,32 +103,36 @@ export default function AcademicHubPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
+      <section className="page-intro content-panel rounded-lg px-5 py-6 sm:px-7">
+        <div className="max-w-2xl">
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
             STUDY CENTRE & REPOSITORY
           </span>
-          <h1 className="text-2xl font-bold text-foreground mt-1">Academic Hub</h1>
-          <p className="text-xs text-muted-foreground mt-1">
+          <div className="mt-1 flex items-center gap-3">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg bg-[var(--primary-soft)] text-primary">
+              <BookOpen size={20} aria-hidden="true" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Academic Hub</h1>
+          </div>
+          <p className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
             Access course lecture slides, past examination papers, laboratory guides, and study materials.
           </p>
-        </div>
 
-        <form onSubmit={handleSearchSubmit} className="w-full sm:w-72 relative">
-          <Search className="absolute left-3 top-2.5 text-muted-foreground" size={14} aria-hidden="true" />
-          <input
-            aria-label="Search academic materials"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title, course code or tag…"
-            className="w-full pl-8 pr-3 py-2 rounded-xl border border-border bg-surface text-xs focus:outline-none focus:border-primary shadow-xs"
-          />
-        </form>
-      </div>
+          <form onSubmit={handleSearchSubmit} className="relative mt-5 w-full max-w-xl">
+            <Search className="absolute left-3.5 top-3 text-muted-foreground" size={15} aria-hidden="true" />
+            <input
+              aria-label="Search academic materials"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by title, course code or tag…"
+              className="w-full rounded-lg border border-border bg-surface py-2.5 pl-10 pr-4 text-xs text-foreground shadow-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+            />
+          </form>
+        </div>
+      </section>
 
       {/* Action and Filter Controls */}
-      <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm space-y-3">
+      <div className="content-panel rounded-lg p-4 space-y-3">
         {/* Category Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           {CATEGORIES.map((cat) => (
@@ -159,6 +163,7 @@ export default function AcademicHubPage() {
             </div>
             <SelectField
               aria-label="Filter by academic level"
+              wrapperClassName="w-auto"
               value={selectedLevel}
               onChange={(e) => {
                 setSelectedLevel(e.target.value)
@@ -178,6 +183,7 @@ export default function AcademicHubPage() {
             </div>
             <SelectField
               aria-label="Filter by semester"
+              wrapperClassName="w-auto"
               value={selectedSemester}
               onChange={(e) => {
                 setSelectedSemester(e.target.value)
@@ -195,6 +201,7 @@ export default function AcademicHubPage() {
             </div>
             <SelectField
               aria-label="Sort academic materials"
+              wrapperClassName="w-auto"
               value={sortBy}
               onChange={(e) => {
                 setSortBy(e.target.value)
@@ -251,9 +258,18 @@ export default function AcademicHubPage() {
       {/* Resource cards */}
       <section aria-label="Academic materials">
         {loading ? (
-          <div className="rounded-lg border border-border bg-surface py-16 text-center space-y-3">
-            <RefreshCw size={24} className="animate-spin text-primary mx-auto" />
-            <p className="text-xs text-muted-foreground">Loading academic materials…</p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" role="status" aria-label="Loading academic materials">
+            {Array.from({ length: 6 }, (_, index) => (
+              <div key={index} className="overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
+                <div className="aspect-[16/9] animate-pulse bg-surface-secondary" />
+                <div className="space-y-3 p-4">
+                  <div className="h-3 w-20 animate-pulse rounded bg-surface-secondary" />
+                  <div className="h-4 w-4/5 animate-pulse rounded bg-surface-secondary" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-surface-secondary" />
+                  <div className="h-9 animate-pulse rounded bg-surface-secondary" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-lg border border-border bg-surface py-14 text-center space-y-2">
@@ -274,12 +290,12 @@ export default function AcademicHubPage() {
               return (
                 <article
                   key={item.id}
-                  className="group flex min-h-[330px] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-[border-color,box-shadow] hover:border-[var(--primary-border)] hover:shadow-raised"
+                  className="library-card group flex min-h-[340px] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[var(--primary-border)] hover:shadow-raised"
                 >
                   <ResourceThumbnail resource={item} onOpen={() => handleView(item)} />
                   <div className="flex flex-1 flex-col p-4">
                     <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="rounded bg-[var(--primary-soft)] px-2 py-0.5 text-[10px] font-extrabold uppercase text-primary">
+                      <span data-file-type={extension} className="file-badge rounded px-2 py-0.5 text-[10px] font-extrabold uppercase">
                         {extension || item.resource_type || 'File'}
                       </span>
                       <span className="truncate text-[10px] font-semibold text-muted-foreground">{item.category || 'General'}</span>

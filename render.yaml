@@ -21,9 +21,9 @@ services:
       - key: ALLOWED_USER_EMAILS
         sync: false
       - key: REQUIRE_VERIFIED_EMAIL
-        value: true
+        value: "true"
       - key: CORS_ORIGINS
-        sync: false
+        value: https://ggg.vercel.app
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY

@@ -2,10 +2,10 @@ import { ChevronDown } from 'lucide-react'
 
 export default function SelectField({ className = '', wrapperClassName = '', children, ...props }) {
   return (
-    <span className={`relative inline-flex min-w-0 ${wrapperClassName}`}>
+    <span className={`relative inline-flex min-w-0 ${wrapperClassName || 'w-full'}`}>
       <select
         {...props}
-        className={`w-full appearance-none border border-border bg-surface pr-8 text-foreground shadow-xs transition-colors hover:border-[var(--primary-border)] focus:border-primary focus:outline-none ${className}`}
+        className={`w-full min-h-10 appearance-none rounded-lg border border-border bg-input px-3 py-2.5 pr-9 text-sm text-foreground shadow-xs transition-colors hover:border-[var(--primary-border)] focus:border-primary focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       >
         {children}
       </select>

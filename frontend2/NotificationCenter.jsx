@@ -19,18 +19,26 @@ export default function NotificationCenter() {
   const [items, setItems] = useState([])
   const [unread, setUnread] = useState(0)
   const [state, setState] = useState('idle')
+  const [countError, setCountError] = useState(false)
   const rootRef = useRef(null)
   const navigate = useNavigate()
 
-  const loadCount = useCallback(() => api.get(ENDPOINTS.notificationUnreadCount).then((data) => setUnread(data.unread_count || 0)).catch(() => {}), [])
+  const loadCount = useCallback(() => api.get(ENDPOINTS.notificationUnreadCount)
+    .then((data) => { setUnread(data.unread_count || 0); setCountError(false) })
+    .catch(() => setCountError(true)), [])
   const load = useCallback(() => {
     setState('loading')
     return Promise.all([api.get(ENDPOINTS.notifications), api.get(ENDPOINTS.notificationUnreadCount)])
       .then(([notifications, count]) => { setItems(notifications); setUnread(count.unread_count || 0); setState('ready') })
-      .catch(() => setState('error'))
+      .catch(() => { setItems([]); setState('error') })
   }, [])
 
-  useEffect(() => { loadCount(); const id = window.setInterval(loadCount, 60000); return () => clearInterval(id) }, [loadCount])
+  useEffect(() => {
+    if (!open) return undefined
+    loadCount()
+    const id = window.setInterval(loadCount, 60000)
+    return () => clearInterval(id)
+  }, [open, loadCount])
   useEffect(() => {
     const close = (event) => { if (!rootRef.current?.contains(event.target)) setOpen(false) }
     document.addEventListener('mousedown', close)
@@ -39,7 +47,11 @@ export default function NotificationCenter() {
 
   const openItem = async (item) => {
     if (!item.is_read) {
-      try { await api.post(ENDPOINTS.notificationRead(item.id)); setUnread((value) => Math.max(0, value - 1)) } catch { /* navigation remains available */ }
+      try {
+        await api.post(ENDPOINTS.notificationRead(item.id))
+        setItems((value) => value.map((entry) => entry.id === item.id ? { ...entry, is_read: true } : entry))
+        setUnread((value) => Math.max(0, value - 1))
+      } catch { setState('error'); return }
     }
     setOpen(false)
     navigate(item.destination_path || '/announcements')
@@ -71,6 +83,7 @@ export default function NotificationCenter() {
         {unread > 0 && <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[9px] font-bold text-white">{unread > 99 ? '99+' : unread}</span>}
       </button>
       {open && <section className="fixed inset-x-3 top-16 z-50 max-h-[70vh] overflow-hidden rounded-lg border border-border bg-surface shadow-card sm:absolute sm:left-auto sm:right-0 sm:top-11 sm:w-96" aria-label="Notifications">
+        {countError && <div className="flex items-center justify-between border-b border-border bg-[var(--destructive-soft)] px-4 py-2 text-[11px] text-destructive"><span>Unread count could not be refreshed.</span><button type="button" className="font-bold underline" onClick={loadCount}>Retry</button></div>}
         <div className="flex items-center justify-between border-b border-border px-4 py-3"><strong className="text-sm text-foreground">Notifications</strong><button type="button" onClick={readAll} disabled={!unread} className="inline-flex items-center gap-1 text-[11px] font-bold text-primary disabled:opacity-40"><CheckCheck size={14} />Mark all read</button></div>
         <div className="max-h-[60vh] overflow-y-auto">
           {state === 'loading' && <div className="flex items-center justify-center gap-2 p-8 text-xs text-muted-foreground"><RefreshCw size={15} className="animate-spin" />Loading…</div>}

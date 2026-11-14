@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Archive,
   Bell,
@@ -32,8 +32,11 @@ import { ENDPOINTS } from './endpoints'
 import AcademicResourceViewer from './AcademicResourceViewer'
 import { downloadAcademicResource } from './resourceDownload'
 import { useAuth } from './AuthContext'
+import AdminApprovalDialog from './AdminApprovalDialog'
 import DeleteConfirmModal from './directory/DeleteConfirmModal'
 import { useToast } from './directory/Toast'
+import AdminPrivacyRequestsPanel from './AdminPrivacyRequestsPanel'
+import SelectField from './SelectField'
 
 const CATEGORIES = [
   'All',
@@ -54,21 +57,25 @@ const formatBytes = (value) => {
 
 export default function AdminPage() {
   const { user } = useAuth()
+  const isSuperAdmin = user?.role === 'super_admin'
   const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromQuery = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(
-    tabFromQuery && ['overview', 'events', 'resources', 'users', 'announcements'].includes(tabFromQuery)
+    tabFromQuery && ['overview', 'events', 'resources', 'users', 'announcements', 'privacy'].includes(tabFromQuery)
       ? tabFromQuery
       : 'overview'
   )
 
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab && ['overview', 'events', 'resources', 'users', 'announcements'].includes(tab)) {
+    if (tab && ['overview', 'events', 'resources', 'users', 'announcements', 'privacy'].includes(tab)) {
       setActiveTab(tab)
+    } else if (tab) {
+      setActiveTab('overview')
+      setSearchParams({}, { replace: true })
     }
-  }, [searchParams])
+  }, [searchParams, setSearchParams])
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId)
@@ -143,6 +150,11 @@ export default function AdminPage() {
   const [usersLoading, setUsersLoading] = useState(false)
   const [usersError, setUsersError] = useState('')
   const [userSearch, setUserSearch] = useState('')
+  const [roleActionId, setRoleActionId] = useState(null)
+  const [roleChangeRequests, setRoleChangeRequests] = useState([])
+  const [roleRequestsLoading, setRoleRequestsLoading] = useState(false)
+  const [roleRequestsError, setRoleRequestsError] = useState('')
+  const [approvalRequest, setApprovalRequest] = useState(null)
 
   const showFeedback = (message, type = 'success') => showToast(message, type)
 
@@ -186,8 +198,8 @@ export default function AdminPage() {
   }, [resourcePage, resourceSearch, resourceCategoryFilter, resourceLevelFilter, includeInactive])
 
   useEffect(() => {
-    fetchAnnouncements()
-  }, [])
+    if (activeTab === 'announcements' || activeTab === 'overview') fetchAnnouncements()
+  }, [activeTab])
 
   useEffect(() => {
     if (activeTab === 'resources' || activeTab === 'overview') {
@@ -199,19 +211,96 @@ export default function AdminPage() {
     setUsersLoading(true)
     setUsersError('')
     try {
-      const result = await api.get(ENDPOINTS.adminManageUsers)
+      const params = new URLSearchParams({ limit: '250' })
+      if (userSearch.trim()) params.set('search', userSearch.trim())
+      const result = await api.get(`${ENDPOINTS.adminManageUsers}?${params}`)
       setAdminUsers(Array.isArray(result) ? result : [])
     } catch (err) {
       setUsersError(err.message || 'Unable to load portal accounts.')
     } finally {
       setUsersLoading(false)
     }
+  }, [userSearch])
+
+  const fetchRoleChangeRequests = useCallback(async () => {
+    setRoleRequestsLoading(true)
+    setRoleRequestsError('')
+    try {
+      const result = await api.get(`${ENDPOINTS.adminRoleChangeRequests}?limit=250`)
+      setRoleChangeRequests(Array.isArray(result) ? result : [])
+    } catch (err) {
+      setRoleRequestsError(err.message || 'Unable to load role-change requests.')
+    } finally {
+      setRoleRequestsLoading(false)
+    }
   }, [])
 
   useEffect(() => {
-    if (activeTab === 'users' || activeTab === 'overview') fetchAdminUsers()
+    if (activeTab !== 'users' && activeTab !== 'overview') return undefined
+    const timer = window.setTimeout(fetchAdminUsers, 250)
+    return () => window.clearTimeout(timer)
   }, [activeTab, fetchAdminUsers])
 
+  useEffect(() => {
+    if (activeTab !== 'users') return
+    fetchRoleChangeRequests()
+  }, [activeTab, fetchRoleChangeRequests])
+
+  const requestUserRoleChange = async (target) => {
+    const role = target.role === 'admin' ? 'student' : 'admin'
+    const action = role === 'admin' ? 'request promotion of' : 'request revocation of administrator access for'
+    if (!window.confirm(`Submit a pending request to ${action} ${target.full_name || target.email}?`)) return
+
+    setRoleActionId(target.id)
+    try {
+      await api.post(ENDPOINTS.adminUserRoleRequests(target.id), { role })
+      showFeedback(`Role-change request submitted for ${target.email}. No role changes until Super Admin approval.`)
+      await Promise.all([fetchAdminUsers(), fetchRoleChangeRequests()])
+    } catch (err) {
+      showFeedback(err.message || 'Unable to submit this role-change request.', 'error')
+    } finally {
+      setRoleActionId(null)
+    }
+  }
+
+  const resolveRoleChangeRequest = async (request, decision) => {
+    const subject = `${request.target.full_name || request.target.email} from ${request.previous_role} to ${request.requested_role}`
+    if (decision === 'approve') {
+      setApprovalRequest(request)
+      return
+    }
+    if (!window.confirm(`Reject this role-change request (${subject})?`)) return
+
+    let resolutionNote
+    if (decision === 'reject') {
+      resolutionNote = window.prompt('Optional reason for rejection:')?.trim() || null
+    }
+    setRoleActionId(request.id)
+    try {
+      await api.post(ENDPOINTS.rejectAdminRoleChange(request.id), { resolution_note: resolutionNote })
+      showFeedback('Role-change request rejected.')
+      await Promise.all([fetchAdminUsers(), fetchRoleChangeRequests()])
+    } catch (err) {
+      showFeedback(err.message || `Unable to ${decision} this request.`, 'error')
+    } finally {
+      setRoleActionId(null)
+    }
+
+    const approveRoleChangeRequest = async (request) => {
+      setRoleActionId(request.id)
+      try {
+        await api.post(ENDPOINTS.approveAdminRoleChange(request.id))
+        setApprovalRequest(null)
+        showFeedback('Role-change request approved.')
+        await Promise.all([fetchAdminUsers(), fetchRoleChangeRequests()])
+      } catch (err) {
+        showFeedback(err.message || 'Unable to approve this request.', 'error')
+        throw err
+      } finally {
+        setRoleActionId(null)
+      }
+    }
+  }
   const createAndPublishEvent = async (event) => {
     event.preventDefault()
     if (publishingEvent) return
@@ -450,7 +539,7 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="page-intro flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
             ADMINISTRATION CONSOLE
@@ -471,18 +560,19 @@ export default function AdminPage() {
       </div>
 
       {/* Sub-Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-border pb-3">
+      <div className="content-panel flex gap-1 overflow-x-auto rounded-lg p-1.5 scrollbar-none">
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'resources', label: `Resources (${resourceData.total || adminResources.length})` },
           { id: 'events', label: 'Events' },
           { id: 'announcements', label: `Announcements (${announcements.length})` },
-          { id: 'users', label: 'Students & Users' },
+          { id: 'users', label: 'Admin Management' },
+          { id: 'privacy', label: 'Privacy Requests' },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+            className={`min-h-9 whitespace-nowrap px-3.5 py-1.5 rounded-md text-xs font-bold transition-colors ${
               activeTab === tab.id
                 ? 'bg-primary text-white shadow-xs'
                 : 'bg-surface border border-border text-muted-foreground hover:border-[var(--primary-border)]'
@@ -491,6 +581,12 @@ export default function AdminPage() {
             {tab.label}
           </button>
         ))}
+        <Link
+          to="/admin/mentorship"
+          className="inline-flex min-h-9 items-center whitespace-nowrap rounded-md border border-border bg-surface px-3.5 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-[var(--primary-border)] hover:text-primary"
+        >
+          Mentorship management
+        </Link>
       </div>
 
       {/* ── Tab: OVERVIEW ────────────────────────────────────────── */}
@@ -703,34 +799,34 @@ export default function AdminPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Category</label>
-                    <select
+                    <SelectField
                       aria-label="Resource category"
                       value={resourceForm.category}
                       onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                      className="min-h-10 rounded-xl py-2 text-xs"
                     >
                       <option value="Past Questions">Past Questions</option>
                       <option value="Lecture Notes">Lecture Notes</option>
                       <option value="Textbooks">Textbooks</option>
                       <option value="Lab Manuals">Lab Manuals</option>
                       <option value="Course Outlines">Course Outlines</option>
-                    </select>
+                    </SelectField>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Level</label>
-                    <select
+                    <SelectField
                       aria-label="Resource level"
                       value={resourceForm.level}
                       onChange={(e) => setResourceForm({ ...resourceForm, level: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                      className="min-h-10 rounded-xl py-2 text-xs"
                     >
                       <option value="100">Level 100</option>
                       <option value="200">Level 200</option>
                       <option value="300">Level 300</option>
                       <option value="400">Level 400</option>
                       <option value="Postgraduate">Postgraduate</option>
-                    </select>
+                    </SelectField>
                   </div>
 
                   <div>
@@ -846,20 +942,21 @@ export default function AdminPage() {
                   <Filter size={13} className="text-primary" />
                   <span className="font-semibold">Level:</span>
                 </div>
-                <select
+                <SelectField
                   value={resourceLevelFilter}
                   onChange={(e) => {
                     setResourceLevelFilter(e.target.value)
                     setResourcePage(1)
                   }}
-                  className="px-2.5 py-1.5 rounded-xl border border-border bg-surface text-xs font-medium focus:outline-none focus:border-primary shadow-xs"
+                  wrapperClassName="w-auto"
+                  className="min-h-9 rounded-xl py-1.5 pl-2.5 text-xs font-medium"
                 >
                   {LEVELS.map((lvl) => (
                     <option key={lvl} value={lvl}>
                       {lvl}
                     </option>
                   ))}
-                </select>
+                </SelectField>
 
                 <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer ml-2">
                   <input
@@ -1146,10 +1243,10 @@ export default function AdminPage() {
 
                     <div>
                       <label className="block text-xs font-bold text-foreground mb-1">Level</label>
-                      <select
+                      <SelectField
                         value={editResourceForm.level}
                         onChange={(e) => setEditResourceForm({ ...editResourceForm, level: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
+                        className="min-h-10 rounded-xl py-2 text-xs"
                       >
                         <option value="">None / Unassigned</option>
                         <option value="100">Level 100</option>
@@ -1157,22 +1254,22 @@ export default function AdminPage() {
                         <option value="300">Level 300</option>
                         <option value="400">Level 400</option>
                         <option value="Postgraduate">Postgraduate</option>
-                      </select>
+                      </SelectField>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-foreground mb-1">Category</label>
-                      <select
+                      <SelectField
                         value={editResourceForm.category}
                         onChange={(e) => setEditResourceForm({ ...editResourceForm, category: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
+                        className="min-h-10 rounded-xl py-2 text-xs"
                       >
                         <option value="Past Questions">Past Questions</option>
                         <option value="Lecture Notes">Lecture Notes</option>
                         <option value="Textbooks">Textbooks</option>
                         <option value="Lab Manuals">Lab Manuals</option>
                         <option value="Course Outlines">Course Outlines</option>
-                      </select>
+                      </SelectField>
                     </div>
 
                     <div>
@@ -1278,17 +1375,17 @@ export default function AdminPage() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Event type</label>
-                <select
+                <SelectField
                   aria-label="Event type"
                   value={eventForm.type}
                   onChange={(e) => setEventForm({ ...eventForm, type: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface"
+                  className="min-h-10 rounded-xl py-2.5 text-xs"
                 >
                   <option value="Seminar">Seminar</option>
                   <option value="Workshop">Workshop</option>
                   <option value="Conference">Conference</option>
                   <option value="Social">Social</option>
-                </select>
+                </SelectField>
               </div>
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1">Date & time</label>
@@ -1441,28 +1538,28 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Category</label>
-                    <select
+                    <SelectField
                       aria-label="Announcement category"
                       value={announcementForm.category}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, category: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                      className="min-h-10 rounded-xl py-2.5 text-xs"
                     >
                       <option value="Academic">Academic</option>
                       <option value="Department">Department</option>
                       <option value="Urgent">Urgent</option>
-                    </select>
+                    </SelectField>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-1">Audience</label>
-                    <select
+                    <SelectField
                       aria-label="Announcement audience"
                       value={announcementForm.audience}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, audience: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border text-xs focus:outline-none focus:border-primary bg-surface shadow-xs"
+                      className="min-h-10 rounded-xl py-2.5 text-xs"
                     >
                       <option value="All students">All students</option>
-                    </select>
+                    </SelectField>
                   </div>
 
                   <div>
@@ -1628,7 +1725,7 @@ export default function AdminPage() {
                   key={item.id}
                   className={`bg-surface border rounded-2xl p-5 shadow-xs transition-all ${
                     item.is_pinned
-                      ? 'border-[#f2d89f] bg-gradient-to-r from-[#fffdfa] to-white ring-1 ring-[#f2d89f]/40'
+                      ? 'border-[var(--primary-border)] bg-[var(--accent-soft)]'
                       : 'border-border hover:border-[var(--primary-border)]'
                   }`}
                 >
@@ -1705,13 +1802,16 @@ export default function AdminPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                USER MANAGEMENT
+                ADMIN MANAGEMENT
               </span>
-              <h2 className="text-xl font-bold text-foreground">Student accounts</h2>
+              <h2 className="text-xl font-bold text-foreground">Registered users and roles</h2>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Role changes require Super Admin review. Your request will not change access until approved.
+              </p>
             </div>
             <input
               type="text"
-              placeholder="Search students"
+              placeholder="Search by name or email"
               aria-label="Search portal accounts"
               value={userSearch}
               onChange={(event) => setUserSearch(event.target.value)}
@@ -1730,6 +1830,7 @@ export default function AdminPage() {
                   <th className="py-2.5">Name</th>
                   <th className="py-2.5">Email</th>
                   <th className="py-2.5">Role</th>
+                  <th className="py-2.5">Access</th>
                   <th className="py-2.5 text-right">Joined</th>
                 </tr>
               </thead>
@@ -1745,6 +1846,27 @@ export default function AdminPage() {
                         {usr.role}
                       </span>
                     </td>
+                    <td className="py-3">
+                      {usr.id === user?.id || usr.role === 'super_admin' || isSuperAdmin ? (
+                        <span className="text-[10px] text-muted-foreground">
+                          {usr.id === user?.id ? 'Your account' : usr.role === 'super_admin' ? 'Protected' : isSuperAdmin ? 'Review requests below' : 'Protected'}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={roleActionId === usr.id}
+                          onClick={() => requestUserRoleChange(usr)}
+                          className="rounded-md border border-border px-2.5 py-1 text-[10px] font-bold text-primary hover:border-primary disabled:cursor-wait disabled:opacity-60"
+                          aria-label={`${usr.role === 'admin' ? 'Request revocation for' : 'Request promotion for'} ${usr.email}`}
+                        >
+                          {roleActionId === usr.id
+                            ? 'Submitting…'
+                            : usr.role === 'admin'
+                              ? 'Request revocation'
+                              : 'Request promotion'}
+                        </button>
+                      )}
+                    </td>
                     <td className="py-3 text-right text-muted-foreground">
                       {usr.created_at && !isNaN(new Date(usr.created_at).getTime())
                         ? new Date(usr.created_at).toLocaleDateString()
@@ -1757,6 +1879,114 @@ export default function AdminPage() {
           </div>
           )}
         </section>
+      )}
+      {activeTab === 'users' && (
+        <section className="space-y-5">
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">ROLE WORKFLOW</span>
+                <h2 className="mt-1 text-lg font-bold text-foreground">Pending Requests</h2>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {isSuperAdmin
+                    ? 'Review requests from administrators. Approval requires recent Firebase MFA verification.'
+                    : 'Only your submitted requests are visible here.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fetchRoleChangeRequests}
+                disabled={roleRequestsLoading}
+                className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-primary disabled:opacity-60"
+              >
+                <RefreshCw size={13} className={roleRequestsLoading ? 'animate-spin' : ''} aria-hidden="true" />
+                Refresh
+              </button>
+            </div>
+            {roleRequestsError && <p className="mt-3 text-xs text-destructive" role="alert">{roleRequestsError}</p>}
+            {roleRequestsLoading ? (
+              <p className="py-8 text-center text-xs text-muted-foreground">Loading role-change requests…</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {roleChangeRequests.filter((request) => request.status === 'pending').length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground">No pending role-change requests.</p>
+                ) : roleChangeRequests.filter((request) => request.status === 'pending').map((request) => (
+                  <article key={request.id} className="flex flex-col gap-3 rounded-xl border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 text-xs">
+                      <strong className="block truncate text-foreground">
+                        {request.target.full_name || request.target.email}
+                      </strong>
+                      <span className="text-muted-foreground">{request.target.email} · {request.previous_role} → {request.requested_role}</span>
+                      <small className="mt-1 block text-muted-foreground">
+                        Requested by {request.requester.full_name || request.requester.email} · {new Date(request.requested_at).toLocaleString()}
+                      </small>
+                    </div>
+                    {isSuperAdmin && request.requester_user_id !== user?.id && (
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          disabled={Boolean(roleActionId)}
+                          onClick={() => resolveRoleChangeRequest(request, 'approve')}
+                          className="rounded-md bg-primary px-3 py-2 text-[10px] font-bold text-white disabled:opacity-60"
+                        >
+                          {roleActionId === request.id ? 'Verifying…' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={Boolean(roleActionId)}
+                          onClick={() => resolveRoleChangeRequest(request, 'reject')}
+                          className="rounded-md border border-border px-3 py-2 text-[10px] font-bold text-foreground disabled:opacity-60"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-foreground">Approval History</h2>
+            {roleRequestsLoading ? (
+              <p className="py-8 text-center text-xs text-muted-foreground">Loading approval history…</p>
+            ) : roleChangeRequests.filter((request) => request.status !== 'pending').length === 0 ? (
+              <p className="py-6 text-center text-xs text-muted-foreground">No resolved role-change requests.</p>
+            ) : (
+              <div className="mt-3 divide-y divide-border">
+                {roleChangeRequests.filter((request) => request.status !== 'pending').map((request) => (
+                  <article key={request.id} className="flex flex-col gap-1 py-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <strong className="text-foreground">{request.target.full_name || request.target.email}</strong>
+                      <span className="ml-2 text-muted-foreground">{request.previous_role} → {request.requested_role}</span>
+                      <small className="block text-muted-foreground">
+                        Requested by {request.requester.full_name || request.requester.email}
+                        {request.approver && ` · ${request.status} by ${request.approver.full_name || request.approver.email}`}
+                      </small>
+                      {request.resolution_note && <small className="block text-muted-foreground">{request.resolution_note}</small>}
+                    </div>
+                    <span className={`self-start rounded-full border px-2 py-1 text-[9px] font-extrabold uppercase ${
+                      request.status === 'approved'
+                        ? 'border-[var(--success-border)] bg-[var(--success-soft)] text-success'
+                        : 'border-[var(--destructive-border)] bg-[var(--destructive-soft)] text-destructive'
+                    }`}>
+                      {request.status}
+                    </span>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+      {activeTab === 'privacy' && <AdminPrivacyRequestsPanel />}
+      {approvalRequest && (
+        <AdminApprovalDialog
+          request={approvalRequest}
+          onClose={() => setApprovalRequest(null)}
+          onApprove={approveRoleChangeRequest}
+        />
       )}
       {previewResource && <AcademicResourceViewer resource={previewResource} onClose={() => setPreviewResource(null)} />}
       <DeleteConfirmModal

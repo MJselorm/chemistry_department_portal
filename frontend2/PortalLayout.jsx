@@ -56,7 +56,7 @@ export default function PortalLayout({ children, title, subtitle }) {
   const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col lg:flex-row font-sans text-[var(--foreground)] transition-colors duration-200">
+    <div className="portal-shell min-h-screen bg-[var(--background)] flex flex-col lg:flex-row font-sans text-[var(--foreground)] transition-colors duration-200">
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -76,7 +76,7 @@ export default function PortalLayout({ children, title, subtitle }) {
           isDarkMode={isDarkMode}
           onToggleTheme={toggleTheme}
         />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 max-w-7xl w-full mx-auto">
+        <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 xl:p-10">
           <ErrorBoundary
             fallback={(error, retry) => (
               <div className="py-12 text-center max-w-md mx-auto bg-surface border border-border rounded-2xl p-6 shadow-sm">
@@ -85,7 +85,7 @@ export default function PortalLayout({ children, title, subtitle }) {
                 </div>
                 <h2 className="text-base font-bold text-foreground">Something went wrong</h2>
                 <p className="text-xs text-muted-foreground mt-1">Chemistry Hub could not display this section.</p>
-                {error && (
+                {import.meta.env.DEV && error && (
                   <div className="mt-3 p-3 bg-red-50 text-red-700 text-[11px] text-left font-mono rounded-lg overflow-auto max-h-40">
                     {error.message || String(error)}
                   </div>

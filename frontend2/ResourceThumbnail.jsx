@@ -17,7 +17,7 @@ function TypePlaceholder({ extension }) {
       : 'bg-[var(--primary-soft)] text-primary'
 
   return (
-    <div className={`grid h-14 w-14 place-items-center rounded-lg ${color}`}>
+    <div className={`grid h-16 w-16 place-items-center rounded-lg shadow-xs ${color}`}>
       <Icon size={25} aria-hidden="true" />
       <span className="sr-only">{extension ? `${extension.toUpperCase()} file` : 'Document file'}</span>
     </div>
@@ -70,7 +70,7 @@ export default function ResourceThumbnail({ resource, onOpen }) {
   }, [])
 
   return (
-    <button ref={rootRef} type="button" onClick={onOpen} className="flex aspect-[16/9] w-full items-center justify-center overflow-hidden border-b border-border bg-surface-secondary transition-colors hover:bg-[var(--primary-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset" aria-label={`Preview ${resource.title || resource.name || 'document'}`}>
+    <button ref={rootRef} type="button" onClick={onOpen} className="document-thumbnail flex aspect-[16/9] w-full items-center justify-center overflow-hidden border-b border-border transition-colors hover:bg-[var(--primary-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset" aria-label={`Preview ${resource.title || resource.name || 'document'}`}>
       {!visible || unavailable ? (
         <TypePlaceholder extension={extension} />
       ) : isPdf ? (

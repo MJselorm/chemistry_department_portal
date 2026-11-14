@@ -3,14 +3,14 @@ from datetime import datetime
 
 from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from .database import Base
 
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = (CheckConstraint("role IN ('student', 'admin')", name="users_role_check"),)
+    __table_args__ = (CheckConstraint("role IN ('student', 'admin', 'super_admin')", name="users_role_check"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     firebase_uid: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
@@ -22,45 +22,54 @@ class User(Base):
 
 
 class PrivacyRequest(Base):
-    """A reviewed data-subject request. Approval never performs a deletion."""
-
     __tablename__ = "privacy_requests"
     __table_args__ = (
         CheckConstraint("request_type IN ('data_export', 'account_deletion')", name="privacy_requests_type_check"),
-        CheckConstraint("status IN ('pending', 'under_review', 'approved', 'rejected')", name="privacy_requests_status_check"),
+        CheckConstraint(
+            "status IN ('pending', 'under_review', 'in_review', 'approved', 'completed', 'rejected', 'cancelled')",
+            name="privacy_requests_status_check",
+        ),
         Index("ix_privacy_requests_user_created_at", "user_id", "created_at"),
-        # The matching partial unique index is also created explicitly by the
-        # Alembic migration, which is the production schema authority.
         Index(
             "uq_privacy_requests_active_type",
             "user_id",
             "request_type",
             unique=True,
-            postgresql_where=text("status IN ('pending', 'under_review')"),
+            postgresql_where=text("status IN ('pending', 'under_review', 'in_review')"),
         ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
-    request_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    requester_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    requester_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    request_type: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
     details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="pending", server_default="pending", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    resolved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    resolved_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    resolved_by = synonym("resolved_by_id")
     resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class PrivacyAuditEvent(Base):
-    """Minimal, content-free audit trail for privacy actions and exports."""
-
     __tablename__ = "privacy_audit_events"
     __table_args__ = (Index("ix_privacy_audit_events_actor_created_at", "actor_user_id", "created_at"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    privacy_request_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("privacy_requests.id", ondelete="RESTRICT"), nullable=True, index=True)
-    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
+    privacy_request_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("privacy_requests.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     event_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     detail: Mapped[str | None] = mapped_column(String(200), nullable=True)
@@ -68,8 +77,6 @@ class PrivacyAuditEvent(Base):
 
 
 class PrivacyRateLimit(Base):
-    """Database-backed fixed-window counters shared by every API instance."""
-
     __tablename__ = "privacy_rate_limits"
     __table_args__ = (UniqueConstraint("scope", "action", "window_started_at", name="uq_privacy_rate_limit_window"),)
 
@@ -79,6 +86,47 @@ class PrivacyRateLimit(Base):
     window_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+
+class AdminRoleAudit(Base):
+    __tablename__ = "admin_role_audit"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    actor_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    target_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    request_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("admin_role_change_requests.id", ondelete="RESTRICT"), nullable=True)
+    previous_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    new_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class AdminRoleChangeRequest(Base):
+    __tablename__ = "admin_role_change_requests"
+    __table_args__ = (
+        CheckConstraint("previous_role IN ('student', 'admin')", name="admin_role_request_previous_role_check"),
+        CheckConstraint("requested_role IN ('student', 'admin')", name="admin_role_request_requested_role_check"),
+        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="admin_role_request_status_check"),
+        Index(
+            "uq_admin_role_request_pending_target",
+            "target_user_id",
+            unique=True,
+            postgresql_where=text("status = 'pending'"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    requester_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    target_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    approver_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    previous_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    requested_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", server_default="pending")
+    resolution_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    requester: Mapped[User] = relationship(foreign_keys=[requester_user_id], lazy="selectin")
+    target: Mapped[User] = relationship(foreign_keys=[target_user_id], lazy="selectin")
+    approver: Mapped[User | None] = relationship(foreign_keys=[approver_user_id], lazy="selectin")
 
 
 class Announcement(Base):
@@ -113,6 +161,7 @@ class Notification(Base):
     target_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     destination_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     announcement_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("announcements.id", ondelete="CASCADE"), nullable=True, unique=True)
+    event_key: Mapped[str | None] = mapped_column(String(180), nullable=True, unique=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="published", server_default="published", index=True)
     scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
