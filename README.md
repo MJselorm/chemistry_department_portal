@@ -247,7 +247,7 @@ Before launch:
 1. Set `APP_ENV=production`, exact `CORS_ORIGINS`, `DATABASE_URL`, Firebase Admin credentials, and Supabase Storage values in Render's encrypted environment settings.
 2. Set all Firebase web values and a verified `VITE_SUPPORT_EMAIL` in Vercel. Confirm that the CSP in `frontend2/vercel.json` permits only services actually in use.
 3. Configure Firebase authorized website domains, enable the existing Email/Password and Google sign-in providers as required, and configure email-verification and password-reset templates plus provider-level abuse protections. The application does not restrict users to an institutional email domain. New email/password registrations must verify their address before profile provisioning.
-4. Apply Alembic migrations through `20261031_17` using a trusted deployment identity. Confirm the API's server-side `DATABASE_URL` can access the application tables under the RLS configuration, and confirm backups and restoration procedures.
+4. Apply the full Alembic history with `python -m alembic upgrade head` (currently revision `20261114_21`) using a trusted deployment identity. Do not target only `20261031_17`, because later revisions add API rate-limit, notification, mentorship-preference, and privacy-workflow schema changes. Confirm the API's server-side `DATABASE_URL` can access the application tables under the RLS configuration, and confirm backups and restoration procedures.
 5. Explicitly bootstrap one verified, MFA-enrolled Super Admin using the documented database procedure before accepting role-change requests. Confirm the Firebase project has MFA enabled and supports the enrolled phone/TOTP factors.
 6. Confirm the `directory-media` bucket's public-read requirement and retention policy. Keep `academic-resources` private and allow the service-role key to read and write it; do not upload sensitive documents through the image endpoint.
 7. Configure platform/WAF rate limits for authentication, password reset, directory search, and uploads. The application does not include a distributed rate limiter.
@@ -319,13 +319,15 @@ python -m alembic upgrade head
 
 Do not use `Base.metadata.create_all()` in the application.
 
-The prepared mentorship migration is
+The foundational mentorship migration is
 `backend/alembic/versions/20261031_17_mentorship_programme.py`. It follows
 `20261031_16`, adds the mentorship applications, matches, goals, sessions,
 reassignment, preferences, and audit tables, and enables RLS with no direct
-client grants. Review the generated SQL and apply migrations through this
-revision in the intended environment before enabling the frontend feature. No
-live database migration is applied by the code change.
+client grants. `20261108_20_matching_preferences.py` then adds the matching
+preference fields and `mentorship_matches.score_breakdown`. Always run
+`python -m alembic upgrade head` in the intended environment before enabling
+the frontend feature; do not apply an arbitrary limited revision. No live
+database migration is applied by a code change alone.
 
 ## Development notes
 
