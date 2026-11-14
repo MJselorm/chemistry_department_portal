@@ -101,6 +101,12 @@ All endpoints except `GET /health` require `Authorization: Bearer <firebase_id_t
 - `/api/notifications/*` provides user-scoped notification history, read state,
   unread counts, and push subscriptions. `/api/notifications/admin/*` requires
   the database-backed `admin` role.
+- `/privacy/requests` creates and lists ownership-scoped data-export or
+  account-deletion review requests; `/privacy/export` generates an
+  ownership-scoped JSON export. `/admin/privacy/requests/*` is restricted to
+  the database-backed `admin` role. See
+  [`backend/PRIVACY_REQUESTS.md`](backend/PRIVACY_REQUESTS.md) before enabling
+  the frontend controls.
 
 ## Security model
 
@@ -141,10 +147,16 @@ Vercel supplies CSP, clickjacking, referrer, permissions, MIME-sniffing, and HST
 - `/privacy` documents verified data processing, essential Firebase/browser storage, service providers, and account-data requests.
 - `/terms` provides an operational acceptable-use baseline requiring institutional/legal review.
 - No refund policy is included because the application does not process payments.
-- No cookie-consent banner is included because no analytics, advertising, or other non-essential trackers were found. Reassess before adding such services.
+- A cookie-preference banner controls optional functional browser preferences;
+  the portal does not initialize advertising or analytics trackers. Reassess
+  consent wording before adding any new tracker.
 - `robots.txt` and page metadata prevent this authenticated portal from being indexed; no sitemap is generated because there are no intended indexable routes.
 
 The application processes account identifiers, email addresses, names, roles, directory contact/academic information, and administrator-provided profile images. The repository does not define a final retention schedule or automated account deletion. Requests must be identity-verified and handled by the responsible institution.
+
+Privacy-request workflow, database migration/rollback, RLS access model,
+retention proposal, endpoint examples, and manual account-deletion safeguards
+are documented in [`backend/PRIVACY_REQUESTS.md`](backend/PRIVACY_REQUESTS.md).
 
 ## Notifications and Web Push
 

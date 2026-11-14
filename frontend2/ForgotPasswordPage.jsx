@@ -89,6 +89,15 @@ export default function ForgotPasswordPage() {
             </button>
           </form>
         )}
+
+        <footer className="mt-12 text-center text-[0.72rem] leading-relaxed text-slate-400">
+          <p className="flex items-center justify-center gap-3">
+            <Link to="/privacy" className="hover:text-primary hover:underline">Privacy Policy</Link>
+            <span>&bull;</span>
+            <Link to="/terms" className="hover:text-primary hover:underline">Terms of Use</Link>
+          </p>
+          <p className="mt-1">&copy; {new Date().getFullYear()} Ghana Students' Chemical Society, KNUST</p>
+        </footer>
       </div>
     </main>
   )

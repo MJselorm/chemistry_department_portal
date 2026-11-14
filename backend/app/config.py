@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,15 @@ class Settings(BaseSettings):
     vapid_public_key: str | None = None
     vapid_private_key: str | None = None
     vapid_subject: str = "mailto:admin@example.invalid"
+    privacy_contact_email: str | None = None
+    # This salt pseudonymizes IP addresses in rate-limit scopes and audit data.
+    # It must be replaced with a secret deployment value outside development.
+    privacy_rate_limit_salt: str = "development-only-change-me"
+    privacy_request_rate_limit: int = Field(default=5, ge=1, le=100)
+    privacy_export_rate_limit: int = Field(default=3, ge=1, le=100)
+    privacy_admin_rate_limit: int = Field(default=120, ge=1, le=1000)
+    privacy_rate_limit_window_seconds: int = Field(default=3600, ge=60, le=86400)
+    privacy_export_max_records: int = Field(default=1000, ge=1, le=10000)
     firebase_service_account_path: str | None = None
     firebase_service_account_json: str | None = None
     # The React portal is served by Vite in development. Keep the static

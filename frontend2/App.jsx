@@ -14,6 +14,7 @@ import AnnouncementsPage from './AnnouncementsPage'
 const LoginPage = lazy(() => import('./LoginPage'))
 const ForgotPasswordPage = lazy(() => import('./ForgotPasswordPage'))
 const LegalPage = lazy(() => import('./LegalPage'))
+const PrivacyPolicyPage = lazy(() => import('./PrivacyPolicyPage'))
 const DashboardPage = lazy(() => import('./DashboardPage'))
 const EventsPage = lazy(() => import('./EventsPage'))
 const AcademicHubPage = lazy(() => import('./AcademicHubPage'))
@@ -45,7 +46,7 @@ export default function App() {
           {/* Landing / Sign In Page (Preserved) */}
           <Route path="/" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/privacy" element={<LegalPage type="privacy" />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<LegalPage type="terms" />} />
           <Route path="/cookies" element={<LegalPage type="cookies" />} />
 

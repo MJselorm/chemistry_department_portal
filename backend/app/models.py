@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,6 +18,66 @@ class User(Base):
     full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="student", server_default="student")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+
+class PrivacyRequest(Base):
+    """A reviewed data-subject request. Approval never performs a deletion."""
+
+    __tablename__ = "privacy_requests"
+    __table_args__ = (
+        CheckConstraint("request_type IN ('data_export', 'account_deletion')", name="privacy_requests_type_check"),
+        CheckConstraint("status IN ('pending', 'under_review', 'approved', 'rejected')", name="privacy_requests_status_check"),
+        Index("ix_privacy_requests_user_created_at", "user_id", "created_at"),
+        # The matching partial unique index is also created explicitly by the
+        # Alembic migration, which is the production schema authority.
+        Index(
+            "uq_privacy_requests_active_type",
+            "user_id",
+            "request_type",
+            unique=True,
+            postgresql_where=text("status IN ('pending', 'under_review')"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    request_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="pending", server_default="pending", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class PrivacyAuditEvent(Base):
+    """Minimal, content-free audit trail for privacy actions and exports."""
+
+    __tablename__ = "privacy_audit_events"
+    __table_args__ = (Index("ix_privacy_audit_events_actor_created_at", "actor_user_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    privacy_request_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("privacy_requests.id", ondelete="RESTRICT"), nullable=True, index=True)
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
+    event_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    detail: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+
+
+class PrivacyRateLimit(Base):
+    """Database-backed fixed-window counters shared by every API instance."""
+
+    __tablename__ = "privacy_rate_limits"
+    __table_args__ = (UniqueConstraint("scope", "action", "window_started_at", name="uq_privacy_rate_limit_window"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    scope: Mapped[str] = mapped_column(String(130), nullable=False)
+    action: Mapped[str] = mapped_column(String(50), nullable=False)
+    window_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
 
